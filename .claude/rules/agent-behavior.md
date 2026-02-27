@@ -35,6 +35,17 @@ Never read a large file into main context when a focused subagent query would su
 | **subagent-driven-development** skill | Executing multi-step implementation plans |
 | **feature-dev** skill | Guided end-to-end feature development workflow |
 
+## Hands-Off Operations
+
+**Never commit.** Git commits are the user's responsibility. Stage files if asked, but
+never run `git commit`. Don't suggest committing as a closing step — the user will decide when.
+
+**Never run the app.** After implementing a feature or fix, don't run `bun dev` or
+`bun start` to verify it. Instead, tell the user what to run and what to look for:
+- Which route or UI element to visit
+- What the expected behaviour is
+- Any edge cases worth manually checking
+
 ## Plans Must Name Their Subagents
 
 When writing implementation plans, explicitly state which agents will be invoked and why.
