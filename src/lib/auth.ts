@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm"
 import { headers } from "next/headers"
 import { cache } from "react"
 import db from "@/lib/db/db"
-import { member, organization } from "@/lib/db/schema"
+import { member } from "@/lib/db/schema"
 
 export const auth = betterAuth({
   emailAndPassword: {
@@ -19,41 +19,21 @@ export const auth = betterAuth({
     provider: "pg",
   }),
   databaseHooks: {
-    user: {
-      create: {
-        after: async (user) => {
-          await auth.api.createOrganization({
-            body: {
-              name: user.name,
-              slug: `personal-${user.id}`,
-              userId: user.id,
-              metadata: { personal: true },
-            },
-          })
-        },
-      },
-    },
     session: {
       create: {
         before: async (session) => {
           if (session.activeOrganizationId) return { data: session }
 
           const memberships = await db
-            .select({ orgId: organization.id, metadata: organization.metadata })
+            .select({ orgId: member.organizationId })
             .from(member)
-            .innerJoin(organization, eq(member.organizationId, organization.id))
             .where(eq(member.userId, session.userId))
-
-          const personalOrg = memberships.find((m) => {
-            const meta = m.metadata ? JSON.parse(m.metadata) : {}
-            return meta.personal === true
-          })
+            .limit(1)
 
           return {
             data: {
               ...session,
-              activeOrganizationId:
-                personalOrg?.orgId ?? memberships[0]?.orgId ?? null,
+              activeOrganizationId: memberships[0]?.orgId ?? null,
             },
           }
         },
