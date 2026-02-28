@@ -1,6 +1,6 @@
 ---
 name: librarian
-description: Documentation specialist for Castparty. Use when querying project docs, understanding architecture/features/conventions/decisions, or updating docs after feature work. Use proactively after completing or updating major features.
+description: Documentation specialist for Castparty. Use when querying project docs, understanding architecture/features/conventions/decisions/product-context, or updating docs after feature work. Use proactively after completing or updating major features.
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: sonnet
 ---

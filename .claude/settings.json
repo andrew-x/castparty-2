@@ -1,3 +1,37 @@
 {
-  "plansDirectory": "./.claude/plans"
+  "enabledPlugins": {
+    "beads@beads-marketplace": true,
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true
+  },
+  "plansDirectory": "./.claude/plans",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "find .claude/plans -name '*.md' -mtime +7 -delete 2>/dev/null; true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(cat | jq -r '.tool_input.file_path // empty') && [ -n \"$FILE\" ] && bunx biome format --write \"$FILE\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -1,0 +1,194 @@
+@import url("tailwindcss");
+@import url("tw-animate-css");
+@import url("shadcn/tailwind.css");
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.25rem;
+  --background: oklch(1 0 0); /* white */
+  --foreground: oklch(0.147 0.004 49.25); /* stone-900 */
+  --card: oklch(0.985 0.001 106.423); /* stone-50 */
+  --card-foreground: oklch(0.147 0.004 49.25); /* stone-900 */
+  --popover: oklch(1 0 0); /* white */
+  --popover-foreground: oklch(0.147 0.004 49.25); /* stone-900 */
+  --primary: oklch(54.1% 0.281 293.009); /* violet-600 */
+  --primary-foreground: oklch(1 0 0); /* white */
+  --secondary: oklch(0.97 0.001 106.424); /* stone-100 */
+  --secondary-foreground: oklch(0.147 0.004 49.25); /* stone-900 */
+  --muted: oklch(0.97 0.001 106.424); /* stone-100 */
+  --muted-foreground: oklch(0.553 0.013 58.071); /* stone-500 */
+  --accent: oklch(0.97 0.001 106.424); /* stone-100 — hover/selected bg */
+  --accent-foreground: oklch(0.147 0.004 49.25); /* stone-900 */
+  --destructive: oklch(0.577 0.245 27.325); /* red-500 */
+  --destructive-foreground: oklch(1 0 0); /* white */
+  --border: oklch(0.923 0.003 48.717); /* stone-200 */
+  --input: oklch(0.923 0.003 48.717); /* stone-200 */
+  --ring: oklch(54.1% 0.281 293.009); /* violet-600 */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0.001 106.423); /* stone-50 */
+  --sidebar-foreground: oklch(0.147 0.004 49.25); /* stone-900 */
+  --sidebar-primary: oklch(54.1% 0.281 293.009); /* violet-600 */
+  --sidebar-primary-foreground: oklch(1 0 0); /* white */
+  --sidebar-accent: oklch(0.97 0.001 106.424); /* stone-100 */
+  --sidebar-accent-foreground: oklch(0.147 0.004 49.25);
+  --sidebar-border: oklch(0.923 0.003 48.717); /* stone-200 */
+  --sidebar-ring: oklch(54.1% 0.281 293.009); /* violet-600 */
+}
+
+@theme inline {
+  /* === Fonts === */
+  --font-sans: var(--font-dm-sans);
+  --font-serif: var(--font-dm-serif-display);
+  --font-mono: var(--font-dm-mono);
+
+  /* === Typography scale === */
+  --text-display: 4.5rem; /* 72px — hero headings */
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.025em;
+  --text-title: 1.875rem; /* 30px — page/section titles */
+  --text-title--line-height: 1.2;
+  --text-heading: 1.25rem; /* 20px — subsection headings */
+  --text-heading--line-height: 1.4;
+  --text-body-lg: 1.125rem; /* 18px — lead/intro text */
+  --text-body-lg--line-height: 1.5;
+  --text-body: 1rem; /* 16px — body text */
+  --text-body--line-height: 1.5;
+  --text-label: 0.875rem; /* 14px — UI labels, buttons */
+  --text-label--line-height: 1.43;
+  --text-caption: 0.75rem; /* 12px — fine print, badges */
+  --text-caption--line-height: 1.33;
+
+  /* === Spacing scale === */
+  --spacing-page: 1rem; /* 16px — page edge padding */
+  --spacing-section: 2rem; /* 32px — between major sections */
+  --spacing-group: 1.5rem; /* 24px — between related groups */
+  --spacing-block: 0.75rem; /* 12px — between block-level items */
+  --spacing-element: 0.5rem; /* 8px  — between tightly coupled elements */
+
+  /* === shadcn variable → Tailwind utility mappings === */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  /* shadcn structural token — stone-100 hover/selected bg. For orange CTAs use bg-cta */
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* === Radius utilities === */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  /* === CTA — orange (replaces old --color-accent-*) === */
+  /* Highlights, notification badges, spotlight moments */
+  --color-cta: #f97316; /* orange-500 */
+  --color-cta-hover: #ea580c; /* orange-600 */
+  --color-cta-light: #ffedd5; /* orange-100 */
+  --color-cta-subtle: #fff7ed; /* orange-50  */
+  --color-cta-fg: #ffffff;
+  --color-cta-text: #ea580c; /* orange-600 — inline text */
+
+  /* === Brand variants (supplementary) === */
+  /* Use bg-primary for main actions; these are for hover/state variants */
+  --color-brand-hover: oklch(49.1% 0.27 292.581); /* violet-700 */
+  --color-brand-pressed: oklch(43.2% 0.232 292.759); /* violet-800 */
+  --color-brand-light: oklch(
+    94.3% 0.029 294.588
+  ); /* violet-100 — badge/chip backgrounds */
+  --color-brand-subtle: oklch(
+    96.9% 0.016 293.756
+  ); /* violet-50  — hover surface tints */
+  --color-brand-text: oklch(
+    49.1% 0.27 292.581
+  ); /* violet-700 — inline brand labels/links */
+  --color-border-brand: oklch(
+    81.1% 0.111 293.571
+  ); /* violet-300 — focus and brand-adjacent borders */
+
+  /* === Status: Success — green === */
+  --color-success: #16a34a; /* green-600 */
+  --color-success-light: #dcfce7; /* green-100 */
+  --color-success-subtle: #f0fdf4; /* green-50  */
+  --color-success-fg: #ffffff;
+  --color-success-text: #15803d; /* green-700 */
+
+  /* === Status: Error — red === */
+  --color-error: #dc2626; /* red-600 */
+  --color-error-light: #fee2e2; /* red-100 */
+  --color-error-subtle: #fef2f2; /* red-50  */
+  --color-error-fg: #ffffff;
+  --color-error-text: #b91c1c; /* red-700 */
+
+  /* === Status: Warning — amber === */
+  --color-warning: #f59e0b; /* amber-500 */
+  --color-warning-light: #fef3c7; /* amber-100 */
+  --color-warning-subtle: #fffbeb; /* amber-50  */
+  --color-warning-fg: #ffffff;
+  --color-warning-text: #d97706; /* amber-600 */
+}
+
+body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: #ede9fe; /* violet-100 */
+  color: #5b21b6; /* violet-800 */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
