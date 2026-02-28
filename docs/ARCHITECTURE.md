@@ -16,6 +16,8 @@
 
 ```
 src/
+├── actions/             # Backend business logic, organized by feature area
+│   └── [feature]/       # e.g., productions/, auditions/, casting/
 ├── app/
 │   ├── (app)/           # Authenticated route group — guarded by (app)/layout.tsx
 │   │   ├── layout.tsx   # Auth guard + SidebarProvider shell
@@ -56,12 +58,16 @@ src/
 ```
 Browser
   └── Next.js App Router (RSC)
-        ├── Server components call getCurrentUser() via Better Auth
-        │     └── Better Auth → Neon (PostgreSQL) via Drizzle ORM
-        └── Client components call authClient.* (Better Auth browser SDK)
+        ├── Server components → plain async functions in src/actions/
+        │     └── checkAuth() + Drizzle queries → Neon (PostgreSQL)
+        ├── Client components → next-safe-action actions in src/actions/
+        │     └── secureActionClient (auth + validation + logging) → Neon
+        └── Client components → authClient.* (Better Auth browser SDK)
               └── → /api/auth/[...all] route handler
 ```
 
+- `src/actions/` — Backend business logic organized by feature area; the boundary between UI and data
+- `src/lib/action.ts` — next-safe-action client setup (`publicActionClient`, `secureActionClient`)
 - `src/lib/auth.ts` — Better Auth server instance; `getCurrentUser()` reads the session from request headers
 - `src/lib/auth/auth-client.ts` — Better Auth browser client; used in form components
 - `src/lib/db/db.ts` — Drizzle ORM instance; Neon serverless HTTP driver; `snake_case` column casing

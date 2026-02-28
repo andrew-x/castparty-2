@@ -36,6 +36,7 @@ Package manager is **Bun** (not npm/yarn/pnpm).
 - **Components** -- shadcn/ui primitives in `src/components/common/`. Always use existing common components; ask before adding new shadcn components or building custom ones.
 - **Fonts** -- DM Sans (body) + DM Serif Display (headings) + DM Mono via `next/font/google` in root layout. Use `font-serif` for display/heading text.
 - **React Compiler** -- enabled experimentally (skip manual useMemo/useCallback).
+- **Backend logic** -- lives in `src/actions/[feature]/`. Writes use `next-safe-action` (`secureActionClient`); reads are plain server functions. Server components first -- only `"use client"` when genuinely needed.
 
 For deeper architecture details, read `docs/ARCHITECTURE.md`.
 
