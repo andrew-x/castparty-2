@@ -21,8 +21,8 @@ const schema = z.object({
   slug: z
     .string()
     .trim()
-    .min(3, "Slug must be at least 3 characters.")
-    .max(60, "Slug must be at most 60 characters.")
+    .min(3, "URL ID must be at least 3 characters.")
+    .max(60, "URL ID must be at most 60 characters.")
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "Lowercase letters, numbers, and hyphens only.",
@@ -89,7 +89,7 @@ export function OrgSettingsForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>URL slug</FieldLabel>
+              <FieldLabel htmlFor={field.name}>URL ID</FieldLabel>
               <Input
                 {...field}
                 id={field.name}

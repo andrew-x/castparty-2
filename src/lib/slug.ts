@@ -43,13 +43,13 @@ export function nameToSlug(name: string): string {
  */
 export function validateSlug(slug: string): string | null {
   if (slug.length < MIN_LENGTH)
-    return `Slug must be at least ${MIN_LENGTH} characters.`
+    return `URL ID must be at least ${MIN_LENGTH} characters.`
   if (slug.length > MAX_LENGTH)
-    return `Slug must be at most ${MAX_LENGTH} characters.`
+    return `URL ID must be at most ${MAX_LENGTH} characters.`
   if (!SLUG_REGEX.test(slug))
-    return "Slug can only contain lowercase letters, numbers, and hyphens."
-  if (/^\d+$/.test(slug)) return "Slug cannot be purely numeric."
-  if (RESERVED_SLUGS.has(slug)) return "This slug is reserved."
+    return "URL ID can only contain lowercase letters, numbers, and hyphens."
+  if (/^\d+$/.test(slug)) return "URL ID cannot be purely numeric."
+  if (RESERVED_SLUGS.has(slug)) return "This URL ID is reserved."
   return null
 }
 

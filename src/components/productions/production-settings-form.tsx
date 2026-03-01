@@ -21,8 +21,8 @@ import { Separator } from "@/components/common/separator"
 const slugSchema = z
   .string()
   .trim()
-  .min(3, "Slug must be at least 3 characters.")
-  .max(60, "Slug must be at most 60 characters.")
+  .min(3, "URL ID must be at least 3 characters.")
+  .max(60, "URL ID must be at most 60 characters.")
   .regex(
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
     "Lowercase letters, numbers, and hyphens only.",
@@ -107,7 +107,8 @@ function ProductionSlugEditor({
     },
     onError({ error }) {
       form.setError("root", {
-        message: error.serverError ?? "We couldn't update the slug. Try again.",
+        message:
+          error.serverError ?? "We couldn't update the URL ID. Try again.",
       })
     },
   })
@@ -127,7 +128,7 @@ function ProductionSlugEditor({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Production slug</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Production URL ID</FieldLabel>
               <Input
                 {...field}
                 id={field.name}
@@ -188,7 +189,8 @@ function RoleSlugEditor({
     },
     onError({ error }) {
       form.setError("root", {
-        message: error.serverError ?? "We couldn't update the slug. Try again.",
+        message:
+          error.serverError ?? "We couldn't update the URL ID. Try again.",
       })
     },
   })

@@ -15,14 +15,14 @@ export const updateProductionSlug = secureActionClient
       slug: z
         .string()
         .trim()
-        .min(3, "Slug must be at least 3 characters.")
-        .max(60, "Slug must be at most 60 characters.")
+        .min(3, "URL ID must be at least 3 characters.")
+        .max(60, "URL ID must be at most 60 characters.")
         .regex(
           /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
           "Lowercase letters, numbers, and hyphens only.",
         )
-        .refine((s) => !/^\d+$/.test(s), "Slug cannot be purely numeric.")
-        .refine((s) => !RESERVED_SLUGS.has(s), "This slug is reserved."),
+        .refine((s) => !/^\d+$/.test(s), "URL ID cannot be purely numeric.")
+        .refine((s) => !RESERVED_SLUGS.has(s), "This URL ID is reserved."),
     }),
   )
   .action(async ({ parsedInput: { productionId, slug }, ctx: { user } }) => {
@@ -51,7 +51,7 @@ export const updateProductionSlug = secureActionClient
     })
 
     if (conflict) {
-      throw new Error("This slug is already taken.")
+      throw new Error("This URL ID is already taken.")
     }
 
     await db
