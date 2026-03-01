@@ -18,9 +18,13 @@ export async function getRolesWithSubmissions(productionId: string) {
   return db.query.Role.findMany({
     where: (r) => eq(r.productionId, productionId),
     with: {
+      pipelineStages: {
+        orderBy: (s, { asc }) => [asc(s.position)],
+      },
       submissions: {
         with: {
           candidate: true,
+          stage: true,
         },
       },
     },

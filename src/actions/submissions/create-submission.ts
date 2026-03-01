@@ -70,6 +70,12 @@ export const createSubmission = publicActionClient
           })
         }
 
+        // Resolve the inbound stage for this role
+        const inboundStage = await tx.query.PipelineStage.findFirst({
+          where: (s) => and(eq(s.roleId, roleId), eq(s.slug, "inbound")),
+          columns: { id: true },
+        })
+
         const submissionId = generateId("sub")
 
         await tx.insert(Submission).values({
@@ -77,6 +83,7 @@ export const createSubmission = publicActionClient
           productionId,
           roleId,
           candidateId,
+          stageId: inboundStage?.id ?? null,
           firstName,
           lastName,
           email,
