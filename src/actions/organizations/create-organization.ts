@@ -20,7 +20,7 @@ export const createOrganization = secureActionClient
   .metadata({ action: "create-organization" })
   .inputSchema(
     z.object({
-      name: z.string().min(1, "Organization name is required.").max(100),
+      name: z.string().trim().min(1, "Organization name is required.").max(100),
     }),
   )
   .action(async ({ parsedInput: { name }, ctx: { user } }) => {

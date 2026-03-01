@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { Controller, useForm } from "react-hook-form"
 import { z } from "zod/v4"
-import { createOrganization } from "@/actions/organizations/create-organization"
+import { updateOrganization } from "@/actions/organizations/update-organization"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
 import {
@@ -16,33 +16,41 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 
-const createOrgSchema = z.object({
-  name: z.string().trim().min(1, "Organization name is required."),
+const schema = z.object({
+  name: z.string().trim().min(1, "Organization name is required.").max(100),
 })
 
-export function CreateOrgForm() {
+interface Props {
+  organizationId: string
+  currentName: string
+}
+
+export function OrgSettingsForm({ organizationId, currentName }: Props) {
   const router = useRouter()
-  const form = useForm<z.infer<typeof createOrgSchema>>({
-    resolver: zodResolver(createOrgSchema),
-    defaultValues: { name: "" },
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: { name: currentName },
   })
 
-  const { execute, isPending } = useAction(createOrganization, {
+  const { execute, isPending } = useAction(updateOrganization, {
     onSuccess() {
       router.refresh()
-      router.push("/home")
     },
     onError({ error }) {
       form.setError("root", {
         message:
           error.serverError ??
-          "We couldn't create the organization. Try again.",
+          "We couldn't update the organization. Try again.",
       })
     },
   })
 
+  const hasChanges = form.watch("name") !== currentName
+
   return (
-    <form onSubmit={form.handleSubmit((v) => execute(v))}>
+    <form
+      onSubmit={form.handleSubmit((v) => execute({ ...v, organizationId }))}
+    >
       <FieldGroup>
         <Controller
           name="name"
@@ -54,7 +62,6 @@ export function CreateOrgForm() {
                 {...field}
                 id={field.name}
                 type="text"
-                placeholder="e.g. Riverside Community Theatre"
                 aria-invalid={fieldState.invalid}
               />
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
@@ -68,8 +75,14 @@ export function CreateOrgForm() {
             </AlertDescription>
           </Alert>
         )}
-        <Button type="submit" loading={isPending} className="w-full">
-          Create organization
+        <Button
+          type="submit"
+          variant="outline"
+          size="sm"
+          loading={isPending}
+          disabled={!hasChanges}
+        >
+          Save
         </Button>
       </FieldGroup>
     </form>
