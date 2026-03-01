@@ -10,6 +10,7 @@ import { z } from "zod/v4"
 import { createRole } from "@/actions/productions/create-role"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
+import { CopyButton } from "@/components/common/copy-button"
 import {
   Empty,
   EmptyContent,
@@ -26,6 +27,7 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { Textarea } from "@/components/common/textarea"
+import { getAppUrl } from "@/lib/url"
 
 const addRoleSchema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100),
@@ -39,11 +41,12 @@ interface Role {
 }
 
 interface Props {
+  orgId: string
   productionId: string
   initialRoles: Role[]
 }
 
-export function RolesList({ productionId, initialRoles }: Props) {
+export function RolesList({ orgId, productionId, initialRoles }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
 
@@ -195,6 +198,16 @@ export function RolesList({ productionId, initialRoles }: Props) {
                     {role.description}
                   </p>
                 )}
+                <div className="flex items-center gap-element">
+                  <p className="break-all font-mono text-caption text-muted-foreground">
+                    /submit/{orgId}/{productionId}/{role.id}
+                  </p>
+                  <CopyButton
+                    value={getAppUrl(
+                      `/submit/${orgId}/${productionId}/${role.id}`,
+                    )}
+                  />
+                </div>
               </div>
             </div>
           ))}

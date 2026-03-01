@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   ExternalLinkIcon,
+  LinkIcon,
   MailIcon,
   PhoneIcon,
   PlusIcon,
@@ -23,6 +24,7 @@ import {
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
+import { CopyButton } from "@/components/common/copy-button"
 import {
   Empty,
   EmptyContent,
@@ -48,6 +50,7 @@ import {
 } from "@/components/common/sheet"
 import { Textarea } from "@/components/common/textarea"
 import day from "@/lib/dayjs"
+import { getAppUrl } from "@/lib/url"
 
 const addRoleSchema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100),
@@ -79,11 +82,12 @@ interface RoleWithSubmissions {
 }
 
 interface Props {
+  orgId: string
   productionId: string
   initialRoles: RoleWithSubmissions[]
 }
 
-export function RolesAccordion({ productionId, initialRoles }: Props) {
+export function RolesAccordion({ orgId, productionId, initialRoles }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [selectedSubmission, setSelectedSubmission] =
@@ -239,6 +243,30 @@ export function RolesAccordion({ productionId, initialRoles }: Props) {
                     {role.description}
                   </p>
                 )}
+                <div className="mb-2 flex flex-col gap-element rounded-lg border p-group">
+                  <p className="text-caption text-muted-foreground">
+                    Role audition link
+                  </p>
+                  <div className="flex items-center gap-element">
+                    <p className="break-all font-mono text-caption text-foreground">
+                      /submit/{orgId}/{productionId}/{role.id}
+                    </p>
+                    <CopyButton
+                      value={getAppUrl(
+                        `/submit/${orgId}/${productionId}/${role.id}`,
+                      )}
+                    />
+                  </div>
+                  <Button
+                    href={`/submit/${orgId}/${productionId}/${role.id}`}
+                    variant="outline"
+                    size="sm"
+                    leftSection={<LinkIcon />}
+                    className="w-fit"
+                  >
+                    View audition page
+                  </Button>
+                </div>
                 {role.submissions.length === 0 ? (
                   <p className="text-caption text-muted-foreground">
                     No submissions yet.
@@ -290,7 +318,7 @@ export function RolesAccordion({ productionId, initialRoles }: Props) {
               </SheetHeader>
               <div className="flex flex-col gap-group px-4">
                 <div className="flex flex-col gap-block">
-                  <h3 className="font-medium text-label text-foreground">
+                  <h3 className="font-medium text-foreground text-label">
                     Contact
                   </h3>
                   <div className="flex flex-col gap-element">
@@ -315,7 +343,7 @@ export function RolesAccordion({ productionId, initialRoles }: Props) {
                   <>
                     <Separator />
                     <div className="flex flex-col gap-block">
-                      <h3 className="font-medium text-label text-foreground">
+                      <h3 className="font-medium text-foreground text-label">
                         Resume
                       </h3>
                       <Button
@@ -335,7 +363,7 @@ export function RolesAccordion({ productionId, initialRoles }: Props) {
                 <Separator />
 
                 <div className="flex flex-col gap-block">
-                  <h3 className="font-medium text-label text-foreground">
+                  <h3 className="font-medium text-foreground text-label">
                     Submitted
                   </h3>
                   <p className="text-label text-muted-foreground">

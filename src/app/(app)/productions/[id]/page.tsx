@@ -1,7 +1,11 @@
+import { LinkIcon } from "lucide-react"
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
 import { getRolesWithSubmissions } from "@/actions/productions/get-roles-with-submissions"
+import { Button } from "@/components/common/button"
+import { CopyButton } from "@/components/common/copy-button"
 import { RolesAccordion } from "@/components/productions/roles-accordion"
+import { getAppUrl } from "@/lib/url"
 
 export async function generateMetadata({
   params,
@@ -41,7 +45,35 @@ export default async function ProductionPage({
           </p>
         )}
       </div>
-      <RolesAccordion productionId={production.id} initialRoles={roles} />
+      <div className="flex flex-col gap-element rounded-lg border p-group">
+        <p className="text-label text-muted-foreground">
+          Production audition link
+        </p>
+        <div className="flex items-center gap-element">
+          <p className="break-all font-mono text-caption text-foreground">
+            /submit/{production.organizationId}/{production.id}
+          </p>
+          <CopyButton
+            value={getAppUrl(
+              `/submit/${production.organizationId}/${production.id}`,
+            )}
+          />
+        </div>
+        <Button
+          href={`/submit/${production.organizationId}/${production.id}`}
+          variant="outline"
+          size="sm"
+          leftSection={<LinkIcon />}
+          className="w-fit"
+        >
+          View audition page
+        </Button>
+      </div>
+      <RolesAccordion
+        orgId={production.organizationId}
+        productionId={production.id}
+        initialRoles={roles}
+      />
     </div>
   )
 }

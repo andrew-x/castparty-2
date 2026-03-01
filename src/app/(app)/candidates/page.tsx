@@ -1,6 +1,7 @@
 import { UsersIcon } from "lucide-react"
 import type { Metadata } from "next"
 import { getCandidates } from "@/actions/candidates/get-candidates"
+import { CandidatesTable } from "@/components/candidates/candidates-table"
 import {
   Empty,
   EmptyDescription,
@@ -8,7 +9,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/common/empty"
-import { CandidatesTable } from "@/components/candidates/candidates-table"
 
 export const metadata: Metadata = {
   title: "Candidates — Castparty",
