@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
-import { getRoles } from "@/actions/productions/get-roles"
-import { RolesList } from "@/components/productions/roles-list"
+import { getRolesWithSubmissions } from "@/actions/productions/get-roles-with-submissions"
+import { RolesAccordion } from "@/components/productions/roles-accordion"
 
 export async function generateMetadata({
   params,
@@ -29,7 +29,7 @@ export default async function ProductionPage({
     notFound()
   }
 
-  const roles = await getRoles(production.id)
+  const roles = await getRolesWithSubmissions(production.id)
 
   return (
     <div className="flex flex-col gap-section px-page py-section">
@@ -41,7 +41,7 @@ export default async function ProductionPage({
           </p>
         )}
       </div>
-      <RolesList productionId={production.id} initialRoles={roles} />
+      <RolesAccordion productionId={production.id} initialRoles={roles} />
     </div>
   )
 }

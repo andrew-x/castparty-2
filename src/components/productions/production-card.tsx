@@ -1,5 +1,6 @@
 import { ClapperboardIcon } from "lucide-react"
 import Link from "next/link"
+import { Badge } from "@/components/common/badge"
 import day from "@/lib/dayjs"
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
     name: string
     description: string | null
     createdAt: Date
+    submissionCount: number
   }
 }
 
@@ -32,9 +34,15 @@ export function ProductionCard({ production }: Props) {
           )}
         </div>
       </div>
-      <p className="text-caption text-muted-foreground">
-        Created {day(production.createdAt).format("LL")}
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-caption text-muted-foreground">
+          Created {day(production.createdAt).format("LL")}
+        </p>
+        <Badge variant="secondary">
+          {production.submissionCount}{" "}
+          {production.submissionCount === 1 ? "submission" : "submissions"}
+        </Badge>
+      </div>
     </Link>
   )
 }

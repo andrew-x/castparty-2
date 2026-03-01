@@ -1,6 +1,6 @@
 import { ClapperboardIcon } from "lucide-react"
 import type { Metadata } from "next"
-import { getProductions } from "@/actions/productions/get-productions"
+import { getProductionsWithSubmissionCounts } from "@/actions/productions/get-productions-with-submission-counts"
 import { Button } from "@/components/common/button"
 import {
   Empty,
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ProductionsPage() {
-  const productions = await getProductions()
+  const productions = await getProductionsWithSubmissionCounts()
 
   if (productions.length === 0) {
     return (
