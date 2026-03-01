@@ -31,8 +31,7 @@
     "feature-dev@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
     "claude-code-setup@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true,
-    "memsearch@memsearch-plugins": true
+    "skill-creator@claude-plugins-official": true
   },
   "plansDirectory": "./.claude/plans"
 }
