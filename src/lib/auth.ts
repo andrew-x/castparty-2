@@ -50,7 +50,7 @@ export const auth = betterAuth({
 })
 
 export const getSession = cache(async () => {
-  return auth.api.getSession({
+  return await auth.api.getSession({
     headers: await headers(),
   })
 })

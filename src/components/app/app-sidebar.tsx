@@ -3,15 +3,14 @@
 import {
   ClapperboardIcon,
   LayoutDashboardIcon,
-  LogOutIcon,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
+  SettingsIcon,
   UsersIcon,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/common/avatar"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/common/button"
 import {
   Sidebar,
@@ -24,7 +23,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/common/sidebar"
 import {
@@ -32,7 +30,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/common/tooltip"
-import { authClient } from "@/lib/auth/auth-client"
+import {
+  OrgSwitcher,
+  type OrgSwitcherOrg,
+} from "@/components/organizations/org-switcher"
 
 const navItems = [
   { label: "Home", href: "/home", icon: LayoutDashboardIcon },
@@ -42,29 +43,24 @@ const navItems = [
 
 interface Props {
   user: { name: string; email: string; image?: string | null }
+  organizations: OrgSwitcherOrg[]
+  activeOrgId: string | null
+  activeOrgRole: string | null
 }
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
-}
-
-export function AppSidebar({ user }: Props) {
+export function AppSidebar({
+  user,
+  organizations,
+  activeOrgId,
+  activeOrgRole,
+}: Props) {
   const pathname = usePathname()
-  const router = useRouter()
   const { toggleSidebar } = useSidebar()
+
+  const canManageOrg = activeOrgRole === "owner" || activeOrgRole === "admin"
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(`${href}/`)
-  }
-
-  async function handleLogOut() {
-    await authClient.signOut()
-    router.push("/auth")
   }
 
   return (
@@ -139,6 +135,20 @@ export function AppSidebar({ user }: Props) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {canManageOrg && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/settings")}
+                    tooltip="Settings"
+                  >
+                    <Link href="/settings">
+                      <SettingsIcon />
+                      <span>Settings</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -147,27 +157,11 @@ export function AppSidebar({ user }: Props) {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="cursor-default">
-              <Avatar size="sm">
-                {user.image && <AvatarImage src={user.image} alt={user.name} />}
-                <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left leading-tight">
-                <span className="truncate font-medium text-label">
-                  {user.name}
-                </span>
-                <span className="truncate font-normal text-caption text-muted-foreground">
-                  {user.email}
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarSeparator />
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Log out" onClick={handleLogOut}>
-              <LogOutIcon />
-              <span>Log out</span>
-            </SidebarMenuButton>
+            <OrgSwitcher
+              user={user}
+              organizations={organizations}
+              activeOrgId={activeOrgId}
+            />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
