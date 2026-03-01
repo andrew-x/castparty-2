@@ -1,13 +1,11 @@
-import { and, eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
+import { getMemberRole } from "@/actions/organizations/get-member-role"
 import { getOrganization } from "@/actions/organizations/get-organization"
 import { Separator } from "@/components/common/separator"
 import { MembersTable } from "@/components/organizations/members-table"
 import { OrgSettingsForm } from "@/components/organizations/org-settings-form"
 import { getCurrentUser, getSession } from "@/lib/auth"
-import db from "@/lib/db/db"
-import { member } from "@/lib/db/schema"
 
 export const metadata: Metadata = {
   title: "Settings — Castparty",
@@ -21,15 +19,9 @@ export default async function SettingsPage() {
   const activeOrgId = session?.session?.activeOrganizationId
   if (!activeOrgId) redirect("/home")
 
-  const [membership] = await db
-    .select({ role: member.role })
-    .from(member)
-    .where(
-      and(eq(member.organizationId, activeOrgId), eq(member.userId, user.id)),
-    )
-    .limit(1)
+  const role = await getMemberRole(activeOrgId, user.id)
 
-  if (!membership || !["owner", "admin"].includes(membership.role)) {
+  if (!role || !["owner", "admin"].includes(role)) {
     redirect("/home")
   }
 

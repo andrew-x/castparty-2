@@ -141,11 +141,15 @@ export const invitation = pgTable(
   ],
 )
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   sessions: many(session),
   accounts: many(account),
   members: many(member),
   invitations: many(invitation),
+  profile: one(UserProfile, {
+    fields: [user.id],
+    references: [UserProfile.id],
+  }),
 }))
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -162,10 +166,19 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }))
 
-export const organizationRelations = relations(organization, ({ many }) => ({
-  members: many(member),
-  invitations: many(invitation),
-}))
+export const organizationRelations = relations(
+  organization,
+  ({ one, many }) => ({
+    members: many(member),
+    invitations: many(invitation),
+    productions: many(Production),
+    candidates: many(Candidate),
+    profile: one(OrganizationProfile, {
+      fields: [organization.id],
+      references: [OrganizationProfile.id],
+    }),
+  }),
+)
 
 export const memberRelations = relations(member, ({ one }) => ({
   organization: one(organization, {
@@ -285,7 +298,7 @@ export const Submission = pgTable("submission", {
   updatedAt: timestamp().defaultNow().notNull(),
 })
 
-// --- RELATIONS ---
+// --- DATA RELATIONS ---
 export const userProfileRelations = relations(UserProfile, ({ one }) => ({
   user: one(User, {
     fields: [UserProfile.id],
