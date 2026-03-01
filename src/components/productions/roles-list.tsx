@@ -39,11 +39,12 @@ interface Role {
 }
 
 interface Props {
+  orgId: string
   productionId: string
   initialRoles: Role[]
 }
 
-export function RolesList({ productionId, initialRoles }: Props) {
+export function RolesList({ orgId, productionId, initialRoles }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
 
@@ -195,6 +196,9 @@ export function RolesList({ productionId, initialRoles }: Props) {
                     {role.description}
                   </p>
                 )}
+                <p className="break-all font-mono text-caption text-muted-foreground">
+                  /submit/{orgId}/{productionId}/{role.id}
+                </p>
               </div>
             </div>
           ))}

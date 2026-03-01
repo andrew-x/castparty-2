@@ -1,6 +1,8 @@
+import { LinkIcon } from "lucide-react"
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
 import { getRoles } from "@/actions/productions/get-roles"
+import { Button } from "@/components/common/button"
 import { RolesList } from "@/components/productions/roles-list"
 
 export async function generateMetadata({
@@ -41,7 +43,28 @@ export default async function ProductionPage({
           </p>
         )}
       </div>
-      <RolesList productionId={production.id} initialRoles={roles} />
+      <div className="flex flex-col gap-element rounded-lg border p-group">
+        <p className="text-label text-muted-foreground">
+          Production audition link
+        </p>
+        <p className="break-all font-mono text-caption text-foreground">
+          /submit/{production.organizationId}/{production.id}
+        </p>
+        <Button
+          href={`/submit/${production.organizationId}/${production.id}`}
+          variant="outline"
+          size="sm"
+          leftSection={<LinkIcon />}
+          className="w-fit"
+        >
+          View audition page
+        </Button>
+      </div>
+      <RolesList
+        orgId={production.organizationId}
+        productionId={production.id}
+        initialRoles={roles}
+      />
     </div>
   )
 }
