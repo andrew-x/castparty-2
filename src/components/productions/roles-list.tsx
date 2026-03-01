@@ -27,6 +27,7 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { Textarea } from "@/components/common/textarea"
+import { getAppUrl } from "@/lib/url"
 
 const addRoleSchema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100),
@@ -202,7 +203,9 @@ export function RolesList({ orgId, productionId, initialRoles }: Props) {
                     /submit/{orgId}/{productionId}/{role.id}
                   </p>
                   <CopyButton
-                    value={`/submit/${orgId}/${productionId}/${role.id}`}
+                    value={getAppUrl(
+                      `/submit/${orgId}/${productionId}/${role.id}`,
+                    )}
                   />
                 </div>
               </div>

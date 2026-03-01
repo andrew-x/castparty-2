@@ -141,7 +141,7 @@ export function SubmissionForm({ orgId, productionId, roleId }: Props) {
             </AlertDescription>
           </Alert>
         )}
-        <Button type="submit" loading={isPending}>
+        <Button type="submit" loading={isPending} className="w-fit">
           Submit audition
         </Button>
       </FieldGroup>

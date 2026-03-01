@@ -1,115 +1,89 @@
-# Plan: Refine Submission Flow
+# Plan: Copy full URLs + non-full-width submit buttons
 
 ## Context
 
-The submission flow was built in the previous session. Four refinements are needed:
+Two issues with the current submission flow:
 
-1. **Remove the `(submission)` route group** — unnecessary wrapper since `/submit` already defines the path
-2. **Add copy-to-clipboard buttons** on all submission link displays in the app side
-3. **Better success state** — tell performers the production team will review
-4. **Center-aligned layout with max width** — inspired by ATS candidate portals
+1. **CopyButton copies relative paths** (e.g. `/submit/org-abc`) instead of full URLs (e.g. `https://castparty.app/submit/org-abc`). When a production team member shares the link, the performer gets a relative path that's useless outside the browser. The display should still show just the path, but the clipboard should get the full URL.
+
+2. **Submit buttons stretch full-width** inside `FieldGroup` (which is `flex flex-col` — children stretch by default). The user wants form submit buttons to NOT be full width, as a general pattern.
 
 ---
 
 ## Changes
 
-### 1. Move routes from `(submission)/submit/` to `submit/`
+### 1. Add `NEXT_PUBLIC_APP_URL` env var
 
-Delete the entire `src/app/(submission)/` directory. Move the four files to `src/app/submit/`:
-
-| From | To |
-|------|-----|
-| `src/app/(submission)/layout.tsx` | `src/app/submit/layout.tsx` (rewritten, see below) |
-| `src/app/(submission)/submit/[orgId]/page.tsx` | `src/app/submit/[orgId]/page.tsx` (verbatim) |
-| `src/app/(submission)/submit/[orgId]/[productionId]/page.tsx` | `src/app/submit/[orgId]/[productionId]/page.tsx` (verbatim) |
-| `src/app/(submission)/submit/[orgId]/[productionId]/[roleId]/page.tsx` | `src/app/submit/[orgId]/[productionId]/[roleId]/page.tsx` (verbatim) |
-
-URLs don't change — they were already `/submit/...`.
-
-### 2. Redesign `src/app/submit/layout.tsx` — centered, max-width
-
-```tsx
-<main className="flex min-h-svh flex-col items-center px-page">
-  <div className="flex w-full max-w-3xl flex-col gap-section py-section">
-    <header className="flex items-center gap-element">
-      <Image ... />
-      <span className="font-serif text-foreground text-heading">Castparty</span>
-    </header>
-    {children}
-  </div>
-</main>
+Add to `.env`:
+```
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-- `items-center` on `<main>` centers the content column
-- `max-w-3xl` (768px) — wide enough for role lists, narrow enough to feel focused
-- The role-form page's own `max-w-lg` still applies inside this container
+This is the standard Next.js pattern for a client-accessible base URL. In production, set to the real domain.
 
-### 3. Create `src/components/common/copy-button.tsx`
+### 2. Create `src/lib/url.ts` — URL helper
 
-New `"use client"` component. Uses `navigator.clipboard.writeText()`, `useState` for copied state, 2-second auto-reset.
-
-- `Button variant="ghost" size="icon-sm"` with `CopyIcon` / `CheckIcon`
-- Wrapped in `Tooltip` from `@/components/common/tooltip` (provider already in root layout)
-- Props: `value: string`
-
-### 4. Add copy buttons to app-side link displays
-
-**`src/app/(app)/home/page.tsx`** — wrap URL text + `<CopyButton>` in a flex row
-**`src/app/(app)/productions/[id]/page.tsx`** — same pattern
-**`src/components/productions/roles-list.tsx`** — add `<CopyButton>` inline with each role's URL text
-
-### 5. Update success state in `src/components/submissions/submission-form.tsx`
-
-```tsx
-if (submitted) {
-  return (
-    <Alert>
-      <AlertTitle>Submission received</AlertTitle>
-      <AlertDescription>
-        The production team will review your submission and be in touch if they want to move forward.
-      </AlertDescription>
-    </Alert>
-  )
+```ts
+export function getAppUrl(path: string): string {
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  return `${base}${path}`
 }
 ```
 
-Import `AlertTitle` from `@/components/common/alert` (already exported).
+Simple, no over-engineering. Works on both server and client (NEXT_PUBLIC_ prefix).
+
+### 3. Update CopyButton usages — copy full URL, display path
+
+All three call sites currently pass a relative path as `value`. Change to pass the full URL via `getAppUrl()`:
+
+**`src/app/(app)/home/page.tsx`** (server component — can use the helper directly):
+```tsx
+<CopyButton value={getAppUrl(`/submit/${orgId}`)} />
+```
+
+**`src/app/(app)/productions/[id]/page.tsx`** (server component):
+```tsx
+<CopyButton value={getAppUrl(`/submit/${production.organizationId}/${production.id}`)} />
+```
+
+**`src/components/productions/roles-list.tsx`** (client component — `NEXT_PUBLIC_` env vars are inlined at build time, so `getAppUrl()` works here too):
+```tsx
+<CopyButton value={getAppUrl(`/submit/${orgId}/${productionId}/${role.id}`)} />
+```
+
+The displayed text (the `<p>` element) keeps showing just the path — only the copied value changes.
+
+### 4. Add `w-fit` to submit buttons
+
+**`src/components/submissions/submission-form.tsx`** — line 142-144:
+```tsx
+// Before
+<Button type="submit" loading={isPending}>
+
+// After
+<Button type="submit" loading={isPending} className="w-fit">
+```
+
+The `FieldGroup` is `flex flex-col` which stretches children. Adding `w-fit` overrides this to keep the button at content width.
 
 ---
 
-## Implementation Order
-
-1. Create `src/components/common/copy-button.tsx` (dependency for steps 3-4)
-2. Create `src/app/submit/layout.tsx` (new centered layout)
-3. Move the three page files from `(submission)/submit/` to `submit/`
-4. Delete `src/app/(submission)/` directory
-5. Modify app-side files: home page, production page, roles list (add copy buttons)
-6. Modify `submission-form.tsx` (update success state)
-7. `bun run lint` + `bun run build`
-
----
-
-## Files Summary
+## Files
 
 | File | Action |
 |------|--------|
-| `src/components/common/copy-button.tsx` | **Create** |
-| `src/app/submit/layout.tsx` | **Create** (replaces old layout) |
-| `src/app/submit/[orgId]/page.tsx` | **Create** (moved verbatim) |
-| `src/app/submit/[orgId]/[productionId]/page.tsx` | **Create** (moved verbatim) |
-| `src/app/submit/[orgId]/[productionId]/[roleId]/page.tsx` | **Create** (moved verbatim) |
-| `src/app/(submission)/` | **Delete** entire directory |
-| `src/app/(app)/home/page.tsx` | **Modify** — add CopyButton |
-| `src/app/(app)/productions/[id]/page.tsx` | **Modify** — add CopyButton |
-| `src/components/productions/roles-list.tsx` | **Modify** — add CopyButton per role |
-| `src/components/submissions/submission-form.tsx` | **Modify** — update success state |
+| `.env` | **Modify** — add `NEXT_PUBLIC_APP_URL=http://localhost:3000` |
+| `src/lib/url.ts` | **Create** — `getAppUrl()` helper |
+| `src/app/(app)/home/page.tsx` | **Modify** — import `getAppUrl`, pass full URL to CopyButton |
+| `src/app/(app)/productions/[id]/page.tsx` | **Modify** — same |
+| `src/components/productions/roles-list.tsx` | **Modify** — same |
+| `src/components/submissions/submission-form.tsx` | **Modify** — add `className="w-fit"` to submit button |
 
 ---
 
 ## Verification
 
-1. `bun run lint` — clean
-2. `bun run build` — routes appear as `/submit/[orgId]`, `/submit/[orgId]/[productionId]`, `/submit/[orgId]/[productionId]/[roleId]`
-3. Manual: submission pages are centered with max-width constraint
-4. Manual: copy buttons show tooltip, copy the URL, show checkmark for 2 seconds
-5. Manual: after form submission, see "Submission received" + review message
+1. `bun run lint` + `bun run build` — clean
+2. Manual: click copy button on home page → paste → should be `http://localhost:3000/submit/org-xxx`
+3. Manual: displayed text still shows just `/submit/org-xxx` (no domain in the UI)
+4. Manual: submit button on audition form is content-width, not full-width

@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Button } from "@/components/common/button"
 import { CopyButton } from "@/components/common/copy-button"
 import { getCurrentUser, getSession } from "@/lib/auth"
+import { getAppUrl } from "@/lib/url"
 
 export const metadata: Metadata = {
   title: "Home — Castparty",
@@ -23,7 +24,7 @@ export default async function HomePage() {
             <p className="break-all font-mono text-caption text-foreground">
               /submit/{orgId}
             </p>
-            <CopyButton value={`/submit/${orgId}`} />
+            <CopyButton value={getAppUrl(`/submit/${orgId}`)} />
           </div>
           <Button
             href={`/submit/${orgId}`}

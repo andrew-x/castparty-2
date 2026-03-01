@@ -5,6 +5,7 @@ import { getRoles } from "@/actions/productions/get-roles"
 import { Button } from "@/components/common/button"
 import { CopyButton } from "@/components/common/copy-button"
 import { RolesList } from "@/components/productions/roles-list"
+import { getAppUrl } from "@/lib/url"
 
 export async function generateMetadata({
   params,
@@ -53,7 +54,9 @@ export default async function ProductionPage({
             /submit/{production.organizationId}/{production.id}
           </p>
           <CopyButton
-            value={`/submit/${production.organizationId}/${production.id}`}
+            value={getAppUrl(
+              `/submit/${production.organizationId}/${production.id}`,
+            )}
           />
         </div>
         <Button
