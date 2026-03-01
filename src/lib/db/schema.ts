@@ -235,31 +235,48 @@ export const OrganizationProfile = pgTable("organization_profile", {
   updatedAt: timestamp().defaultNow().notNull(),
 })
 
-export const Production = pgTable("production", {
-  id: text().primaryKey(),
-  organizationId: text()
-    .notNull()
-    .references(() => Organization.id, { onDelete: "cascade" }),
+export const Production = pgTable(
+  "production",
+  {
+    id: text().primaryKey(),
+    organizationId: text()
+      .notNull()
+      .references(() => Organization.id, { onDelete: "cascade" }),
 
-  name: text().notNull(),
-  description: text(),
+    name: text().notNull(),
+    slug: text().notNull(),
+    description: text(),
 
-  createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp().defaultNow().notNull(),
-})
+    createdAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp().defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("production_org_slug_uidx").on(
+      table.organizationId,
+      table.slug,
+    ),
+  ],
+)
 
-export const Role = pgTable("role", {
-  id: text().primaryKey(),
-  productionId: text()
-    .notNull()
-    .references(() => Production.id, { onDelete: "cascade" }),
+export const Role = pgTable(
+  "role",
+  {
+    id: text().primaryKey(),
+    productionId: text()
+      .notNull()
+      .references(() => Production.id, { onDelete: "cascade" }),
 
-  name: text().notNull(),
-  description: text(),
+    name: text().notNull(),
+    slug: text().notNull(),
+    description: text(),
 
-  createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp().defaultNow().notNull(),
-})
+    createdAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp().defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("role_production_slug_uidx").on(table.productionId, table.slug),
+  ],
+)
 
 export const Candidate = pgTable("candidate", {
   id: text().primaryKey(),

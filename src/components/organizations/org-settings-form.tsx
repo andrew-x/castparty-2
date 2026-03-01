@@ -18,18 +18,32 @@ import { Input } from "@/components/common/input"
 
 const schema = z.object({
   name: z.string().trim().min(1, "Organization name is required.").max(100),
+  slug: z
+    .string()
+    .trim()
+    .min(3, "URL ID must be at least 3 characters.")
+    .max(60, "URL ID must be at most 60 characters.")
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Lowercase letters, numbers, and hyphens only.",
+    ),
 })
 
 interface Props {
   organizationId: string
   currentName: string
+  currentSlug: string
 }
 
-export function OrgSettingsForm({ organizationId, currentName }: Props) {
+export function OrgSettingsForm({
+  organizationId,
+  currentName,
+  currentSlug,
+}: Props) {
   const router = useRouter()
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { name: currentName },
+    defaultValues: { name: currentName, slug: currentSlug },
   })
 
   const { execute, isPending } = useAction(updateOrganization, {
@@ -45,7 +59,9 @@ export function OrgSettingsForm({ organizationId, currentName }: Props) {
     },
   })
 
-  const hasChanges = form.watch("name") !== currentName
+  const watchedName = form.watch("name")
+  const watchedSlug = form.watch("slug")
+  const hasChanges = watchedName !== currentName || watchedSlug !== currentSlug
 
   return (
     <form
@@ -64,6 +80,25 @@ export function OrgSettingsForm({ organizationId, currentName }: Props) {
                 type="text"
                 aria-invalid={fieldState.invalid}
               />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+        <Controller
+          name="slug"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor={field.name}>URL ID</FieldLabel>
+              <Input
+                {...field}
+                id={field.name}
+                type="text"
+                aria-invalid={fieldState.invalid}
+              />
+              <p className="text-caption text-muted-foreground">
+                /submit/{watchedSlug || "..."}
+              </p>
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}

@@ -1,6 +1,7 @@
 import { UserIcon } from "lucide-react"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { getPublicOrg } from "@/actions/submissions/get-public-org"
 import { getPublicProduction } from "@/actions/submissions/get-public-production"
 import { Button } from "@/components/common/button"
 import {
@@ -14,10 +15,12 @@ import {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ orgId: string; productionId: string }>
+  params: Promise<{ orgSlug: string; productionSlug: string }>
 }): Promise<Metadata> {
-  const { productionId } = await params
-  const production = await getPublicProduction(productionId)
+  const { orgSlug, productionSlug } = await params
+  const org = await getPublicOrg(orgSlug)
+  if (!org) return { title: "Auditions — Castparty" }
+  const production = await getPublicProduction(org.id, productionSlug)
   return {
     title: production
       ? `${production.name} — Auditions`
@@ -28,13 +31,15 @@ export async function generateMetadata({
 export default async function SubmitProductionPage({
   params,
 }: {
-  params: Promise<{ orgId: string; productionId: string }>
+  params: Promise<{ orgSlug: string; productionSlug: string }>
 }) {
-  const { orgId, productionId } = await params
+  const { orgSlug, productionSlug } = await params
 
-  const production = await getPublicProduction(productionId)
+  const org = await getPublicOrg(orgSlug)
+  if (!org) notFound()
 
-  if (!production || production.organizationId !== orgId) notFound()
+  const production = await getPublicProduction(org.id, productionSlug)
+  if (!production) notFound()
 
   return (
     <div className="flex flex-col gap-section">
@@ -82,7 +87,7 @@ export default async function SubmitProductionPage({
                 </div>
               </div>
               <Button
-                href={`/submit/${orgId}/${productionId}/${role.id}`}
+                href={`/submit/${orgSlug}/${productionSlug}/${role.slug}`}
                 variant="outline"
                 size="sm"
               >

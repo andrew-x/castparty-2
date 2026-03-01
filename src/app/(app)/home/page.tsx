@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm"
 import { LinkIcon } from "lucide-react"
 import type { Metadata } from "next"
 import { getProductionsWithSubmissionCounts } from "@/actions/productions/get-productions-with-submission-counts"
@@ -5,6 +6,7 @@ import { Button } from "@/components/common/button"
 import { CopyButton } from "@/components/common/copy-button"
 import { ProductionCard } from "@/components/productions/production-card"
 import { getCurrentUser, getSession } from "@/lib/auth"
+import db from "@/lib/db/db"
 import { getAppUrl } from "@/lib/url"
 
 export const metadata: Metadata = {
@@ -19,21 +21,30 @@ export default async function HomePage() {
   ])
   const orgId = session?.session?.activeOrganizationId ?? null
 
+  let orgSlug: string | null = null
+  if (orgId) {
+    const org = await db.query.organization.findFirst({
+      where: (o) => eq(o.id, orgId),
+      columns: { slug: true },
+    })
+    orgSlug = org?.slug ?? null
+  }
+
   return (
     <div className="flex flex-col gap-section px-page py-section">
       <h1 className="font-serif text-title">Welcome, {user?.name}.</h1>
 
-      {orgId && (
+      {orgSlug && (
         <div className="flex flex-col gap-element rounded-lg border p-group">
           <p className="text-label text-muted-foreground">Your audition link</p>
           <div className="flex items-center gap-element">
             <p className="break-all font-mono text-caption text-foreground">
-              /submit/{orgId}
+              /submit/{orgSlug}
             </p>
-            <CopyButton value={getAppUrl(`/submit/${orgId}`)} />
+            <CopyButton value={getAppUrl(`/submit/${orgSlug}`)} />
           </div>
           <Button
-            href={`/submit/${orgId}`}
+            href={`/submit/${orgSlug}`}
             variant="outline"
             size="sm"
             leftSection={<LinkIcon />}

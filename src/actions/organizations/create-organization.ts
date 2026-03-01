@@ -1,35 +1,36 @@
 "use server"
 
-import { createId } from "@paralleldrive/cuid2"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
-
-function generateSlug(name: string): string {
-  const base = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 40)
-
-  const suffix = createId().slice(0, 8)
-  return `${base}-${suffix}`
-}
+import { nameToSlug, RESERVED_SLUGS } from "@/lib/slug"
 
 export const createOrganization = secureActionClient
   .metadata({ action: "create-organization" })
   .inputSchema(
     z.object({
       name: z.string().trim().min(1, "Organization name is required.").max(100),
+      slug: z
+        .string()
+        .trim()
+        .min(3, "URL ID must be at least 3 characters.")
+        .max(60, "URL ID must be at most 60 characters.")
+        .regex(
+          /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+          "Lowercase letters, numbers, and hyphens only.",
+        )
+        .refine((s) => !/^\d+$/.test(s), "URL ID cannot be purely numeric.")
+        .refine((s) => !RESERVED_SLUGS.has(s), "This URL ID is reserved.")
+        .optional(),
     }),
   )
-  .action(async ({ parsedInput: { name }, ctx: { user } }) => {
-    const slug = generateSlug(name)
+  .action(async ({ parsedInput: { name, slug }, ctx: { user } }) => {
+    const finalSlug = slug || nameToSlug(name)
 
     const org = await auth.api.createOrganization({
       body: {
         name,
-        slug,
+        slug: finalSlug,
         userId: user.id,
       },
     })

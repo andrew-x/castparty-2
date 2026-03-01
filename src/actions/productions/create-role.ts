@@ -1,9 +1,11 @@
 "use server"
 
+import { eq } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Role } from "@/lib/db/schema"
+import { generateUniqueSlug } from "@/lib/slug"
 import { generateId } from "@/lib/util"
 
 export const createRole = secureActionClient
@@ -17,11 +19,18 @@ export const createRole = secureActionClient
   )
   .action(async ({ parsedInput: { productionId, name, description } }) => {
     const id = generateId("role")
+    const slug = await generateUniqueSlug(
+      name,
+      Role,
+      Role.slug,
+      eq(Role.productionId, productionId),
+    )
 
     await db.insert(Role).values({
       id,
       productionId,
       name,
+      slug,
       description: description || null,
     })
 

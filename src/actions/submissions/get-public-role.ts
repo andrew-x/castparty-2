@@ -1,12 +1,12 @@
 "use server"
 
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import db from "@/lib/db/db"
 
-export async function getPublicRole(roleId: string) {
+export async function getPublicRole(productionId: string, roleSlug: string) {
   return (
     (await db.query.Role.findFirst({
-      where: (r) => eq(r.id, roleId),
+      where: (r) => and(eq(r.productionId, productionId), eq(r.slug, roleSlug)),
       with: { production: true },
     })) ?? null
   )

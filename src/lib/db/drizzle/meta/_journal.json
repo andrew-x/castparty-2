@@ -15,6 +15,13 @@
       "when": 1772379262724,
       "tag": "0001_quick_killmonger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772386924712,
+      "tag": "0002_slow_carnage",
+      "breakpoints": true
     }
   ]
 }

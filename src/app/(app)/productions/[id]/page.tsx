@@ -1,4 +1,4 @@
-import { LinkIcon } from "lucide-react"
+import { LinkIcon, SettingsIcon } from "lucide-react"
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
 import { getRolesWithSubmissions } from "@/actions/productions/get-roles-with-submissions"
@@ -33,17 +33,28 @@ export default async function ProductionPage({
     notFound()
   }
 
+  const orgSlug = production.organization.slug
   const roles = await getRolesWithSubmissions(production.id)
 
   return (
     <div className="flex flex-col gap-section px-page py-section">
-      <div>
-        <h1 className="font-serif text-title">{production.name}</h1>
-        {production.description && (
-          <p className="mt-2 text-body text-muted-foreground">
-            {production.description}
-          </p>
-        )}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="font-serif text-title">{production.name}</h1>
+          {production.description && (
+            <p className="mt-2 text-body text-muted-foreground">
+              {production.description}
+            </p>
+          )}
+        </div>
+        <Button
+          href={`/productions/${production.id}/settings`}
+          variant="outline"
+          size="sm"
+          leftSection={<SettingsIcon />}
+        >
+          Settings
+        </Button>
       </div>
       <div className="flex flex-col gap-element rounded-lg border p-group">
         <p className="text-label text-muted-foreground">
@@ -51,16 +62,14 @@ export default async function ProductionPage({
         </p>
         <div className="flex items-center gap-element">
           <p className="break-all font-mono text-caption text-foreground">
-            /submit/{production.organizationId}/{production.id}
+            /submit/{orgSlug}/{production.slug}
           </p>
           <CopyButton
-            value={getAppUrl(
-              `/submit/${production.organizationId}/${production.id}`,
-            )}
+            value={getAppUrl(`/submit/${orgSlug}/${production.slug}`)}
           />
         </div>
         <Button
-          href={`/submit/${production.organizationId}/${production.id}`}
+          href={`/submit/${orgSlug}/${production.slug}`}
           variant="outline"
           size="sm"
           leftSection={<LinkIcon />}
@@ -70,7 +79,8 @@ export default async function ProductionPage({
         </Button>
       </div>
       <RolesAccordion
-        orgId={production.organizationId}
+        orgSlug={orgSlug}
+        productionSlug={production.slug}
         productionId={production.id}
         initialRoles={roles}
       />

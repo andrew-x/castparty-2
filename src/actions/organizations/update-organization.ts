@@ -1,10 +1,11 @@
 "use server"
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, not } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { member, organization } from "@/lib/db/schema"
+import { RESERVED_SLUGS } from "@/lib/slug"
 
 export const updateOrganization = secureActionClient
   .metadata({ action: "update-organization" })
@@ -12,28 +13,54 @@ export const updateOrganization = secureActionClient
     z.object({
       organizationId: z.string().min(1),
       name: z.string().trim().min(1, "Organization name is required.").max(100),
+      slug: z
+        .string()
+        .trim()
+        .min(3, "URL ID must be at least 3 characters.")
+        .max(60, "URL ID must be at most 60 characters.")
+        .regex(
+          /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+          "Lowercase letters, numbers, and hyphens only.",
+        )
+        .refine((s) => !/^\d+$/.test(s), "URL ID cannot be purely numeric.")
+        .refine((s) => !RESERVED_SLUGS.has(s), "This URL ID is reserved.")
+        .optional(),
     }),
   )
-  .action(async ({ parsedInput: { organizationId, name }, ctx: { user } }) => {
-    const membership = await db
-      .select({ role: member.role })
-      .from(member)
-      .where(
-        and(
-          eq(member.organizationId, organizationId),
-          eq(member.userId, user.id),
-        ),
-      )
-      .limit(1)
+  .action(
+    async ({ parsedInput: { organizationId, name, slug }, ctx: { user } }) => {
+      const membership = await db
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(
+            eq(member.organizationId, organizationId),
+            eq(member.userId, user.id),
+          ),
+        )
+        .limit(1)
 
-    if (!membership[0] || !["owner", "admin"].includes(membership[0].role)) {
-      throw new Error("You don't have permission to update this organization.")
-    }
+      if (!membership[0] || !["owner", "admin"].includes(membership[0].role)) {
+        throw new Error(
+          "You don't have permission to update this organization.",
+        )
+      }
 
-    await db
-      .update(organization)
-      .set({ name })
-      .where(eq(organization.id, organizationId))
+      if (slug) {
+        const conflict = await db.query.organization.findFirst({
+          where: (o) => and(eq(o.slug, slug), not(eq(o.id, organizationId))),
+          columns: { id: true },
+        })
+        if (conflict) {
+          throw new Error("This URL ID is already taken.")
+        }
+      }
 
-    return { success: true }
-  })
+      await db
+        .update(organization)
+        .set({ name, ...(slug ? { slug } : {}) })
+        .where(eq(organization.id, organizationId))
+
+      return { success: true }
+    },
+  )

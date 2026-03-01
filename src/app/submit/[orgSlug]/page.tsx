@@ -15,10 +15,10 @@ import {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ orgId: string }>
+  params: Promise<{ orgSlug: string }>
 }): Promise<Metadata> {
-  const { orgId } = await params
-  const org = await getPublicOrg(orgId)
+  const { orgSlug } = await params
+  const org = await getPublicOrg(orgSlug)
   return {
     title: org ? `${org.name} — Auditions` : "Auditions — Castparty",
   }
@@ -27,15 +27,15 @@ export async function generateMetadata({
 export default async function SubmitOrgPage({
   params,
 }: {
-  params: Promise<{ orgId: string }>
+  params: Promise<{ orgSlug: string }>
 }) {
-  const { orgId } = await params
+  const { orgSlug } = await params
 
-  const org = await getPublicOrg(orgId)
+  const org = await getPublicOrg(orgSlug)
 
   if (!org) notFound()
 
-  const productions = await getPublicProductions(orgId)
+  const productions = await getPublicProductions(org.id)
 
   return (
     <div className="flex flex-col gap-section">
@@ -104,7 +104,7 @@ export default async function SubmitOrgPage({
                         </div>
                       </div>
                       <Button
-                        href={`/submit/${orgId}/${production.id}/${role.id}`}
+                        href={`/submit/${orgSlug}/${production.slug}/${role.slug}`}
                         variant="outline"
                         size="sm"
                       >

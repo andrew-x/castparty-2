@@ -10,6 +10,11 @@ export async function getProduction(id: string) {
   return (
     (await db.query.Production.findFirst({
       where: (p) => eq(p.id, id),
+      with: {
+        organization: {
+          columns: { slug: true },
+        },
+      },
     })) ?? null
   )
 }
