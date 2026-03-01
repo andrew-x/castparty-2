@@ -38,7 +38,7 @@ import {
 const navItems = [
   { label: "Home", href: "/home", icon: LayoutDashboardIcon },
   { label: "Productions", href: "/productions", icon: ClapperboardIcon },
-  { label: "Performers", href: "/performers", icon: UsersIcon },
+  { label: "Candidates", href: "/candidates", icon: UsersIcon },
 ]
 
 interface Props {

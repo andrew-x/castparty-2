@@ -1,10 +1,10 @@
 import { LinkIcon } from "lucide-react"
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
-import { getRoles } from "@/actions/productions/get-roles"
+import { getRolesWithSubmissions } from "@/actions/productions/get-roles-with-submissions"
 import { Button } from "@/components/common/button"
 import { CopyButton } from "@/components/common/copy-button"
-import { RolesList } from "@/components/productions/roles-list"
+import { RolesAccordion } from "@/components/productions/roles-accordion"
 import { getAppUrl } from "@/lib/url"
 
 export async function generateMetadata({
@@ -33,7 +33,7 @@ export default async function ProductionPage({
     notFound()
   }
 
-  const roles = await getRoles(production.id)
+  const roles = await getRolesWithSubmissions(production.id)
 
   return (
     <div className="flex flex-col gap-section px-page py-section">
@@ -69,7 +69,7 @@ export default async function ProductionPage({
           View audition page
         </Button>
       </div>
-      <RolesList
+      <RolesAccordion
         orgId={production.organizationId}
         productionId={production.id}
         initialRoles={roles}

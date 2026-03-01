@@ -1,7 +1,9 @@
 import { LinkIcon } from "lucide-react"
 import type { Metadata } from "next"
+import { getProductionsWithSubmissionCounts } from "@/actions/productions/get-productions-with-submission-counts"
 import { Button } from "@/components/common/button"
 import { CopyButton } from "@/components/common/copy-button"
+import { ProductionCard } from "@/components/productions/production-card"
 import { getCurrentUser, getSession } from "@/lib/auth"
 import { getAppUrl } from "@/lib/url"
 
@@ -10,12 +12,16 @@ export const metadata: Metadata = {
 }
 
 export default async function HomePage() {
-  const [user, session] = await Promise.all([getCurrentUser(), getSession()])
+  const [user, session, productions] = await Promise.all([
+    getCurrentUser(),
+    getSession(),
+    getProductionsWithSubmissionCounts(),
+  ])
   const orgId = session?.session?.activeOrganizationId ?? null
 
   return (
     <div className="flex flex-col gap-section px-page py-section">
-      <h1 className="font-serif text-heading">Welcome, {user?.name}.</h1>
+      <h1 className="font-serif text-title">Welcome, {user?.name}.</h1>
 
       {orgId && (
         <div className="flex flex-col gap-element rounded-lg border p-group">
@@ -35,6 +41,17 @@ export default async function HomePage() {
           >
             View audition page
           </Button>
+        </div>
+      )}
+
+      {productions.length > 0 && (
+        <div className="flex flex-col gap-block">
+          <h2 className="font-medium text-heading">Your productions</h2>
+          <div className="grid gap-block sm:grid-cols-2 lg:grid-cols-3">
+            {productions.map((production) => (
+              <ProductionCard key={production.id} production={production} />
+            ))}
+          </div>
         </div>
       )}
     </div>
