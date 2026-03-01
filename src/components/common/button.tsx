@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority"
+import Link from "next/link"
 import { Slot } from "radix-ui"
 import type * as React from "react"
 
@@ -39,46 +40,80 @@ const buttonVariants = cva(
   },
 )
 
+type ButtonSharedProps = VariantProps<typeof buttonVariants> & {
+  asChild?: boolean
+  loading?: boolean
+  leftSection?: React.ReactNode
+  rightSection?: React.ReactNode
+  className?: string
+}
+
+type ButtonBaseProps = ButtonSharedProps &
+  Omit<React.ComponentProps<"button">, "href"> & {
+    href?: undefined
+  }
+
+type ButtonLinkProps = ButtonSharedProps &
+  Omit<React.ComponentProps<typeof Link>, "className"> & {
+    href: React.ComponentProps<typeof Link>["href"]
+  }
+
+type ButtonProps = ButtonBaseProps | ButtonLinkProps
+
+function Button(props: ButtonLinkProps): React.ReactElement
+function Button(props: ButtonBaseProps): React.ReactElement
 function Button({
   className,
   variant = "default",
   size = "default",
   asChild = false,
   loading = false,
-  disabled,
   leftSection,
   rightSection,
   children,
-  ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-    loading?: boolean
-    leftSection?: React.ReactNode
-    rightSection?: React.ReactNode
-  }) {
+  ...rest
+}: ButtonProps) {
+  const sharedProps = {
+    "data-slot": "button",
+    "data-variant": variant,
+    "data-size": size,
+    className: cn(buttonVariants({ variant, size, className })),
+  }
+
+  const content = asChild ? (
+    children
+  ) : (
+    <>
+      {loading ? <Spinner /> : leftSection}
+      {children}
+      {rightSection}
+    </>
+  )
+
+  if (rest.href != null) {
+    const { href, ...linkRest } = rest as Omit<
+      ButtonLinkProps,
+      keyof ButtonSharedProps | "children"
+    >
+    return (
+      <Link {...sharedProps} href={href} {...linkRest}>
+        {content}
+      </Link>
+    )
+  }
+
+  const { disabled, ...buttonRest } = rest as Omit<
+    ButtonBaseProps,
+    keyof ButtonSharedProps | "children"
+  >
   const Comp = asChild ? Slot.Root : "button"
 
   return (
-    <Comp
-      data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      disabled={disabled || loading}
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    >
-      {asChild ? (
-        children
-      ) : (
-        <>
-          {loading ? <Spinner /> : leftSection}
-          {children}
-          {rightSection}
-        </>
-      )}
+    <Comp {...sharedProps} disabled={disabled || loading} {...buttonRest}>
+      {content}
     </Comp>
   )
 }
 
 export { Button, buttonVariants }
+export type { ButtonProps, ButtonBaseProps, ButtonLinkProps }

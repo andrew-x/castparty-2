@@ -1,5 +1,6 @@
 import Image from "next/image"
-import Link from "next/link"
+
+import { Button } from "@/components/common/button"
 
 export default function Home() {
   return (
@@ -24,12 +25,9 @@ export default function Home() {
             The easiest way to cast your next show.
           </p>
         </div>
-        <Link
-          href="/auth"
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-cta px-8 font-medium text-cta-fg text-label transition-all hover:bg-cta-hover focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
+        <Button href="/auth" size="lg">
           Get Started
-        </Link>
+        </Button>
       </div>
     </main>
   )

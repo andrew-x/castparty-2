@@ -1,7 +1,6 @@
 "use client"
 
 import Image from "next/image"
-import Link from "next/link"
 
 import { Button } from "@/components/common/button"
 
@@ -28,8 +27,8 @@ export default function ErrorPage({ reset }: ErrorPageProps) {
         </div>
         <div className="flex items-center gap-block">
           <Button onClick={reset}>Try again</Button>
-          <Button asChild variant="outline">
-            <Link href="/">Back to home</Link>
+          <Button href="/" variant="outline">
+            Back to home
           </Button>
         </div>
       </div>

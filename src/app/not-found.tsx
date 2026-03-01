@@ -1,5 +1,6 @@
 import Image from "next/image"
-import Link from "next/link"
+
+import { Button } from "@/components/common/button"
 
 export default function NotFound() {
   return (
@@ -26,12 +27,9 @@ export default function NotFound() {
             moved.
           </p>
         </div>
-        <Link
-          href="/"
-          className="inline-flex h-9 items-center justify-center rounded-md border bg-background px-4 font-medium text-label shadow-xs transition-all hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
+        <Button href="/" variant="outline">
           Back to home
-        </Link>
+        </Button>
       </div>
     </main>
   )

@@ -1,6 +1,5 @@
 import { ClapperboardIcon } from "lucide-react"
 import type { Metadata } from "next"
-import Link from "next/link"
 import { getProductions } from "@/actions/productions/get-productions"
 import { Button } from "@/components/common/button"
 import {
@@ -35,9 +34,7 @@ export default async function ProductionsPage() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button asChild>
-              <Link href="/productions/new">Create production</Link>
-            </Button>
+            <Button href="/productions/new">Create production</Button>
           </EmptyContent>
         </Empty>
       </div>
@@ -48,9 +45,7 @@ export default async function ProductionsPage() {
     <div className="flex flex-col gap-section px-page py-section">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-title">Productions</h1>
-        <Button asChild>
-          <Link href="/productions/new">Create production</Link>
-        </Button>
+        <Button href="/productions/new">Create production</Button>
       </div>
       <div className="grid gap-block sm:grid-cols-2 lg:grid-cols-3">
         {productions.map((production) => (
