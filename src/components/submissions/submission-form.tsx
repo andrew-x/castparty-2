@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { z } from "zod/v4"
 import { createSubmission } from "@/actions/submissions/create-submission"
-import { Alert, AlertDescription } from "@/components/common/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
 import {
   Field,
@@ -54,8 +54,10 @@ export function SubmissionForm({ orgId, productionId, roleId }: Props) {
   if (submitted) {
     return (
       <Alert>
+        <AlertTitle>Submission received</AlertTitle>
         <AlertDescription>
-          Your submission has been received. Good luck!
+          The production team will review your submission and be in touch if
+          they want to move forward.
         </AlertDescription>
       </Alert>
     )

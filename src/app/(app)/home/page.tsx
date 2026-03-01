@@ -1,6 +1,7 @@
 import { LinkIcon } from "lucide-react"
 import type { Metadata } from "next"
 import { Button } from "@/components/common/button"
+import { CopyButton } from "@/components/common/copy-button"
 import { getCurrentUser, getSession } from "@/lib/auth"
 
 export const metadata: Metadata = {
@@ -18,9 +19,12 @@ export default async function HomePage() {
       {orgId && (
         <div className="flex flex-col gap-element rounded-lg border p-group">
           <p className="text-label text-muted-foreground">Your audition link</p>
-          <p className="break-all font-mono text-caption text-foreground">
-            /submit/{orgId}
-          </p>
+          <div className="flex items-center gap-element">
+            <p className="break-all font-mono text-caption text-foreground">
+              /submit/{orgId}
+            </p>
+            <CopyButton value={`/submit/${orgId}`} />
+          </div>
           <Button
             href={`/submit/${orgId}`}
             variant="outline"

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
 import { getRoles } from "@/actions/productions/get-roles"
 import { Button } from "@/components/common/button"
+import { CopyButton } from "@/components/common/copy-button"
 import { RolesList } from "@/components/productions/roles-list"
 
 export async function generateMetadata({
@@ -47,9 +48,14 @@ export default async function ProductionPage({
         <p className="text-label text-muted-foreground">
           Production audition link
         </p>
-        <p className="break-all font-mono text-caption text-foreground">
-          /submit/{production.organizationId}/{production.id}
-        </p>
+        <div className="flex items-center gap-element">
+          <p className="break-all font-mono text-caption text-foreground">
+            /submit/{production.organizationId}/{production.id}
+          </p>
+          <CopyButton
+            value={`/submit/${production.organizationId}/${production.id}`}
+          />
+        </div>
         <Button
           href={`/submit/${production.organizationId}/${production.id}`}
           variant="outline"
