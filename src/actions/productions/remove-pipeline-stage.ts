@@ -45,17 +45,15 @@ export const removePipelineStage = secureActionClient
       columns: { id: true },
     })
 
-    await db.transaction(async (tx) => {
-      // Move submissions on this stage to inbound
-      if (inboundStage) {
-        await tx
-          .update(Submission)
-          .set({ stageId: inboundStage.id, updatedAt: new Date() })
-          .where(eq(Submission.stageId, stageId))
-      }
+    // Move submissions on this stage to inbound
+    if (inboundStage) {
+      await db
+        .update(Submission)
+        .set({ stageId: inboundStage.id, updatedAt: new Date() })
+        .where(eq(Submission.stageId, stageId))
+    }
 
-      await tx.delete(PipelineStage).where(eq(PipelineStage.id, stageId))
-    })
+    await db.delete(PipelineStage).where(eq(PipelineStage.id, stageId))
 
     return { success: true }
   })

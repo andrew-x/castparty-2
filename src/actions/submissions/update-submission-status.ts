@@ -49,19 +49,17 @@ export const updateSubmissionStatus = secureActionClient
       throw new Error("Invalid pipeline stage.")
     }
 
-    await db.transaction(async (tx) => {
-      await tx
-        .update(Submission)
-        .set({ stageId, updatedAt: new Date() })
-        .where(eq(Submission.id, submissionId))
+    await db
+      .update(Submission)
+      .set({ stageId, updatedAt: new Date() })
+      .where(eq(Submission.id, submissionId))
 
-      await tx.insert(StatusChange).values({
-        id: generateId("sc"),
-        submissionId,
-        fromStageId: submission.stageId,
-        toStageId: stageId,
-        changedById: user.id,
-      })
+    await db.insert(StatusChange).values({
+      id: generateId("sc"),
+      submissionId,
+      fromStageId: submission.stageId,
+      toStageId: stageId,
+      changedById: user.id,
     })
 
     return { id: submissionId }
