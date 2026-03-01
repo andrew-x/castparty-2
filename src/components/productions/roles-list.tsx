@@ -37,16 +37,23 @@ const addRoleSchema = z.object({
 interface Role {
   id: string
   name: string
+  slug: string
   description: string | null
 }
 
 interface Props {
-  orgId: string
+  orgSlug: string
+  productionSlug: string
   productionId: string
   initialRoles: Role[]
 }
 
-export function RolesList({ orgId, productionId, initialRoles }: Props) {
+export function RolesList({
+  orgSlug,
+  productionSlug,
+  productionId,
+  initialRoles,
+}: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
 
@@ -200,11 +207,11 @@ export function RolesList({ orgId, productionId, initialRoles }: Props) {
                 )}
                 <div className="flex items-center gap-element">
                   <p className="break-all font-mono text-caption text-muted-foreground">
-                    /submit/{orgId}/{productionId}/{role.id}
+                    /submit/{orgSlug}/{productionSlug}/{role.slug}
                   </p>
                   <CopyButton
                     value={getAppUrl(
-                      `/submit/${orgId}/${productionId}/${role.id}`,
+                      `/submit/${orgSlug}/${productionSlug}/${role.slug}`,
                     )}
                   />
                 </div>

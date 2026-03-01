@@ -1,20 +1,9 @@
 "use server"
 
-import { createId } from "@paralleldrive/cuid2"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
-
-function generateSlug(name: string): string {
-  const base = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 40)
-
-  const suffix = createId().slice(0, 8)
-  return `${base}-${suffix}`
-}
+import { nameToSlug } from "@/lib/slug"
 
 export const createOrganization = secureActionClient
   .metadata({ action: "create-organization" })
@@ -24,7 +13,7 @@ export const createOrganization = secureActionClient
     }),
   )
   .action(async ({ parsedInput: { name }, ctx: { user } }) => {
-    const slug = generateSlug(name)
+    const slug = nameToSlug(name)
 
     const org = await auth.api.createOrganization({
       body: {

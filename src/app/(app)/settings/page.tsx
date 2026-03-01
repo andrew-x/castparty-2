@@ -37,6 +37,7 @@ export default async function SettingsPage() {
           <OrgSettingsForm
             organizationId={activeOrgId}
             currentName={orgData.organization.name}
+            currentSlug={orgData.organization.slug}
           />
         </section>
 

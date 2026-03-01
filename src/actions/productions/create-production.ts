@@ -1,9 +1,11 @@
 "use server"
 
+import { eq } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Production, Role } from "@/lib/db/schema"
+import { generateUniqueSlug, nameToSlug } from "@/lib/slug"
 import { generateId } from "@/lib/util"
 
 const roleSchema = z.object({
@@ -27,23 +29,40 @@ export const createProduction = secureActionClient
       }
 
       const productionId = generateId("prod")
+      const productionSlug = await generateUniqueSlug(
+        name,
+        Production,
+        Production.slug,
+        eq(Production.organizationId, user.activeOrganizationId),
+      )
 
       await db.insert(Production).values({
         id: productionId,
         organizationId: user.activeOrganizationId,
         name,
+        slug: productionSlug,
         description: description || null,
       })
 
       if (roles?.length) {
-        await db.insert(Role).values(
-          roles.map((role) => ({
+        // New production has no existing roles, so generate slugs in memory
+        const usedSlugs = new Set<string>()
+        const roleValues = roles.map((role) => {
+          let slug = nameToSlug(role.name)
+          while (usedSlugs.has(slug)) {
+            slug = nameToSlug(role.name)
+          }
+          usedSlugs.add(slug)
+          return {
             id: generateId("role"),
             productionId,
             name: role.name,
+            slug,
             description: role.description || null,
-          })),
-        )
+          }
+        })
+
+        await db.insert(Role).values(roleValues)
       }
 
       return { id: productionId }
