@@ -254,19 +254,91 @@ export const Candidate = pgTable("candidate", {
     .notNull()
     .references(() => Organization.id, { onDelete: "cascade" }),
 
+  firstName: text().notNull(),
+  lastName: text().notNull(),
+  email: text().notNull(),
+  phone: text(),
+
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 })
 
-export const Submission = pgTable("role", {
+export const Submission = pgTable("submission", {
   id: text().primaryKey(),
   productionId: text()
     .notNull()
     .references(() => Production.id, { onDelete: "cascade" }),
+  roleId: text()
+    .notNull()
+    .references(() => Role.id, { onDelete: "cascade" }),
+  candidateId: text()
+    .notNull()
+    .references(() => Candidate.id, { onDelete: "cascade" }),
 
-  name: text().notNull(),
-  description: text(),
+  firstName: text().notNull(),
+  lastName: text().notNull(),
+  email: text().notNull(),
+  phone: text(),
+  resumeUrl: text(),
 
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 })
+
+// --- RELATIONS ---
+export const userProfileRelations = relations(UserProfile, ({ one }) => ({
+  user: one(User, {
+    fields: [UserProfile.id],
+    references: [User.id],
+  }),
+}))
+
+export const organizationProfileRelations = relations(
+  OrganizationProfile,
+  ({ one }) => ({
+    organization: one(Organization, {
+      fields: [OrganizationProfile.id],
+      references: [Organization.id],
+    }),
+  }),
+)
+
+export const productionRelations = relations(Production, ({ one, many }) => ({
+  organization: one(Organization, {
+    fields: [Production.organizationId],
+    references: [Organization.id],
+  }),
+  roles: many(Role),
+  submissions: many(Submission),
+}))
+
+export const roleRelations = relations(Role, ({ one, many }) => ({
+  production: one(Production, {
+    fields: [Role.productionId],
+    references: [Production.id],
+  }),
+  submissions: many(Submission),
+}))
+
+export const candidateRelations = relations(Candidate, ({ one, many }) => ({
+  organization: one(Organization, {
+    fields: [Candidate.organizationId],
+    references: [Organization.id],
+  }),
+  submissions: many(Submission),
+}))
+
+export const submissionRelations = relations(Submission, ({ one }) => ({
+  production: one(Production, {
+    fields: [Submission.productionId],
+    references: [Production.id],
+  }),
+  role: one(Role, {
+    fields: [Submission.roleId],
+    references: [Role.id],
+  }),
+  candidate: one(Candidate, {
+    fields: [Submission.candidateId],
+    references: [Candidate.id],
+  }),
+}))

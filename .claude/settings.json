@@ -1,15 +1,4 @@
 {
-  "enabledPlugins": {
-    "beads@beads-marketplace": true,
-    "frontend-design@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "claude-code-setup@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true
-  },
-  "plansDirectory": "./.claude/plans",
   "hooks": {
     "SessionStart": [
       {
@@ -33,5 +22,17 @@
         ]
       }
     ]
-  }
+  },
+  "enabledPlugins": {
+    "beads@beads-marketplace": true,
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "memsearch@memsearch-plugins": true
+  },
+  "plansDirectory": "./.claude/plans"
 }
