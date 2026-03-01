@@ -49,8 +49,10 @@ export const createProduction = secureActionClient
         const usedSlugs = new Set<string>()
         const roleValues = roles.map((role) => {
           let slug = nameToSlug(role.name)
+          let counter = 2
           while (usedSlugs.has(slug)) {
-            slug = nameToSlug(role.name)
+            slug = `${nameToSlug(role.name)}-${counter}`
+            counter++
           }
           usedSlugs.add(slug)
           return {

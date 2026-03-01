@@ -88,7 +88,7 @@ export const inviteMember = secureActionClient
         organizationId,
         userId: invitedUser.id,
         role,
-        createdAt: new Date(),
+        createdAt: day().toDate(),
       })
 
       return { success: true }

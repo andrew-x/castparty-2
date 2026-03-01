@@ -3,6 +3,7 @@
 import { and, eq } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
+import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import { PipelineStage, Submission } from "@/lib/db/schema"
 
@@ -46,12 +47,14 @@ export const removePipelineStage = secureActionClient
     })
 
     // Move submissions on this stage to inbound
-    if (inboundStage) {
-      await db
-        .update(Submission)
-        .set({ stageId: inboundStage.id, updatedAt: new Date() })
-        .where(eq(Submission.stageId, stageId))
+    if (!inboundStage) {
+      throw new Error("Inbound stage not found for this role.")
     }
+
+    await db
+      .update(Submission)
+      .set({ stageId: inboundStage.id, updatedAt: day().toDate() })
+      .where(eq(Submission.stageId, stageId))
 
     await db.delete(PipelineStage).where(eq(PipelineStage.id, stageId))
 

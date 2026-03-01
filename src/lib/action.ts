@@ -11,7 +11,11 @@ export const publicActionClient = createSafeActionClient({
   handleServerError(e) {
     logger.error(e, "Action failed")
 
-    if (e instanceof Error) {
+    if (
+      e instanceof Error &&
+      e.message.length < 200 &&
+      !e.message.includes("\n")
+    ) {
       return e.message
     }
 

@@ -63,6 +63,10 @@ export const createSubmission = publicActionClient
 
       if (existing) {
         candidateId = existing.id
+        await db
+          .update(Candidate)
+          .set({ firstName, lastName, phone: phone ?? null })
+          .where(eq(Candidate.id, existing.id))
       } else {
         candidateId = generateId("cand")
         await db.insert(Candidate).values({

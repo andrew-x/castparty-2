@@ -302,20 +302,29 @@ export const PipelineStage = pgTable(
   ],
 )
 
-export const Candidate = pgTable("candidate", {
-  id: text().primaryKey(),
-  organizationId: text()
-    .notNull()
-    .references(() => Organization.id, { onDelete: "cascade" }),
+export const Candidate = pgTable(
+  "candidate",
+  {
+    id: text().primaryKey(),
+    organizationId: text()
+      .notNull()
+      .references(() => Organization.id, { onDelete: "cascade" }),
 
-  firstName: text().notNull(),
-  lastName: text().notNull(),
-  email: text().notNull(),
-  phone: text(),
+    firstName: text().notNull(),
+    lastName: text().notNull(),
+    email: text().notNull(),
+    phone: text(),
 
-  createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp().defaultNow().notNull(),
-})
+    createdAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp().defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("candidate_org_email_uidx").on(
+      table.organizationId,
+      table.email,
+    ),
+  ],
+)
 
 export const Submission = pgTable("submission", {
   id: text().primaryKey(),
@@ -353,9 +362,7 @@ export const StatusChange = pgTable(
     toStageId: text().references(() => PipelineStage.id, {
       onDelete: "set null",
     }),
-    changedById: text()
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    changedById: text().references(() => user.id, { onDelete: "set null" }),
     changedAt: timestamp().defaultNow().notNull(),
   },
   (table) => [index("status_change_submission_id_idx").on(table.submissionId)],

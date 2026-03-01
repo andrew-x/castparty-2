@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { getSession } from "@/lib/auth"
 import db from "@/lib/db/db"
 import { member } from "@/lib/db/schema"
@@ -13,6 +13,20 @@ export async function checkAuth() {
   }
 
   let orgId = data.session.activeOrganizationId
+
+  if (orgId) {
+    const valid = await db
+      .select({ orgId: member.organizationId })
+      .from(member)
+      .where(
+        and(eq(member.userId, data.user.id), eq(member.organizationId, orgId)),
+      )
+      .limit(1)
+
+    if (!valid[0]) {
+      orgId = null
+    }
+  }
 
   if (!orgId) {
     const memberships = await db

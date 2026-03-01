@@ -3,6 +3,7 @@
 import { and, eq } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
+import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import { StatusChange, Submission } from "@/lib/db/schema"
 import { generateId } from "@/lib/util"
@@ -39,6 +40,20 @@ export const updateSubmissionStatus = secureActionClient
       throw new Error("Submission not found.")
     }
 
+    // Prevent transitions from terminal stages
+    const currentStageId = submission.stageId
+    if (currentStageId) {
+      const currentStage = await db.query.PipelineStage.findFirst({
+        where: (s) => eq(s.id, currentStageId),
+        columns: { isTerminal: true },
+      })
+      if (currentStage?.isTerminal) {
+        throw new Error(
+          "This submission is in a final stage and cannot be moved.",
+        )
+      }
+    }
+
     // Verify the target stage belongs to the same role
     const targetStage = await db.query.PipelineStage.findFirst({
       where: (s) => and(eq(s.id, stageId), eq(s.roleId, submission.roleId)),
@@ -51,7 +66,7 @@ export const updateSubmissionStatus = secureActionClient
 
     await db
       .update(Submission)
-      .set({ stageId, updatedAt: new Date() })
+      .set({ stageId, updatedAt: day().toDate() })
       .where(eq(Submission.id, submissionId))
 
     await db.insert(StatusChange).values({

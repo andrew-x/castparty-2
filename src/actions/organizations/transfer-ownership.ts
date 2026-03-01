@@ -52,16 +52,27 @@ export const transferOwnership = secureActionClient
         throw new Error("You already own this organization.")
       }
 
-      // Transfer: new owner gets "owner", old owner becomes "admin"
-      await db
-        .update(member)
-        .set({ role: "owner" })
-        .where(eq(member.id, targetMember.id))
-
+      // Transfer: demote caller first, then promote target.
+      // If the second update fails, no one is owner (recoverable by re-running)
+      // rather than two owners (which would be an inconsistent state).
       await db
         .update(member)
         .set({ role: "admin" })
         .where(eq(member.id, callerMembership[0].id))
+
+      try {
+        await db
+          .update(member)
+          .set({ role: "owner" })
+          .where(eq(member.id, targetMember.id))
+      } catch (error) {
+        // Rollback: restore caller as owner since promotion failed
+        await db
+          .update(member)
+          .set({ role: "owner" })
+          .where(eq(member.id, callerMembership[0].id))
+        throw error
+      }
 
       return { success: true }
     },

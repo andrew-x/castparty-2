@@ -24,26 +24,38 @@ src/
 │   │   └── home/        # Post-login landing
 │   ├── api/             # API route handlers
 │   ├── auth/            # Login / signup / forgot-password pages
-│   ├── globals.scss     # Tailwind import + theme tokens (CSS custom properties)
+│   ├── submit/          # Public submission flow (unauthenticated)
 │   ├── layout.tsx       # Root layout — fonts, <html>/<body> wrapper
 │   └── page.tsx         # Landing page (/)
 ├── components/
 │   ├── app/             # App shell components — sidebar, header, layout-level UI
 │   ├── auth/            # Auth-specific form components
-│   └── common/          # Generic shadcn/ui primitives — no feature logic
+│   ├── common/          # Generic shadcn/ui primitives — no feature logic
+│   ├── productions/     # Production-scoped components
+│   ├── organizations/   # Org-scoped components (settings, invite, switcher)
+│   ├── candidates/      # Candidate-scoped components
+│   ├── submissions/     # Submission form (public flow)
+│   ├── admin/           # Admin panel components
+│   └── onboarding/      # Onboarding flow components
 ├── hooks/               # Shared custom React hooks
-├── lib/                 # Server-side utilities (auth, db, etc.)
-└── styles/              # Global stylesheets (imported by app/layout.tsx)
+├── lib/                 # Server-side utilities (auth, db, slug, pipeline, etc.)
+└── styles/
+    └── globals.scss     # Tailwind import + theme tokens (CSS custom properties)
 ```
 
 **Component directory conventions:**
 
-| Directory | Contents | Rule |
-|-----------|----------|------|
-| `src/components/common/` | shadcn/ui primitives | No feature logic; styling, variants, and accessibility only |
-| `src/components/app/` | Authenticated app shell components (sidebar, header) | Shared across all `(app)/` routes; may accept user/session data as props |
-| `src/components/auth/` | Auth form components | Auth-specific; client components that call Better Auth SDK |
-| Feature directories (future) | e.g., `src/components/productions/` | Scoped to a single feature area |
+| Directory | Contents |
+|-----------|----------|
+| `src/components/common/` | shadcn/ui primitives — no feature logic; styling, variants, and accessibility only |
+| `src/components/app/` | Authenticated app shell components (sidebar, header) — shared across all `(app)/` routes |
+| `src/components/auth/` | Auth form components — client components that call the Better Auth SDK |
+| `src/components/productions/` | Production-scoped components (cards, forms, roles accordion, settings) |
+| `src/components/organizations/` | Org-scoped components (settings form, invite dialog, member management, org switcher) |
+| `src/components/candidates/` | Candidate-scoped components (candidates table) |
+| `src/components/submissions/` | Submission-scoped components (submission form for public flow) |
+| `src/components/admin/` | Admin panel components (add/delete user, change password dialogs) |
+| `src/components/onboarding/` | Onboarding flow (create organization form) |
 
 ## Key Patterns
 
@@ -51,7 +63,7 @@ src/
 - **React Compiler** — no manual `useMemo`, `useCallback`, or `React.memo`. The compiler handles it.
 - **Path alias** — `@/*` maps to `./src/*` (configured in `tsconfig.json`).
 - **Fonts** — DM Sans (body/UI) + DM Serif Display (headings/display) + DM Mono loaded via `next/font/google` in root layout. Exposed as CSS variables `--font-dm-sans`, `--font-dm-serif-display`, and `--font-dm-mono`. Use Tailwind's `font-serif` class for heading/display text.
-- **Theme tokens** — CSS custom properties in `globals.scss` with `@theme inline` block for Tailwind integration. Dark mode via `prefers-color-scheme`.
+- **Theme tokens** — CSS custom properties in `src/styles/globals.scss` with `@theme inline` block for Tailwind integration. No dark mode support — the `.dark` class in `globals.scss` contains only sidebar variables inherited from shadcn defaults.
 
 ## Data Flow
 
@@ -81,4 +93,45 @@ Browser
 | Neon (PostgreSQL) | Primary database | `DATABASE_URL` env var |
 | Better Auth | Authentication (sessions, orgs) | Configured in `src/lib/auth.ts` |
 
+**Better Auth plugins** (configured in `src/lib/auth.ts`):
+
+| Plugin | Purpose |
+|--------|---------|
+| `adminPlugin()` | Admin user management (list, ban, change password, delete users) |
+| `organizationPlugin({ creatorRole: "owner" })` | Multi-org support with owner/admin/member roles; creator becomes owner |
+| `nextCookies()` | Session persistence via cookies for Next.js server components |
+
+A `databaseHooks.session.create.before` hook auto-sets `activeOrganizationId` on new sessions so users land in the correct org context without an extra redirect.
+
+---
+
+## Data Model
+
+Schema lives in `src/lib/db/schema.ts`. Drizzle relational API (`db.query`) is the default for reads.
+
+**Better Auth tables** (managed by Better Auth; use PascalCase aliases in Drizzle code):
+
+| Table | Alias | Key columns |
+|-------|-------|-------------|
+| `user` | `User` | `id`, `email`, `role`, `banned` |
+| `session` | `Session` | `userId`, `activeOrganizationId` |
+| `account` | `Account` | `userId`, `providerId`, `password` |
+| `organization` | `Organization` | `id`, `name`, `slug` (globally unique) |
+| `member` | `Member` | `organizationId`, `userId`, `role` |
+| `invitation` | `Invitation` | `organizationId`, `email`, `status` |
+
+**Application tables:**
+
+| Table | Scoped to | Key columns / constraints |
+|-------|-----------|--------------------------|
+| `Production` | Organization | `organizationId`, `name`, `slug` (unique per org) |
+| `Role` | Production | `productionId`, `name`, `slug` (unique per production) |
+| `PipelineStage` | Role | `roleId`, `name`, `slug`, `position`, `isSystem`, `isTerminal` |
+| `Candidate` | Organization | `organizationId`, `firstName`, `lastName`, `email` (unique per org) |
+| `Submission` | Role + Candidate | `roleId`, `candidateId`, `stageId` — links a candidate to a role at a pipeline stage |
+| `StatusChange` | Submission | `submissionId`, `fromStageId`, `toStageId`, `changedById` — full audit trail |
+
+Candidate records are deduplicated by `(organizationId, email)` — the same person applying to multiple roles in the same org shares one Candidate row.
+
 *Updated: 2026-02-28 — Replaced stale placeholders with actual data flow and external services*
+*Updated: 2026-03-01 — Added Better Auth plugins, expanded directory layout, fixed component directories, added Data Model section*

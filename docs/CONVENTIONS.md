@@ -77,7 +77,7 @@ All UI copy follows the voice and tone rules in `.claude/rules/voice-and-tone.md
 
 ## Design Token Usage
 
-Design tokens live in `src/app/globals.scss`. The primary layer uses **shadcn's CSS variable naming** (`--primary`, `--background`, `--card`, etc.) with Violet+Stone values, available as Tailwind utilities. Supplementary tokens (`--color-cta-*`, `--color-brand-*`, `--color-success-*`, etc.) are declared alongside them in `@theme inline`. See `docs/FEATURES.md#design-system` for architecture rationale.
+Design tokens live in `src/styles/globals.scss`. The primary layer uses **shadcn's CSS variable naming** (`--primary`, `--background`, `--card`, etc.) with Violet+Stone values, available as Tailwind utilities. Supplementary tokens (`--color-cta-*`, `--color-brand-*`, `--color-success-*`, etc.) are declared alongside them in `@theme inline`. See `docs/FEATURES.md#design-system` for architecture rationale.
 
 ### Token quick-reference
 
@@ -157,6 +157,15 @@ The `Button` component accepts `leftSection` and `rightSection` props (`ReactNod
 ```
 
 The `loading` + `leftSection` pattern is the standard way to show async state on action buttons — the spinner occupies the same space as the icon, preventing layout shift.
+
+The `Button` component also accepts an `href` prop. When `href` is provided it renders as a Next.js `Link` instead of a `<button>` element. This works in server components — the landing page at `src/app/page.tsx` uses `<Button href="/auth">` — so you no longer need a styled `<Link>` workaround for navigation buttons in server-rendered pages.
+
+```tsx
+// Server component — OK
+<Button href="/auth" size="lg">Get Started</Button>
+
+// Use a styled <Link> only when you need full link semantics without button styling
+```
 
 ### Cards and Panels
 
@@ -364,6 +373,6 @@ await db.delete(member).where(eq(member.id, memberId))
 - `bun.lock` is a binary lockfile — don't try to read or edit it.
 - React Compiler is experimental (`babel-plugin-react-compiler` 1.0.0) — if you hit odd rendering bugs, check compiler output first.
 - Biome's `noUnknownAtRules` is disabled to allow Tailwind v4 directives (`@theme`, `@import "tailwindcss"`).
-- **`Button` cannot be used in statically prerendered server components.** The shadcn `Button` component imports `Slot` from `@radix-ui/react-slot`, which triggers "Minified React error #143" during `next build` on pages that are statically prerendered (e.g., `src/app/page.tsx`, `src/app/not-found.tsx`). Workaround: use a styled `<Link>` or `<button>` with equivalent Tailwind classes instead. The `Button` component works correctly in client components (`"use client"`), such as `src/app/error.tsx` and `src/app/global-error.tsx`.
+- **`Button` with `asChild` cannot be used in statically prerendered server components.** The shadcn `Button` with `asChild` imports `Slot` from `@radix-ui/react-slot`, which can trigger "Minified React error #143" during `next build` on statically prerendered pages (e.g., `src/app/not-found.tsx`). For navigation buttons in server-rendered pages, use the `href` prop instead of `asChild` — `<Button href="/auth">` renders as a Next.js `Link` without the `Slot` overhead. Workaround for `not-found.tsx` and similar static pages: use a styled `<Link>` with equivalent Tailwind classes if the `href` prop still causes issues.
 
 *Updated: 2026-02-28 — Added Button leftSection/rightSection props, Zod .trim() rule, common-components-only rule; fixed text hierarchy tokens (semantic tokens replace raw stone palette)*
