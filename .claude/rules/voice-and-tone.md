@@ -57,6 +57,6 @@ Use these terms consistently across all screens:
 | Role | Term | Don't use |
 |------|------|-----------|
 | Organizer-side users | **production team** | admins, managers, organizers |
-| Talent-side users | **performer** | actor, auditionee, talent, candidate |
+| Talent-side users | **candidate** | actor, auditionee, talent, performer |
 
 Don't alternate between synonyms across different screens.

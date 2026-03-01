@@ -5,11 +5,10 @@ import db from "@/lib/db/db"
 import { member } from "@/lib/db/schema"
 
 export async function hasAnyOrganization(userId: string) {
-  const result = await db
-    .select({ orgId: member.organizationId })
-    .from(member)
-    .where(eq(member.userId, userId))
-    .limit(1)
+  const result = await db.query.member.findFirst({
+    where: eq(member.userId, userId),
+    columns: { organizationId: true },
+  })
 
-  return result.length > 0
+  return !!result
 }

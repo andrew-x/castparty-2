@@ -8,6 +8,13 @@
       "when": 1772308444214,
       "tag": "0000_salty_justice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772379262724,
+      "tag": "0001_quick_killmonger",
+      "breakpoints": true
     }
   ]
 }
