@@ -11,8 +11,8 @@ export const createRole = secureActionClient
   .inputSchema(
     z.object({
       productionId: z.string().min(1),
-      name: z.string().min(1, "Role name is required.").max(100),
-      description: z.string().optional(),
+      name: z.string().trim().min(1, "Role name is required.").max(100),
+      description: z.string().trim().optional(),
     }),
   )
   .action(async ({ parsedInput: { productionId, name, description } }) => {

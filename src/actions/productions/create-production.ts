@@ -7,13 +7,13 @@ import { Production, Role } from "@/lib/db/schema"
 import { generateId } from "@/lib/util"
 
 const roleSchema = z.object({
-  name: z.string().min(1, "Role name is required.").max(100),
-  description: z.string().optional(),
+  name: z.string().trim().min(1, "Role name is required.").max(100),
+  description: z.string().trim().optional(),
 })
 
 const createProductionSchema = z.object({
-  name: z.string().min(1, "Production name is required.").max(100),
-  description: z.string().optional(),
+  name: z.string().trim().min(1, "Production name is required.").max(100),
+  description: z.string().trim().optional(),
   roles: z.array(roleSchema).optional(),
 })
 

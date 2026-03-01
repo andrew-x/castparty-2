@@ -7,6 +7,12 @@
 | Design System | `shipped` | `src/app/globals.scss` | Violet+Stone semantic token system powering all UI color, surface, and status styling |
 | Auth Flow | `shipped` | `src/app/auth/page.tsx` | Email/password login and signup with layout-level route guards and a password-reset stub |
 | App Shell (Sidebar Layout) | `shipped` | `src/app/(app)/layout.tsx` | Persistent collapsible sidebar with nav and user footer; wraps all authenticated routes |
+| Onboarding | `shipped` | `src/app/(onboarding)/onboarding/page.tsx` | Organization creation flow for new users; shown when user has no active organization |
+| Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | Org settings (rename), members table, invite/remove/role-change; owner/admin only |
+| Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | Grid of production cards for the active org; empty state with create CTA |
+| Production Detail | `shipped` | `src/app/(app)/productions/[id]/page.tsx` | Production overview with roles list and inline role creation |
+| Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | Form to create a new production with optional roles |
+| Admin Panel | `shipped` | `src/app/admin/page.tsx` | Internal user management (list, create, change password, delete); bypasses org scope |
 | Landing Page | `shipped` | `src/app/page.tsx` | Single-screen hero with Castparty branding, tagline, and CTA link to /dashboard |
 | 404 Page | `shipped` | `src/app/not-found.tsx` | Theatrical "didn't make the callback list" copy with decorative 404 display |
 | Route Error Page | `shipped` | `src/app/error.tsx` | "Something went wrong backstage" — try again + back to home; client component |

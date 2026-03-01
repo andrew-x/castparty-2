@@ -49,6 +49,7 @@ Use `unknown` when the type is genuinely unknown, then narrow with guards.
 - **Server components by default** — only add `"use client"` when the component needs browser APIs, event handlers, or state.
 - **Props typing** — inline by default; switch to `interface Props` (not `type Props`) when readability suffers or the interface is referenced elsewhere. Use judgment.
 - **No manual memoization** — React Compiler handles it. Don't add `useMemo`, `useCallback`, or `React.memo`.
+- **Always use common components** — never use raw HTML elements when a `src/components/common/` equivalent exists. Use `<Button>` not `<button>`, `<Input>` not `<input>`, `<Label>` not `<label>`, etc. Raw elements bypass the design system (token classes, focus rings, accessibility attributes). The only exceptions are the static prerender gotcha (see below) and cases where `asChild` composition is required.
 
 ## Styling
 
@@ -115,14 +116,12 @@ Design tokens live in `src/app/globals.scss`. The primary layer uses **shadcn's 
 | `--color-error` / `-light` / `-text` | `bg-error`, etc. | Errors, destructive actions |
 | `--color-warning` / `-light` / `-text` | `bg-warning`, etc. | Cautionary states |
 
-**Text hierarchy** (Tailwind stone palette — not tokenized):
+**Text hierarchy** — use semantic tokens, never raw stone palette classes:
 
 | Level | Class |
 |---|---|
-| Primary | `text-stone-900` |
-| Secondary | `text-stone-600` |
-| Muted / placeholder | `text-stone-400` |
-| Disabled | `text-stone-300` |
+| Primary | `text-foreground` |
+| Muted / secondary | `text-muted-foreground` |
 
 ## Component Patterns — Design Token Usage
 
@@ -146,6 +145,18 @@ bg-destructive hover:bg-error text-destructive-foreground rounded-lg px-4 py-2 t
 # CTA / Spotlight
 bg-cta hover:bg-cta-hover text-cta-fg rounded-lg px-4 py-2 text-sm font-semibold transition-colors
 ```
+
+**Button icon props** (`src/components/common/button.tsx`):
+
+The `Button` component accepts `leftSection` and `rightSection` props (`ReactNode`) for placing icons or other content on either side of the label. When `loading={true}`, a `Spinner` replaces `leftSection` automatically and `disabled` is set.
+
+```tsx
+<Button leftSection={<PlusIcon />}>Add performer</Button>
+<Button rightSection={<ArrowRightIcon />}>Continue</Button>
+<Button loading={isPending}>Saving...</Button>
+```
+
+The `loading` + `leftSection` pattern is the standard way to show async state on action buttons — the spinner occupies the same space as the icon, preventing layout shift.
 
 ### Cards and Panels
 
@@ -272,6 +283,19 @@ export const createProduction = secureActionClient
 - Use `publicActionClient` only for unauthenticated actions (rare).
 - Always provide `metadata({ action: "kebab-case-name" })` for logging/tracing.
 - Always provide `.inputSchema()` with a Zod schema for type-safe validation.
+- All `z.string()` fields for user-entered text must chain `.trim()` before any other validators (`.min()`, `.email()`, etc.). This strips leading/trailing whitespace before validation so "  alice@example.com  " is accepted. **Exceptions:** passwords, IDs, and tokens — these must not be trimmed.
+
+```ts
+// Correct
+name: z.string().trim().min(1, "Name is required."),
+email: z.string().trim().email("Enter a valid email."),
+
+// Wrong — whitespace not stripped before validation
+name: z.string().min(1, "Name is required."),
+
+// Correct exception — passwords must not be trimmed
+password: z.string().min(8),
+```
 
 ### Plain server functions (reads)
 
@@ -312,3 +336,5 @@ genuinely needs browser APIs, event handlers, or React state. This means:
 - React Compiler is experimental (`babel-plugin-react-compiler` 1.0.0) — if you hit odd rendering bugs, check compiler output first.
 - Biome's `noUnknownAtRules` is disabled to allow Tailwind v4 directives (`@theme`, `@import "tailwindcss"`).
 - **`Button` cannot be used in statically prerendered server components.** The shadcn `Button` component imports `Slot` from `@radix-ui/react-slot`, which triggers "Minified React error #143" during `next build` on pages that are statically prerendered (e.g., `src/app/page.tsx`, `src/app/not-found.tsx`). Workaround: use a styled `<Link>` or `<button>` with equivalent Tailwind classes instead. The `Button` component works correctly in client components (`"use client"`), such as `src/app/error.tsx` and `src/app/global-error.tsx`.
+
+*Updated: 2026-02-28 — Added Button leftSection/rightSection props, Zod .trim() rule, common-components-only rule; fixed text hierarchy tokens (semantic tokens replace raw stone palette)*

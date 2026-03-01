@@ -96,8 +96,11 @@ export function MembersTable({
           {members.length} {members.length === 1 ? "member" : "members"}
         </p>
         {canManage && (
-          <Button size="sm" onClick={() => setInviteOpen(true)}>
-            <PlusIcon />
+          <Button
+            size="sm"
+            leftSection={<PlusIcon />}
+            onClick={() => setInviteOpen(true)}
+          >
             Invite
           </Button>
         )}

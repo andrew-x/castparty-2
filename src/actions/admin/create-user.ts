@@ -9,8 +9,8 @@ export const createUserAction = publicActionClient
   .metadata({ action: "create-user" })
   .inputSchema(
     z.object({
-      name: z.string().min(1),
-      email: z.email(),
+      name: z.string().trim().min(1),
+      email: z.string().trim().email(),
       password: z.string().min(8),
     }),
   )

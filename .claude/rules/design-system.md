@@ -31,6 +31,26 @@ propose a new token to the user:
 > "There's no token for this use case. I'd suggest adding `--<type>-<name>` to
 > `src/styles/globals.scss`. Should I do that?"
 
+## Button sections (left/right)
+
+The `Button` component supports `leftSection` and `rightSection` props for placing
+icons or other elements alongside the button label. Use these instead of passing icons
+as children alongside text.
+
+```tsx
+// Preferred — explicit icon placement
+<Button leftSection={<PlusIcon />}>Add role</Button>
+<Button rightSection={<ChevronRightIcon />}>Next</Button>
+
+// Also fine — icon-only buttons (use size="icon" variants)
+<Button variant="ghost" size="icon"><TrashIcon /></Button>
+
+// Acceptable for simple cases — icon as child still works
+<Button><PlusIcon /> Add role</Button>
+```
+
+When `loading` is true, the spinner replaces the `leftSection` automatically.
+
 ## Component library: shadcn/ui via `@/components/common`
 
 All UI primitives come from **shadcn/ui**, installed into `src/components/common/`. Import from `@/components/common/<component>`, never from a third-party package directly.

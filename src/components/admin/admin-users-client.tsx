@@ -44,8 +44,11 @@ export function AdminUsersClient({ users }: Props) {
     <div className="flex flex-col gap-section">
       <div className="flex items-center justify-between">
         <p className="text-label text-muted-foreground">{users.length} users</p>
-        <Button size="sm" onClick={() => setAddOpen(true)}>
-          <PlusIcon />
+        <Button
+          size="sm"
+          leftSection={<PlusIcon />}
+          onClick={() => setAddOpen(true)}
+        >
           Add user
         </Button>
       </div>

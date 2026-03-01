@@ -1,6 +1,6 @@
 # Documentation Index
 
-> **Status:** Scaffolding phase — structure in place, features pending.
+> **Status:** Active development — auth, organizations, productions, and admin are shipped.
 > **Maintained by:** Librarian agent (`.claude/agents/librarian.md`)
 
 | Document | Read when you need to... |

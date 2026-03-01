@@ -28,8 +28,8 @@ import { Input } from "@/components/common/input"
 import { Textarea } from "@/components/common/textarea"
 
 const addRoleSchema = z.object({
-  name: z.string().min(1, "Role name is required.").max(100),
-  description: z.string().optional(),
+  name: z.string().trim().min(1, "Role name is required.").max(100),
+  description: z.string().trim().optional(),
 })
 
 interface Role {
@@ -70,8 +70,12 @@ export function RolesList({ productionId, initialRoles }: Props) {
       <div className="flex items-center justify-between">
         <h2 className="font-medium text-heading">Roles</h2>
         {!showForm && (
-          <Button variant="outline" size="sm" onClick={() => setShowForm(true)}>
-            <PlusIcon className="size-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            leftSection={<PlusIcon />}
+            onClick={() => setShowForm(true)}
+          >
             Add role
           </Button>
         )}
@@ -161,8 +165,11 @@ export function RolesList({ productionId, initialRoles }: Props) {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button variant="outline" onClick={() => setShowForm(true)}>
-              <PlusIcon className="size-4" />
+            <Button
+              variant="outline"
+              leftSection={<PlusIcon />}
+              onClick={() => setShowForm(true)}
+            >
               Add role
             </Button>
           </EmptyContent>

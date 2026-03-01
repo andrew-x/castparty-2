@@ -20,12 +20,12 @@ import { Input } from "@/components/common/input"
 import { Textarea } from "@/components/common/textarea"
 
 const schema = z.object({
-  name: z.string().min(1, "Production name is required.").max(100),
-  description: z.string().optional(),
+  name: z.string().trim().min(1, "Production name is required.").max(100),
+  description: z.string().trim().optional(),
   roles: z.array(
     z.object({
-      name: z.string().min(1, "Role name is required.").max(100),
-      description: z.string().optional(),
+      name: z.string().trim().min(1, "Role name is required.").max(100),
+      description: z.string().trim().optional(),
     }),
   ),
 })
@@ -146,9 +146,9 @@ export function CreateProductionForm() {
                 type="button"
                 variant="outline"
                 size="sm"
+                leftSection={<PlusIcon />}
                 onClick={() => append({ name: "", description: "" })}
               >
-                <PlusIcon className="size-4" />
                 Add role
               </Button>
             </div>

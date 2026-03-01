@@ -46,12 +46,16 @@ function Button({
   asChild = false,
   loading = false,
   disabled,
+  leftSection,
+  rightSection,
   children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
     loading?: boolean
+    leftSection?: React.ReactNode
+    rightSection?: React.ReactNode
   }) {
   const Comp = asChild ? Slot.Root : "button"
 
@@ -68,8 +72,9 @@ function Button({
         children
       ) : (
         <>
-          {loading && <Spinner />}
+          {loading ? <Spinner /> : leftSection}
           {children}
+          {rightSection}
         </>
       )}
     </Comp>

@@ -23,8 +23,8 @@ import {
 import { Input } from "@/components/common/input"
 
 const schema = z.object({
-  name: z.string().min(1, "Name is required."),
-  email: z.email("Enter a valid email."),
+  name: z.string().trim().min(1, "Name is required."),
+  email: z.string().trim().email("Enter a valid email."),
   password: z.string().min(8, "Password must be at least 8 characters."),
 })
 
