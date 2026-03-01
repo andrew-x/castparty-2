@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm"
 import {
   boolean,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -278,6 +279,29 @@ export const Role = pgTable(
   ],
 )
 
+export const PipelineStage = pgTable(
+  "pipeline_stage",
+  {
+    id: text().primaryKey(),
+    roleId: text()
+      .notNull()
+      .references(() => Role.id, { onDelete: "cascade" }),
+
+    name: text().notNull(),
+    slug: text().notNull(),
+    position: integer().notNull(),
+    isSystem: boolean().default(false).notNull(),
+    isTerminal: boolean().default(false).notNull(),
+
+    createdAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp().defaultNow().notNull(),
+  },
+  (table) => [
+    index("pipeline_stage_role_id_idx").on(table.roleId),
+    uniqueIndex("pipeline_stage_role_slug_uidx").on(table.roleId, table.slug),
+  ],
+)
+
 export const Candidate = pgTable("candidate", {
   id: text().primaryKey(),
   organizationId: text()
@@ -304,6 +328,7 @@ export const Submission = pgTable("submission", {
   candidateId: text()
     .notNull()
     .references(() => Candidate.id, { onDelete: "cascade" }),
+  stageId: text().references(() => PipelineStage.id, { onDelete: "set null" }),
 
   firstName: text().notNull(),
   lastName: text().notNull(),
@@ -314,6 +339,27 @@ export const Submission = pgTable("submission", {
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 })
+
+export const StatusChange = pgTable(
+  "status_change",
+  {
+    id: text().primaryKey(),
+    submissionId: text()
+      .notNull()
+      .references(() => Submission.id, { onDelete: "cascade" }),
+    fromStageId: text().references(() => PipelineStage.id, {
+      onDelete: "set null",
+    }),
+    toStageId: text().references(() => PipelineStage.id, {
+      onDelete: "set null",
+    }),
+    changedById: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    changedAt: timestamp().defaultNow().notNull(),
+  },
+  (table) => [index("status_change_submission_id_idx").on(table.submissionId)],
+)
 
 // --- DATA RELATIONS ---
 export const userProfileRelations = relations(UserProfile, ({ one }) => ({
@@ -348,6 +394,7 @@ export const roleRelations = relations(Role, ({ one, many }) => ({
     references: [Production.id],
   }),
   submissions: many(Submission),
+  pipelineStages: many(PipelineStage),
 }))
 
 export const candidateRelations = relations(Candidate, ({ one, many }) => ({
@@ -358,7 +405,7 @@ export const candidateRelations = relations(Candidate, ({ one, many }) => ({
   submissions: many(Submission),
 }))
 
-export const submissionRelations = relations(Submission, ({ one }) => ({
+export const submissionRelations = relations(Submission, ({ one, many }) => ({
   production: one(Production, {
     fields: [Submission.productionId],
     references: [Production.id],
@@ -370,5 +417,44 @@ export const submissionRelations = relations(Submission, ({ one }) => ({
   candidate: one(Candidate, {
     fields: [Submission.candidateId],
     references: [Candidate.id],
+  }),
+  stage: one(PipelineStage, {
+    fields: [Submission.stageId],
+    references: [PipelineStage.id],
+  }),
+  statusChanges: many(StatusChange),
+}))
+
+export const pipelineStageRelations = relations(
+  PipelineStage,
+  ({ one, many }) => ({
+    role: one(Role, {
+      fields: [PipelineStage.roleId],
+      references: [Role.id],
+    }),
+    submissions: many(Submission),
+    statusChangesFrom: many(StatusChange, { relationName: "fromStage" }),
+    statusChangesTo: many(StatusChange, { relationName: "toStage" }),
+  }),
+)
+
+export const statusChangeRelations = relations(StatusChange, ({ one }) => ({
+  submission: one(Submission, {
+    fields: [StatusChange.submissionId],
+    references: [Submission.id],
+  }),
+  fromStage: one(PipelineStage, {
+    fields: [StatusChange.fromStageId],
+    references: [PipelineStage.id],
+    relationName: "fromStage",
+  }),
+  toStage: one(PipelineStage, {
+    fields: [StatusChange.toStageId],
+    references: [PipelineStage.id],
+    relationName: "toStage",
+  }),
+  changedBy: one(user, {
+    fields: [StatusChange.changedById],
+    references: [user.id],
   }),
 }))

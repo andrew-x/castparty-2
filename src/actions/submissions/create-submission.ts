@@ -47,43 +47,48 @@ export const createSubmission = publicActionClient
         throw new Error("This role is not available for submissions.")
       }
 
-      return db.transaction(async (tx) => {
-        // Look up existing candidate in this org by email
-        const existing = await tx.query.Candidate.findFirst({
-          where: (c) => and(eq(c.organizationId, orgId), eq(c.email, email)),
-          columns: { id: true },
-        })
+      // Resolve the inbound stage for this role
+      const inboundStage = await db.query.PipelineStage.findFirst({
+        where: (s) => and(eq(s.roleId, roleId), eq(s.slug, "inbound")),
+        columns: { id: true },
+      })
 
-        let candidateId: string
+      // Look up existing candidate in this org by email
+      const existing = await db.query.Candidate.findFirst({
+        where: (c) => and(eq(c.organizationId, orgId), eq(c.email, email)),
+        columns: { id: true },
+      })
 
-        if (existing) {
-          candidateId = existing.id
-        } else {
-          candidateId = generateId("cand")
-          await tx.insert(Candidate).values({
-            id: candidateId,
-            organizationId: orgId,
-            firstName,
-            lastName,
-            email,
-            phone: phone ?? null,
-          })
-        }
+      let candidateId: string
 
-        const submissionId = generateId("sub")
-
-        await tx.insert(Submission).values({
-          id: submissionId,
-          productionId,
-          roleId,
-          candidateId,
+      if (existing) {
+        candidateId = existing.id
+      } else {
+        candidateId = generateId("cand")
+        await db.insert(Candidate).values({
+          id: candidateId,
+          organizationId: orgId,
           firstName,
           lastName,
           email,
           phone: phone ?? null,
         })
+      }
 
-        return { id: submissionId }
+      const submissionId = generateId("sub")
+
+      await db.insert(Submission).values({
+        id: submissionId,
+        productionId,
+        roleId,
+        candidateId,
+        stageId: inboundStage?.id ?? null,
+        firstName,
+        lastName,
+        email,
+        phone: phone ?? null,
       })
+
+      return { id: submissionId }
     },
   )
