@@ -41,19 +41,17 @@ const navItems = [
   { label: "Candidates", href: "/candidates", icon: UsersIcon },
 ]
 
-interface Props {
-  user: { name: string; email: string; image?: string | null }
-  organizations: OrgSwitcherOrg[]
-  activeOrgId: string | null
-  activeOrgRole: string | null
-}
-
 export function AppSidebar({
   user,
   organizations,
   activeOrgId,
   activeOrgRole,
-}: Props) {
+}: {
+  user: { name: string; email: string; image?: string | null }
+  organizations: OrgSwitcherOrg[]
+  activeOrgId: string | null
+  activeOrgRole: string | null
+}) {
   const pathname = usePathname()
   const { toggleSidebar } = useSidebar()
 

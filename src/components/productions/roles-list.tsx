@@ -207,11 +207,11 @@ export function RolesList({
                 )}
                 <div className="flex items-center gap-element">
                   <p className="break-all font-mono text-caption text-muted-foreground">
-                    /submit/{orgSlug}/{productionSlug}/{role.slug}
+                    /s/{orgSlug}/{productionSlug}/{role.slug}
                   </p>
                   <CopyButton
                     value={getAppUrl(
-                      `/submit/${orgSlug}/${productionSlug}/${role.slug}`,
+                      `/s/${orgSlug}/${productionSlug}/${role.slug}`,
                     )}
                   />
                 </div>

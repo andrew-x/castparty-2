@@ -7,7 +7,7 @@
 | Design System | `shipped` | `src/styles/globals.scss` | Violet+Stone semantic token system powering all UI color, surface, and status styling |
 | Auth Flow | `shipped` | `src/app/auth/page.tsx` | Email/password login and signup with layout-level route guards and a password-reset stub |
 | App Shell (Sidebar Layout) | `shipped` | `src/app/(app)/layout.tsx` | Persistent collapsible sidebar with nav and user footer; wraps all authenticated routes |
-| Onboarding | `shipped` | `src/app/(onboarding)/onboarding/page.tsx` | Organization creation flow for new users; shown when user has no active organization |
+| Onboarding | `shipped` | `src/app/onboarding/page.tsx` | Multi-step flow for new users: create an organization then optionally invite team members; shown when user has no active organization |
 | Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | Org settings (rename), members table, invite/remove/role-change; owner/admin only |
 | Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | Grid of production cards for the active org; empty state with create CTA |
 | Production Detail | `shipped` | `src/app/(app)/productions/[id]/page.tsx` | Production overview with roles list and inline role creation |
@@ -124,6 +124,54 @@ GET /(app)/*
 **Integration points:** All routes under `src/app/(app)/` depend on `(app)/layout.tsx` for auth enforcement. The `getCurrentUser()` helper lives in `src/lib/auth` — see `docs/ARCHITECTURE.md` for the Better Auth setup.
 
 *Updated: 2026-02-28 — Initial auth flow documentation*
+
+---
+
+## Onboarding
+
+**Overview:** A multi-step flow shown to authenticated users who do not yet belong to any organization. Step 1 creates the org; step 2 invites team members (skippable). Exists because a new account is useless without an organization — this flow bridges sign-up and first use.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/app/onboarding/layout.tsx` | Server component; calls `getCurrentUser()` (redirect to `/auth` if unauthenticated) and `hasAnyOrganization()` (redirect to `/home` if already in an org); renders the card shell |
+| `src/app/onboarding/page.tsx` | Server component; renders `<OnboardingFlow />` |
+| `src/components/onboarding/onboarding-flow.tsx` | Client component; owns step state (`create-org` → `invite-team`) and passes `handleOrgCreated` as the `onComplete` callback to `CreateOrgForm` |
+| `src/components/onboarding/create-org-form.tsx` | Client component; collects org name and URL slug, auto-derives slug from name; accepts optional `onComplete(organizationId)` callback — when present, calls it instead of navigating to `/home` |
+| `src/components/onboarding/invite-team-form.tsx` | Client component; sends invites via `inviteMember` action one at a time; shows a sent-emails list; "Skip for now" / "Continue" button navigates to `/home` |
+
+**How it works:**
+
+```
+GET /onboarding
+  └── onboarding/layout.tsx    ← getCurrentUser() → /auth if not signed in
+                               ← hasAnyOrganization() → /home if already has org
+      └── onboarding/page.tsx  ← renders <OnboardingFlow />
+
+OnboardingFlow (client)
+  step = "create-org"
+    └── <CreateOrgForm onComplete={handleOrgCreated} />
+          createOrganization action → onComplete(organizationId)
+          → setOrgId(organizationId); setStep("invite-team")
+
+  step = "invite-team"
+    └── <InviteTeamForm organizationId={orgId} />
+          inviteMember action (repeatable, one email at a time)
+          "Skip for now" / "Continue" → router.push("/home")
+```
+
+**Architecture decisions:**
+
+- **Client-side step manager (`OnboardingFlow`) instead of multi-page routes** — step transitions are instant and no intermediate state needs to survive a navigation. A single client component holding `step` and `orgId` in `useState` is simpler than URL-based step routing.
+
+- **`onComplete` callback on `CreateOrgForm`** — the form is also used standalone (e.g. an org-switcher "create new" path). Adding an optional `onComplete` prop lets the onboarding flow intercept the success event without forking the component. When `onComplete` is absent, the form falls back to `router.push("/home")` — the original behavior.
+
+- **Guard in `layout.tsx`, not `page.tsx`** — the redirect logic (no auth, already has org) lives in the layout so it applies to every child route under `/onboarding/`, not just the index page.
+
+**Integration points:** Depends on `hasAnyOrganization` from `src/actions/organizations/get-user-memberships.ts`. On completion, the user lands at `/home`, which is guarded by `(app)/layout.tsx` — see the Auth Flow section. Invites use the same `inviteMember` action as the Organizations Management settings page.
+
+*Updated: 2026-03-02 — Documented multi-step onboarding flow (create org + invite team)*
 
 ---
 

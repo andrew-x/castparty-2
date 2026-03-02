@@ -5,7 +5,7 @@ import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
-import { StatusChange, Submission } from "@/lib/db/schema"
+import { PipelineUpdate, Submission } from "@/lib/db/schema"
 import { generateId } from "@/lib/util"
 
 export const updateSubmissionStatus = secureActionClient
@@ -23,7 +23,7 @@ export const updateSubmissionStatus = secureActionClient
     // Load submission with its role's production for ownership check
     const submission = await db.query.Submission.findFirst({
       where: (s) => eq(s.id, submissionId),
-      columns: { id: true, roleId: true, stageId: true },
+      columns: { id: true, roleId: true, stageId: true, productionId: true },
       with: {
         role: {
           columns: { id: true },
@@ -41,17 +41,17 @@ export const updateSubmissionStatus = secureActionClient
     }
 
     // Prevent transitions from terminal stages
-    const currentStageId = submission.stageId
-    if (currentStageId) {
-      const currentStage = await db.query.PipelineStage.findFirst({
-        where: (s) => eq(s.id, currentStageId),
-        columns: { isTerminal: true },
-      })
-      if (currentStage?.isTerminal) {
-        throw new Error(
-          "This submission is in a final stage and cannot be moved.",
-        )
-      }
+    const currentStage = await db.query.PipelineStage.findFirst({
+      where: (s) => eq(s.id, submission.stageId),
+      columns: { type: true },
+    })
+    if (
+      currentStage?.type === "SELECTED" ||
+      currentStage?.type === "REJECTED"
+    ) {
+      throw new Error(
+        "This submission is in a final stage and cannot be moved.",
+      )
     }
 
     // Verify the target stage belongs to the same role
@@ -69,12 +69,15 @@ export const updateSubmissionStatus = secureActionClient
       .set({ stageId, updatedAt: day().toDate() })
       .where(eq(Submission.id, submissionId))
 
-    await db.insert(StatusChange).values({
-      id: generateId("sc"),
+    await db.insert(PipelineUpdate).values({
+      id: generateId("pu"),
+      organizationId: orgId,
+      productionId: submission.productionId,
+      roleId: submission.roleId,
       submissionId,
-      fromStageId: submission.stageId,
-      toStageId: stageId,
-      changedById: user.id,
+      fromStage: submission.stageId,
+      toStage: stageId,
+      changeByUserId: user.id,
     })
 
     return { id: submissionId }

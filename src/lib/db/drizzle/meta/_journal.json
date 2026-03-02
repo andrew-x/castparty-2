@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1772308444214,
-      "tag": "0000_salty_justice",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1772379262724,
-      "tag": "0001_quick_killmonger",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1772386924712,
-      "tag": "0002_slow_carnage",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1772402221605,
-      "tag": "0003_overconfident_mephistopheles",
+      "when": 1772414595292,
+      "tag": "0000_chunky_vindicator",
       "breakpoints": true
     }
   ]

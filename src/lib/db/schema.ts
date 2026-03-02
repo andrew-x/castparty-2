@@ -3,11 +3,14 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
+  pgEnum,
   pgTable,
   text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
+import type { CustomForm, CustomFormResponse } from "../types"
 
 // --- BETTER AUTH ---
 export const user = pgTable("user", {
@@ -174,6 +177,8 @@ export const organizationRelations = relations(
     invitations: many(invitation),
     productions: many(Production),
     candidates: many(Candidate),
+    pipelineStages: many(PipelineStage),
+    pipelineUpdates: many(PipelineUpdate),
     profile: one(OrganizationProfile, {
       fields: [organization.id],
       references: [OrganizationProfile.id],
@@ -229,8 +234,9 @@ export const OrganizationProfile = pgTable("organization_profile", {
     .notNull()
     .references(() => Organization.id, { onDelete: "cascade" }),
 
-  websiteUrl: text(),
-  description: text(),
+  websiteUrl: text().notNull().default(""),
+  description: text().notNull().default(""),
+  isAuditionBoardOpen: boolean().default(false).notNull(),
 
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
@@ -246,7 +252,12 @@ export const Production = pgTable(
 
     name: text().notNull(),
     slug: text().notNull(),
-    description: text(),
+    description: text().notNull().default(""),
+    isOpen: boolean().default(false).notNull(),
+
+    location: text().notNull().default(""),
+    formFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    stages: jsonb().array().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
@@ -269,7 +280,11 @@ export const Role = pgTable(
 
     name: text().notNull(),
     slug: text().notNull(),
-    description: text(),
+    description: text().notNull().default(""),
+    isOpen: boolean().default(false).notNull(),
+
+    location: text().notNull().default(""),
+    formFields: jsonb().$type<CustomForm[]>().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
@@ -279,28 +294,56 @@ export const Role = pgTable(
   ],
 )
 
-export const PipelineStage = pgTable(
-  "pipeline_stage",
-  {
-    id: text().primaryKey(),
-    roleId: text()
-      .notNull()
-      .references(() => Role.id, { onDelete: "cascade" }),
+export const pipelineStageTypeEnum = pgEnum("pipeline_stage_type", [
+  "APPLIED",
+  "SELECTED",
+  "REJECTED",
+  "CUSTOM",
+])
 
-    name: text().notNull(),
-    slug: text().notNull(),
-    position: integer().notNull(),
-    isSystem: boolean().default(false).notNull(),
-    isTerminal: boolean().default(false).notNull(),
+export const PipelineStage = pgTable("pipeline_stage", {
+  id: text().primaryKey(),
+  organizationId: text()
+    .notNull()
+    .references(() => Organization.id, { onDelete: "cascade" }),
+  productionId: text()
+    .notNull()
+    .references(() => Production.id, { onDelete: "cascade" }),
+  roleId: text()
+    .notNull()
+    .references(() => Role.id, { onDelete: "cascade" }),
 
-    createdAt: timestamp().defaultNow().notNull(),
-    updatedAt: timestamp().defaultNow().notNull(),
-  },
-  (table) => [
-    index("pipeline_stage_role_id_idx").on(table.roleId),
-    uniqueIndex("pipeline_stage_role_slug_uidx").on(table.roleId, table.slug),
-  ],
-)
+  name: text().notNull(),
+  order: integer().notNull(),
+  type: pipelineStageTypeEnum().notNull().default("CUSTOM"),
+
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+})
+
+export const PipelineUpdate = pgTable("pipeline_update", {
+  id: text().primaryKey(),
+  organizationId: text()
+    .notNull()
+    .references(() => Organization.id, { onDelete: "cascade" }),
+  productionId: text()
+    .notNull()
+    .references(() => Production.id, { onDelete: "cascade" }),
+  roleId: text()
+    .notNull()
+    .references(() => Role.id, { onDelete: "cascade" }),
+
+  fromStage: text().references(() => PipelineStage.id, {
+    onDelete: "cascade",
+  }),
+  toStage: text().references(() => PipelineStage.id, { onDelete: "cascade" }),
+  submissionId: text()
+    .notNull()
+    .references(() => Submission.id, { onDelete: "cascade" }),
+  changeByUserId: text().references(() => User.id, { onDelete: "set null" }),
+
+  createdAt: timestamp().defaultNow().notNull(),
+})
 
 export const Candidate = pgTable(
   "candidate",
@@ -313,7 +356,8 @@ export const Candidate = pgTable(
     firstName: text().notNull(),
     lastName: text().notNull(),
     email: text().notNull(),
-    phone: text(),
+    phone: text().notNull().default(""),
+    location: text().notNull().default(""),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
@@ -337,36 +381,21 @@ export const Submission = pgTable("submission", {
   candidateId: text()
     .notNull()
     .references(() => Candidate.id, { onDelete: "cascade" }),
-  stageId: text().references(() => PipelineStage.id, { onDelete: "set null" }),
+  stageId: text()
+    .notNull()
+    .references(() => PipelineStage.id, { onDelete: "restrict" }),
 
   firstName: text().notNull(),
   lastName: text().notNull(),
   email: text().notNull(),
-  phone: text(),
-  resumeUrl: text(),
+  phone: text().notNull().default(""),
+  location: text().notNull().default(""),
+
+  answers: jsonb().$type<CustomFormResponse[]>().notNull().default([]),
 
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 })
-
-export const StatusChange = pgTable(
-  "status_change",
-  {
-    id: text().primaryKey(),
-    submissionId: text()
-      .notNull()
-      .references(() => Submission.id, { onDelete: "cascade" }),
-    fromStageId: text().references(() => PipelineStage.id, {
-      onDelete: "set null",
-    }),
-    toStageId: text().references(() => PipelineStage.id, {
-      onDelete: "set null",
-    }),
-    changedById: text().references(() => user.id, { onDelete: "set null" }),
-    changedAt: timestamp().defaultNow().notNull(),
-  },
-  (table) => [index("status_change_submission_id_idx").on(table.submissionId)],
-)
 
 // --- DATA RELATIONS ---
 export const userProfileRelations = relations(UserProfile, ({ one }) => ({
@@ -392,6 +421,8 @@ export const productionRelations = relations(Production, ({ one, many }) => ({
     references: [Organization.id],
   }),
   roles: many(Role),
+  pipelineStages: many(PipelineStage),
+  pipelineUpdates: many(PipelineUpdate),
   submissions: many(Submission),
 }))
 
@@ -402,6 +433,7 @@ export const roleRelations = relations(Role, ({ one, many }) => ({
   }),
   submissions: many(Submission),
   pipelineStages: many(PipelineStage),
+  pipelineUpdates: many(PipelineUpdate),
 }))
 
 export const candidateRelations = relations(Candidate, ({ one, many }) => ({
@@ -429,39 +461,59 @@ export const submissionRelations = relations(Submission, ({ one, many }) => ({
     fields: [Submission.stageId],
     references: [PipelineStage.id],
   }),
-  statusChanges: many(StatusChange),
+  pipelineUpdates: many(PipelineUpdate),
 }))
 
 export const pipelineStageRelations = relations(
   PipelineStage,
   ({ one, many }) => ({
+    organization: one(Organization, {
+      fields: [PipelineStage.organizationId],
+      references: [Organization.id],
+    }),
+    production: one(Production, {
+      fields: [PipelineStage.productionId],
+      references: [Production.id],
+    }),
     role: one(Role, {
       fields: [PipelineStage.roleId],
       references: [Role.id],
     }),
     submissions: many(Submission),
-    statusChangesFrom: many(StatusChange, { relationName: "fromStage" }),
-    statusChangesTo: many(StatusChange, { relationName: "toStage" }),
+    pipelineUpdatesFrom: many(PipelineUpdate, { relationName: "fromStage" }),
+    pipelineUpdatesTo: many(PipelineUpdate, { relationName: "toStage" }),
   }),
 )
 
-export const statusChangeRelations = relations(StatusChange, ({ one }) => ({
+export const pipelineUpdateRelations = relations(PipelineUpdate, ({ one }) => ({
+  organization: one(Organization, {
+    fields: [PipelineUpdate.organizationId],
+    references: [Organization.id],
+  }),
+  production: one(Production, {
+    fields: [PipelineUpdate.productionId],
+    references: [Production.id],
+  }),
+  role: one(Role, {
+    fields: [PipelineUpdate.roleId],
+    references: [Role.id],
+  }),
   submission: one(Submission, {
-    fields: [StatusChange.submissionId],
+    fields: [PipelineUpdate.submissionId],
     references: [Submission.id],
   }),
   fromStage: one(PipelineStage, {
-    fields: [StatusChange.fromStageId],
+    fields: [PipelineUpdate.fromStage],
     references: [PipelineStage.id],
     relationName: "fromStage",
   }),
   toStage: one(PipelineStage, {
-    fields: [StatusChange.toStageId],
+    fields: [PipelineUpdate.toStage],
     references: [PipelineStage.id],
     relationName: "toStage",
   }),
   changedBy: one(user, {
-    fields: [StatusChange.changedById],
+    fields: [PipelineUpdate.changeByUserId],
     references: [user.id],
   }),
 }))

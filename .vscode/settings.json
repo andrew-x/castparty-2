@@ -23,5 +23,17 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "prettier.enable": false,
-  "eslint.enable": false
+  "eslint.enable": false,
+  "github.copilot.chat.codeGeneration.instructions": [
+    { "file": "CLAUDE.md" },
+    { "file": ".github/copilot-instructions.md" }
+  ],
+  "github.copilot.chat.reviewSelection.instructions": [
+    { "file": ".github/copilot-instructions.md" }
+  ],
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "text": "Imperative mood, under 72 chars. Prefix with feature area (e.g., 'productions:', 'auth:'). No emoji."
+    }
+  ]
 }

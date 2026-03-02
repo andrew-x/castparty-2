@@ -4,7 +4,7 @@ import {
 } from "next-safe-action"
 import { z } from "zod"
 import logger from "@/lib/logger"
-import { generateId, IS_MAINTENANCE_MODE } from "@/lib/util"
+import { generateId, IS_DEV, IS_MAINTENANCE_MODE } from "@/lib/util"
 import { checkAuth } from "./auth/auth-util"
 
 export const publicActionClient = createSafeActionClient({
@@ -56,4 +56,9 @@ export const publicActionClient = createSafeActionClient({
 export const secureActionClient = publicActionClient.use(async ({ next }) => {
   const user = await checkAuth()
   return next({ ctx: { user } })
+})
+
+export const adminActionClient = publicActionClient.use(async ({ next }) => {
+  if (!IS_DEV) throw new Error("Not available in production")
+  return next()
 })

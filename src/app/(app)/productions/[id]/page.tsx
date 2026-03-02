@@ -62,14 +62,12 @@ export default async function ProductionPage({
         </p>
         <div className="flex items-center gap-element">
           <p className="break-all font-mono text-caption text-foreground">
-            /submit/{orgSlug}/{production.slug}
+            /s/{orgSlug}/{production.slug}
           </p>
-          <CopyButton
-            value={getAppUrl(`/submit/${orgSlug}/${production.slug}`)}
-          />
+          <CopyButton value={getAppUrl(`/s/${orgSlug}/${production.slug}`)} />
         </div>
         <Button
-          href={`/submit/${orgSlug}/${production.slug}`}
+          href={`/s/${orgSlug}/${production.slug}`}
           variant="outline"
           size="sm"
           leftSection={<LinkIcon />}

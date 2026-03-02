@@ -21,7 +21,7 @@ export const removePipelineStage = secureActionClient
     // Load the stage with ownership chain
     const stage = await db.query.PipelineStage.findFirst({
       where: (s) => eq(s.id, stageId),
-      columns: { id: true, roleId: true, isSystem: true },
+      columns: { id: true, roleId: true, type: true },
       with: {
         role: {
           columns: { id: true },
@@ -36,24 +36,24 @@ export const removePipelineStage = secureActionClient
       throw new Error("Stage not found.")
     }
 
-    if (stage.isSystem) {
+    if (stage.type !== "CUSTOM") {
       throw new Error("System stages cannot be removed.")
     }
 
-    // Find the inbound stage for this role to reassign submissions
-    const inboundStage = await db.query.PipelineStage.findFirst({
-      where: (s) => and(eq(s.roleId, stage.roleId), eq(s.slug, "inbound")),
+    // Find the APPLIED stage for this role to reassign submissions
+    const appliedStage = await db.query.PipelineStage.findFirst({
+      where: (s) => and(eq(s.roleId, stage.roleId), eq(s.type, "APPLIED")),
       columns: { id: true },
     })
 
-    // Move submissions on this stage to inbound
-    if (!inboundStage) {
-      throw new Error("Inbound stage not found for this role.")
+    if (!appliedStage) {
+      throw new Error("Applied stage not found for this role.")
     }
 
+    // Move submissions on this stage to the applied stage
     await db
       .update(Submission)
-      .set({ stageId: inboundStage.id, updatedAt: day().toDate() })
+      .set({ stageId: appliedStage.id, updatedAt: day().toDate() })
       .where(eq(Submission.stageId, stageId))
 
     await db.delete(PipelineStage).where(eq(PipelineStage.id, stageId))

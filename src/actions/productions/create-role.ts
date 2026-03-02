@@ -46,10 +46,10 @@ export const createRole = secureActionClient
         productionId,
         name,
         slug,
-        description: description || null,
+        description: description || "",
       })
 
-      const stages = buildSystemStages(id)
+      const stages = buildSystemStages(id, productionId, orgId)
       await db.insert(PipelineStage).values(stages)
 
       return { id }

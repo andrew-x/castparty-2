@@ -87,7 +87,7 @@ export default async function SubmitProductionPage({
                 </div>
               </div>
               <Button
-                href={`/submit/${orgSlug}/${productionSlug}/${role.slug}`}
+                href={`/s/${orgSlug}/${productionSlug}/${role.slug}`}
                 variant="outline"
                 size="sm"
               >

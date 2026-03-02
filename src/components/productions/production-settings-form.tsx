@@ -136,7 +136,7 @@ function ProductionSlugEditor({
                 aria-invalid={fieldState.invalid}
               />
               <p className="text-caption text-muted-foreground">
-                /submit/{orgSlug}/{watchedSlug || "..."}
+                /s/{orgSlug}/{watchedSlug || "..."}
               </p>
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
             </Field>
@@ -219,7 +219,7 @@ function RoleSlugEditor({
                 aria-invalid={fieldState.invalid}
               />
               <p className="text-caption text-muted-foreground">
-                /submit/{orgSlug}/{productionSlug}/{watchedSlug || "..."}
+                /s/{orgSlug}/{productionSlug}/{watchedSlug || "..."}
               </p>
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
             </Field>

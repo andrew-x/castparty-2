@@ -22,7 +22,7 @@ export const addPipelineStage = secureActionClient
     // Verify ownership chain: role → production → org
     const role = await db.query.Role.findFirst({
       where: (r) => eq(r.id, roleId),
-      columns: { id: true },
+      columns: { id: true, productionId: true },
       with: {
         production: { columns: { organizationId: true } },
       },
@@ -32,45 +32,25 @@ export const addPipelineStage = secureActionClient
       throw new Error("Role not found.")
     }
 
-    // Generate slug from name
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-
-    if (!slug) {
-      throw new Error("Stage name must contain at least one letter or number.")
-    }
-
-    // Check slug uniqueness within role
-    const existingSlug = await db.query.PipelineStage.findFirst({
-      where: (s) => and(eq(s.roleId, roleId), eq(s.slug, slug)),
-      columns: { id: true },
-    })
-
-    if (existingSlug) {
-      throw new Error("A stage with that name already exists for this role.")
-    }
-
-    // Calculate position: max position of non-terminal stages + 1
+    // Calculate order: max order of non-terminal stages + 1
     const [result] = await db
-      .select({ maxPos: max(PipelineStage.position) })
+      .select({ maxOrder: max(PipelineStage.order) })
       .from(PipelineStage)
       .where(
-        and(eq(PipelineStage.roleId, roleId), lt(PipelineStage.position, 1000)),
+        and(eq(PipelineStage.roleId, roleId), lt(PipelineStage.order, 1000)),
       )
 
-    const position = (result?.maxPos ?? 0) + 1
+    const order = (result?.maxOrder ?? 0) + 1
 
     const id = generateId("stg")
     await db.insert(PipelineStage).values({
       id,
       roleId,
+      productionId: role.productionId,
+      organizationId: orgId,
       name,
-      slug,
-      position,
-      isSystem: false,
-      isTerminal: false,
+      order,
+      type: "CUSTOM",
     })
 
     return { id }

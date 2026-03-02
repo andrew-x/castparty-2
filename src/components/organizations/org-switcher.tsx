@@ -108,23 +108,25 @@ export function OrgSwitcher({ user, organizations, activeOrgId }: Props) {
             <p className="px-2 py-1 text-caption text-muted-foreground">
               Organizations
             </p>
-            {organizations.map((org) => (
-              <Button
-                key={org.id}
-                variant="ghost"
-                size="sm"
-                onClick={() => handleSwitch(org.id)}
-                className="h-auto w-full justify-start gap-element px-2 py-1.5"
-              >
-                <div className="flex size-6 shrink-0 items-center justify-center rounded bg-accent">
-                  <BuildingIcon className="size-3.5 text-muted-foreground" />
-                </div>
-                <span className="flex-1 truncate text-left">{org.name}</span>
-                {org.id === activeOrgId && (
-                  <CheckIcon className="size-4 shrink-0 text-primary" />
-                )}
-              </Button>
-            ))}
+            <div className="max-h-64 overflow-y-auto">
+              {organizations.map((org) => (
+                <Button
+                  key={org.id}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSwitch(org.id)}
+                  className="h-auto w-full justify-start gap-element px-2 py-1.5"
+                >
+                  <div className="flex size-6 shrink-0 items-center justify-center rounded bg-accent">
+                    <BuildingIcon className="size-3.5 text-muted-foreground" />
+                  </div>
+                  <span className="flex-1 truncate text-left">{org.name}</span>
+                  {org.id === activeOrgId && (
+                    <CheckIcon className="size-4 shrink-0 text-primary" />
+                  )}
+                </Button>
+              ))}
+            </div>
             <Button
               variant="ghost"
               size="sm"

@@ -1,24 +1,26 @@
 import { generateId } from "@/lib/util"
 
 export const SYSTEM_STAGES = [
-  { slug: "inbound", name: "Inbound", position: 0, isTerminal: false },
-  { slug: "cast", name: "Cast", position: 1000, isTerminal: true },
-  { slug: "rejected", name: "Rejected", position: 1001, isTerminal: true },
-] as const
-
-export type SystemStageSlug = (typeof SYSTEM_STAGES)[number]["slug"]
+  { name: "Inbound", order: 0, type: "APPLIED" as const },
+  { name: "Cast", order: 1000, type: "SELECTED" as const },
+  { name: "Rejected", order: 1001, type: "REJECTED" as const },
+]
 
 /**
  * Build the 3 system pipeline stage rows for a new role.
  */
-export function buildSystemStages(roleId: string) {
+export function buildSystemStages(
+  roleId: string,
+  productionId: string,
+  organizationId: string,
+) {
   return SYSTEM_STAGES.map((s) => ({
     id: generateId("stg"),
     roleId,
+    productionId,
+    organizationId,
     name: s.name,
-    slug: s.slug,
-    position: s.position,
-    isSystem: true,
-    isTerminal: s.isTerminal,
+    order: s.order,
+    type: s.type,
   }))
 }

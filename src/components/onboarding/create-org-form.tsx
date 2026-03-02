@@ -16,6 +16,7 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { getAppUrl } from "@/lib/url"
 
 function toUrlId(name: string): string {
   return name
@@ -38,7 +39,11 @@ const createOrgSchema = z.object({
     ),
 })
 
-export function CreateOrgForm() {
+export function CreateOrgForm({
+  onComplete,
+}: {
+  onComplete?: (organizationId: string) => void
+} = {}) {
   const router = useRouter()
   const form = useForm<z.infer<typeof createOrgSchema>>({
     resolver: zodResolver(createOrgSchema),
@@ -46,9 +51,13 @@ export function CreateOrgForm() {
   })
 
   const { execute, isPending } = useAction(createOrganization, {
-    onSuccess() {
-      router.refresh()
-      router.push("/home")
+    onSuccess({ data }) {
+      if (onComplete && data?.organizationId) {
+        onComplete(data.organizationId)
+      } else {
+        router.refresh()
+        router.push("/home")
+      }
     },
     onError({ error }) {
       form.setError("root", {
@@ -113,8 +122,9 @@ export function CreateOrgForm() {
                 placeholder="e.g. riverside-community-theatre"
                 aria-invalid={fieldState.invalid}
               />
-              <p className="text-caption text-muted-foreground">
-                Your audition page will be at /submit/{watchedSlug || "..."}
+              <p className="break-all text-caption text-muted-foreground">
+                Your organization page will be at <br />{" "}
+                <strong>{getAppUrl(`/s/${watchedSlug || "..."}`)}</strong>
               </p>
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
             </Field>

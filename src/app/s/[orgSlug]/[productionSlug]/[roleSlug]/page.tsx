@@ -46,7 +46,7 @@ export default async function SubmitRolePage({
   if (!role) notFound()
 
   return (
-    <div className="flex max-w-lg flex-col gap-section">
+    <div className="flex flex-col gap-section">
       <div>
         <p className="text-caption text-muted-foreground">{production.name}</p>
         <h1 className="font-serif text-title">{role.name}</h1>
@@ -61,6 +61,8 @@ export default async function SubmitRolePage({
         orgId={org.id}
         productionId={production.id}
         roleId={role.id}
+        orgSlug={orgSlug}
+        productionSlug={productionSlug}
       />
     </div>
   )

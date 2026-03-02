@@ -6,6 +6,7 @@ import { Separator } from "@/components/common/separator"
 import { MembersTable } from "@/components/organizations/members-table"
 import { OrgSettingsForm } from "@/components/organizations/org-settings-form"
 import { getCurrentUser, getSession } from "@/lib/auth"
+import { getAppUrl } from "@/lib/url"
 
 export const metadata: Metadata = {
   title: "Settings — Castparty",
@@ -38,6 +39,7 @@ export default async function SettingsPage() {
             organizationId={activeOrgId}
             currentName={orgData.organization.name}
             currentSlug={orgData.organization.slug}
+            auditionUrl={getAppUrl(`/s/${orgData.organization.slug}`)}
           />
         </section>
 

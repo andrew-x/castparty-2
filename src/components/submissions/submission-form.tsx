@@ -29,9 +29,17 @@ interface Props {
   orgId: string
   productionId: string
   roleId: string
+  orgSlug: string
+  productionSlug: string
 }
 
-export function SubmissionForm({ orgId, productionId, roleId }: Props) {
+export function SubmissionForm({
+  orgId,
+  productionId,
+  roleId,
+  orgSlug,
+  productionSlug,
+}: Props) {
   const [submitted, setSubmitted] = useState(false)
 
   const form = useForm<FormValues>({
@@ -53,13 +61,22 @@ export function SubmissionForm({ orgId, productionId, roleId }: Props) {
 
   if (submitted) {
     return (
-      <Alert>
-        <AlertTitle>Submission received</AlertTitle>
-        <AlertDescription>
-          The production team will review your submission and be in touch if
-          they want to move forward.
-        </AlertDescription>
-      </Alert>
+      <div className="flex flex-col gap-group">
+        <Alert>
+          <AlertTitle>Submission received</AlertTitle>
+          <AlertDescription>
+            The production team will review your submission and be in touch if
+            they want to move forward.
+          </AlertDescription>
+        </Alert>
+        <Button
+          href={`/s/${orgSlug}/${productionSlug}`}
+          variant="outline"
+          className="w-fit"
+        >
+          Browse other roles
+        </Button>
+      </div>
     )
   }
 

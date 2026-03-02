@@ -4,7 +4,8 @@ import { eq } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { Production, Role } from "@/lib/db/schema"
+import { PipelineStage, Production, Role } from "@/lib/db/schema"
+import { buildSystemStages } from "@/lib/pipeline"
 import { generateUniqueSlug, nameToSlug } from "@/lib/slug"
 import { generateId } from "@/lib/util"
 
@@ -24,7 +25,8 @@ export const createProduction = secureActionClient
   .inputSchema(createProductionSchema)
   .action(
     async ({ parsedInput: { name, description, roles }, ctx: { user } }) => {
-      if (!user.activeOrganizationId) {
+      const orgId = user.activeOrganizationId
+      if (!orgId) {
         throw new Error("No active organization.")
       }
 
@@ -33,15 +35,15 @@ export const createProduction = secureActionClient
         name,
         Production,
         Production.slug,
-        eq(Production.organizationId, user.activeOrganizationId),
+        eq(Production.organizationId, orgId),
       )
 
       await db.insert(Production).values({
         id: productionId,
-        organizationId: user.activeOrganizationId,
+        organizationId: orgId,
         name,
         slug: productionSlug,
-        description: description || null,
+        description: description || "",
       })
 
       if (roles?.length) {
@@ -60,11 +62,17 @@ export const createProduction = secureActionClient
             productionId,
             name: role.name,
             slug,
-            description: role.description || null,
+            description: role.description || "",
           }
         })
 
         await db.insert(Role).values(roleValues)
+
+        // Create pipeline stages for each role
+        const allStages = roleValues.flatMap((role) =>
+          buildSystemStages(role.id, productionId, orgId),
+        )
+        await db.insert(PipelineStage).values(allStages)
       }
 
       return { id: productionId }

@@ -16,7 +16,10 @@ export const createSubmission = publicActionClient
       roleId: z.string().min(1),
       firstName: z.string().trim().min(1, "First name is required.").max(100),
       lastName: z.string().trim().min(1, "Last name is required.").max(100),
-      email: z.string().trim().email("Enter a valid email."),
+      email: z
+        .string()
+        .trim()
+        .pipe(z.email({ error: "Enter a valid email." })),
       phone: z.string().trim().optional(),
     }),
   )
@@ -47,11 +50,15 @@ export const createSubmission = publicActionClient
         throw new Error("This role is not available for submissions.")
       }
 
-      // Resolve the inbound stage for this role
-      const inboundStage = await db.query.PipelineStage.findFirst({
-        where: (s) => and(eq(s.roleId, roleId), eq(s.slug, "inbound")),
+      // Resolve the APPLIED stage for this role
+      const appliedStage = await db.query.PipelineStage.findFirst({
+        where: (s) => and(eq(s.roleId, roleId), eq(s.type, "APPLIED")),
         columns: { id: true },
       })
+
+      if (!appliedStage) {
+        throw new Error("Pipeline is not configured for this role.")
+      }
 
       // Look up existing candidate in this org by email
       const existing = await db.query.Candidate.findFirst({
@@ -65,7 +72,7 @@ export const createSubmission = publicActionClient
         candidateId = existing.id
         await db
           .update(Candidate)
-          .set({ firstName, lastName, phone: phone ?? null })
+          .set({ firstName, lastName, phone: phone ?? "" })
           .where(eq(Candidate.id, existing.id))
       } else {
         candidateId = generateId("cand")
@@ -75,7 +82,7 @@ export const createSubmission = publicActionClient
           firstName,
           lastName,
           email,
-          phone: phone ?? null,
+          phone: phone ?? "",
         })
       }
 
@@ -86,11 +93,11 @@ export const createSubmission = publicActionClient
         productionId,
         roleId,
         candidateId,
-        stageId: inboundStage?.id ?? null,
+        stageId: appliedStage.id,
         firstName,
         lastName,
         email,
-        phone: phone ?? null,
+        phone: phone ?? "",
       })
 
       return { id: submissionId }

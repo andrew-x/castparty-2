@@ -1,4 +1,3 @@
-import { Badge } from "@/components/common/badge"
 import {
   Table,
   TableBody,
@@ -14,9 +13,8 @@ interface Candidate {
   firstName: string
   lastName: string
   email: string
-  phone: string | null
+  phone: string
   createdAt: Date | string
-  submissionCount: number
 }
 
 interface Props {
@@ -31,7 +29,6 @@ export function CandidatesTable({ candidates }: Props) {
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Phone</TableHead>
-          <TableHead>Submissions</TableHead>
           <TableHead>Added</TableHead>
         </TableRow>
       </TableHeader>
@@ -45,10 +42,7 @@ export function CandidatesTable({ candidates }: Props) {
               {candidate.email}
             </TableCell>
             <TableCell className="text-muted-foreground">
-              {candidate.phone ?? "—"}
-            </TableCell>
-            <TableCell>
-              <Badge variant="secondary">{candidate.submissionCount}</Badge>
+              {candidate.phone || "—"}
             </TableCell>
             <TableCell className="text-muted-foreground">
               {day(candidate.createdAt).format("LL")}

@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
-  ExternalLinkIcon,
   LinkIcon,
   MailIcon,
   PhoneIcon,
@@ -78,10 +77,8 @@ const addRoleSchema = z.object({
 interface PipelineStageData {
   id: string
   name: string
-  slug: string
-  position: number
-  isSystem: boolean
-  isTerminal: boolean
+  order: number
+  type: "APPLIED" | "SELECTED" | "REJECTED" | "CUSTOM"
 }
 
 interface SubmissionWithCandidate {
@@ -89,17 +86,16 @@ interface SubmissionWithCandidate {
   firstName: string
   lastName: string
   email: string
-  phone: string | null
-  resumeUrl: string | null
+  phone: string
   createdAt: Date | string
-  stageId: string | null
+  stageId: string
   stage: PipelineStageData | null
   candidate: {
     id: string
     firstName: string
     lastName: string
     email: string
-    phone: string | null
+    phone: string
   }
 }
 
@@ -107,7 +103,7 @@ interface RoleWithSubmissions {
   id: string
   name: string
   slug: string
-  description: string | null
+  description: string
   pipelineStages: PipelineStageData[]
   submissions: SubmissionWithCandidate[]
 }
@@ -123,22 +119,18 @@ function getStageBadgeProps(stage: PipelineStageData | null): {
   variant: "secondary" | "destructive" | "outline"
   className?: string
 } {
-  if (!stage || stage.slug === "inbound") return { variant: "secondary" }
-  if (stage.slug === "cast")
+  if (!stage || stage.type === "APPLIED") return { variant: "secondary" }
+  if (stage.type === "SELECTED")
     return {
       variant: "outline",
       className: "border-success-text/30 bg-success-light text-success-text",
     }
-  if (stage.slug === "rejected") return { variant: "destructive" }
+  if (stage.type === "REJECTED") return { variant: "destructive" }
   return { variant: "outline" }
 }
 
 function getStageLabel(submission: SubmissionWithCandidate): string {
   return submission.stage?.name ?? "Inbound"
-}
-
-function resolveStageSlug(submission: SubmissionWithCandidate): string {
-  return submission.stage?.slug ?? "inbound"
 }
 
 export function RolesAccordion({
@@ -358,17 +350,17 @@ export function RolesAccordion({
                   </p>
                   <div className="flex items-center gap-element">
                     <p className="break-all font-mono text-caption text-foreground">
-                      /submit/{orgSlug}/{productionSlug}/{role.slug}
+                      /s/{orgSlug}/{productionSlug}/{role.slug}
                     </p>
                     <CopyButton
                       value={getAppUrl(
-                        `/submit/${orgSlug}/${productionSlug}/${role.slug}`,
+                        `/s/${orgSlug}/${productionSlug}/${role.slug}`,
                       )}
                     />
                   </div>
                   <div className="flex items-center gap-element">
                     <Button
-                      href={`/submit/${orgSlug}/${productionSlug}/${role.slug}`}
+                      href={`/s/${orgSlug}/${productionSlug}/${role.slug}`}
                       variant="outline"
                       size="sm"
                       leftSection={<LinkIcon />}
@@ -406,13 +398,13 @@ export function RolesAccordion({
                         >
                           <span className="text-muted-foreground">
                             {stage.name}
-                            {stage.isSystem && (
+                            {stage.type !== "CUSTOM" && (
                               <span className="ml-1 text-caption text-muted-foreground/60">
                                 (system)
                               </span>
                             )}
                           </span>
-                          {!stage.isSystem && (
+                          {stage.type === "CUSTOM" && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -467,11 +459,11 @@ export function RolesAccordion({
                       </TabsTrigger>
                       {role.pipelineStages.map((stage) => {
                         const count = role.submissions.filter(
-                          (s) => resolveStageSlug(s) === stage.slug,
+                          (s) => s.stageId === stage.id,
                         ).length
                         if (count === 0) return null
                         return (
-                          <TabsTrigger key={stage.id} value={stage.slug}>
+                          <TabsTrigger key={stage.id} value={stage.id}>
                             {stage.name}{" "}
                             <Badge variant="secondary" className="ml-1">
                               {count}
@@ -490,10 +482,10 @@ export function RolesAccordion({
                       />
                     </TabsContent>
                     {role.pipelineStages.map((stage) => (
-                      <TabsContent key={stage.id} value={stage.slug}>
+                      <TabsContent key={stage.id} value={stage.id}>
                         <SubmissionList
                           submissions={role.submissions.filter(
-                            (s) => resolveStageSlug(s) === stage.slug,
+                            (s) => s.stageId === stage.id,
                           )}
                           onSelect={(s) => {
                             setSelectedSubmission(s)
@@ -536,13 +528,7 @@ export function RolesAccordion({
                       Status
                     </h3>
                     <Select
-                      value={
-                        selectedSubmission.stageId ??
-                        selectedRole.pipelineStages.find(
-                          (s) => s.slug === "inbound",
-                        )?.id ??
-                        ""
-                      }
+                      value={selectedSubmission.stageId}
                       onValueChange={(value) =>
                         handleStatusChange(selectedSubmission.id, value)
                       }
@@ -584,27 +570,6 @@ export function RolesAccordion({
                     )}
                   </div>
                 </div>
-
-                {selectedSubmission.resumeUrl && (
-                  <>
-                    <Separator />
-                    <div className="flex flex-col gap-block">
-                      <h3 className="font-medium text-foreground text-label">
-                        Resume
-                      </h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        leftSection={<ExternalLinkIcon />}
-                        href={selectedSubmission.resumeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View resume
-                      </Button>
-                    </div>
-                  </>
-                )}
 
                 <Separator />
 

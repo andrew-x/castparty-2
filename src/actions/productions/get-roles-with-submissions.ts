@@ -19,7 +19,7 @@ export async function getRolesWithSubmissions(productionId: string) {
     where: (r) => eq(r.productionId, productionId),
     with: {
       pipelineStages: {
-        orderBy: (s, { asc }) => [asc(s.position)],
+        orderBy: (s, { asc }) => [asc(s.order)],
       },
       submissions: {
         with: {
