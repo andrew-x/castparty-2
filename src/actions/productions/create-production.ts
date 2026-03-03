@@ -5,7 +5,7 @@ import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { PipelineStage, Production, Role } from "@/lib/db/schema"
-import { buildSystemStages } from "@/lib/pipeline"
+import { buildProductionStages, buildStagesFromTemplate } from "@/lib/pipeline"
 import { generateUniqueSlug, nameToSlug } from "@/lib/slug"
 import { generateId } from "@/lib/util"
 
@@ -46,6 +46,10 @@ export const createProduction = secureActionClient
         description: description || "",
       })
 
+      // Seed production-level template stages
+      const templateStages = buildProductionStages(productionId, orgId)
+      await db.insert(PipelineStage).values(templateStages)
+
       if (roles?.length) {
         // New production has no existing roles, so generate slugs in memory
         const usedSlugs = new Set<string>()
@@ -68,9 +72,9 @@ export const createProduction = secureActionClient
 
         await db.insert(Role).values(roleValues)
 
-        // Create pipeline stages for each role
+        // Create pipeline stages for each role from the production template
         const allStages = roleValues.flatMap((role) =>
-          buildSystemStages(role.id, productionId, orgId),
+          buildStagesFromTemplate(templateStages, role.id, productionId, orgId),
         )
         await db.insert(PipelineStage).values(allStages)
       }

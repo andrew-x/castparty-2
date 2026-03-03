@@ -1,7 +1,6 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { LinkIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { Controller, useForm } from "react-hook-form"
@@ -9,7 +8,6 @@ import { z } from "zod/v4"
 import { updateOrganization } from "@/actions/organizations/update-organization"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
-import { CopyButton } from "@/components/common/copy-button"
 import {
   Field,
   FieldContent,
@@ -20,6 +18,7 @@ import {
   FieldTitle,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { ShareLink } from "@/components/common/share-link"
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
 import { getAppUrl } from "@/lib/url"
@@ -203,33 +202,12 @@ export function OrgSettingsForm({
           )}
         />
 
-        <div className="flex flex-col gap-group pt-block">
-          <div className="flex flex-col gap-element">
-            <p className="font-medium text-foreground text-label">
-              Your organization page
-            </p>
-            <p className="text-caption text-muted-foreground">
-              Share this link with candidates so they can find all your casting
-              calls across all productions. Post it on social media, your
-              website, or in audition notices.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-element rounded-md border bg-muted px-group py-element">
-            <p className="flex-1 break-all font-mono text-caption text-foreground">
-              {auditionUrl}
-            </p>
-            <CopyButton value={auditionUrl} />
-            <Button
-              href={`/s/${currentSlug}`}
-              variant="ghost"
-              size="sm"
-              leftSection={<LinkIcon />}
-            >
-              View page
-            </Button>
-          </div>
-        </div>
+        <ShareLink
+          title="Your organization page"
+          description="Share this link with candidates so they can find all your casting calls across all productions. Post it on social media, your website, or in audition notices."
+          url={auditionUrl}
+          href={`/s/${currentSlug}`}
+        />
 
         {form.formState.errors.root && (
           <Alert variant="destructive">

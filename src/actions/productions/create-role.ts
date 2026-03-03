@@ -1,11 +1,11 @@
 "use server"
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { PipelineStage, Role } from "@/lib/db/schema"
-import { buildSystemStages } from "@/lib/pipeline"
+import { buildStagesFromTemplate, buildSystemStages } from "@/lib/pipeline"
 import { generateUniqueSlug } from "@/lib/slug"
 import { generateId } from "@/lib/util"
 
@@ -49,7 +49,18 @@ export const createRole = secureActionClient
         description: description || "",
       })
 
-      const stages = buildSystemStages(id, productionId, orgId)
+      // Try to copy stages from the production template
+      const templateStages = await db.query.PipelineStage.findMany({
+        where: (s) => and(eq(s.productionId, productionId), isNull(s.roleId)),
+        columns: { name: true, order: true, type: true },
+        orderBy: (s) => s.order,
+      })
+
+      const stages =
+        templateStages.length > 0
+          ? buildStagesFromTemplate(templateStages, id, productionId, orgId)
+          : buildSystemStages(id, productionId, orgId)
+
       await db.insert(PipelineStage).values(stages)
 
       return { id }
