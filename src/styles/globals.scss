@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.25rem;
+  --radius: 0.5rem;
   --background: oklch(1 0 0); /* white */
   --foreground: oklch(0.147 0.004 49.25); /* stone-900 */
   --card: oklch(0.985 0.001 106.423); /* stone-50 */
@@ -171,6 +171,21 @@ body {
 ::selection {
   background-color: #ede9fe; /* violet-100 */
   color: #5b21b6; /* violet-800 */
+}
+
+/* Interactive elements should always show pointer cursor */
+button:not(:disabled),
+[role="checkbox"]:not(:disabled),
+[role="radio"]:not(:disabled),
+[role="switch"]:not(:disabled),
+[role="tab"]:not(:disabled),
+[role="menuitem"],
+[role="menuitemcheckbox"],
+[role="menuitemradio"],
+[role="option"],
+[role="combobox"],
+summary:not(:disabled) {
+  cursor: pointer;
 }
 
 @layer base {

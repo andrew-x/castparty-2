@@ -22,7 +22,12 @@ const inviteSchema = z.object({
   email: z.string().trim().email("Enter a valid email."),
 })
 
-export function InviteTeamForm({ organizationId }: { organizationId: string }) {
+interface Props {
+  organizationId: string
+  onContinue?: () => void
+}
+
+export function InviteTeamForm({ organizationId, onContinue }: Props) {
   const router = useRouter()
   const [sentEmails, setSentEmails] = useState<string[]>([])
 
@@ -45,6 +50,10 @@ export function InviteTeamForm({ organizationId }: { organizationId: string }) {
   })
 
   function handleContinue() {
+    if (onContinue) {
+      onContinue()
+      return
+    }
     router.refresh()
     router.push("/home")
   }

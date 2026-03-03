@@ -410,6 +410,7 @@ export function RolesAccordion({
                               size="icon"
                               className="size-6"
                               onClick={() => handleRemoveStage(stage.id)}
+                              tooltip="Remove stage"
                             >
                               <XIcon className="size-3" />
                             </Button>

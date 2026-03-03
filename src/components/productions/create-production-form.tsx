@@ -193,6 +193,7 @@ export function CreateProductionForm() {
                     size="icon"
                     className="mt-6 shrink-0"
                     onClick={() => remove(index)}
+                    tooltip="Remove role"
                   >
                     <TrashIcon className="size-4" />
                     <span className="sr-only">Remove role</span>

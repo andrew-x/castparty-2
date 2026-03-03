@@ -11,6 +11,7 @@ import {
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import type { UserInvitation } from "@/actions/organizations/get-user-invitations"
 import { Button } from "@/components/common/button"
 import {
   Sidebar,
@@ -25,15 +26,12 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/common/sidebar"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/common/tooltip"
+
 import {
   OrgSwitcher,
   type OrgSwitcherOrg,
 } from "@/components/organizations/org-switcher"
+import { PendingInvitesButton } from "@/components/organizations/pending-invites-button"
 
 const navItems = [
   { label: "Home", href: "/home", icon: LayoutDashboardIcon },
@@ -46,11 +44,13 @@ export function AppSidebar({
   organizations,
   activeOrgId,
   activeOrgRole,
+  pendingInvitations,
 }: {
   user: { name: string; email: string; image?: string | null }
   organizations: OrgSwitcherOrg[]
   activeOrgId: string | null
   activeOrgRole: string | null
+  pendingInvitations: UserInvitation[]
 }) {
   const pathname = usePathname()
   const { toggleSidebar } = useSidebar()
@@ -77,20 +77,16 @@ export function AppSidebar({
                 />
               </Link>
             </SidebarMenuButton>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleSidebar}
-                  className="size-7"
-                >
-                  <PanelLeftCloseIcon />
-                  <span className="sr-only">Collapse sidebar</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Collapse sidebar</TooltipContent>
-            </Tooltip>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="size-7"
+              tooltip="Collapse sidebar"
+            >
+              <PanelLeftCloseIcon />
+              <span className="sr-only">Collapse sidebar</span>
+            </Button>
           </SidebarMenuItem>
 
           {/* Collapsed: icon + expand button */}
@@ -154,6 +150,7 @@ export function AppSidebar({
 
       <SidebarFooter>
         <SidebarMenu>
+          <PendingInvitesButton invitations={pendingInvitations} />
           <SidebarMenuItem>
             <OrgSwitcher
               user={user}

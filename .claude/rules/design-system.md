@@ -31,6 +31,36 @@ propose a new token to the user:
 > "There's no token for this use case. I'd suggest adding `--<type>-<name>` to
 > `src/styles/globals.scss`. Should I do that?"
 
+## Cursor on interactive elements
+
+Every clickable element must show `cursor: pointer`. This is enforced globally via a CSS
+rule in `src/styles/globals.scss` that targets `button`, interactive ARIA roles
+(`checkbox`, `radio`, `switch`, `tab`, `menuitem`, etc.), and `summary`. The `Button`
+component also includes `cursor-pointer` in its base CVA class.
+
+If you add a new interactive element type, ensure it's covered by either the global CSS
+rule or an explicit `cursor-pointer` class.
+
+## Icon-only buttons must have a tooltip
+
+Every button that renders only an icon (no visible text label) **must** have an
+accessible tooltip explaining what it does. Use the `tooltip` prop on `Button`:
+
+```tsx
+// Correct — icon button with tooltip
+<Button variant="ghost" size="icon" tooltip="Delete role">
+  <TrashIcon />
+</Button>
+
+// Wrong — no tooltip, sighted users can't tell what this does
+<Button variant="ghost" size="icon">
+  <TrashIcon />
+</Button>
+```
+
+For non-`Button` icon triggers (e.g., Radix primitives), wrap manually with
+`Tooltip` / `TooltipTrigger` / `TooltipContent` from `@/components/common/tooltip`.
+
 ## Button sections (left/right)
 
 The `Button` component supports `leftSection` and `rightSection` props for placing

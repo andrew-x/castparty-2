@@ -1,5 +1,6 @@
 "use server"
 
+import { headers } from "next/headers"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
@@ -38,6 +39,11 @@ export const createOrganization = secureActionClient
     if (!org) {
       throw new Error("Failed to create organization.")
     }
+
+    await auth.api.setActiveOrganization({
+      body: { organizationId: org.id },
+      headers: await headers(),
+    })
 
     return { organizationId: org.id }
   })

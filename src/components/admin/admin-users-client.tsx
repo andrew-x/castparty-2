@@ -84,6 +84,7 @@ export function AdminUsersClient({ users }: Props) {
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => setPasswordTarget(u)}
+                    tooltip="Change password"
                   >
                     <KeyIcon />
                     <span className="sr-only">Change password</span>
@@ -92,6 +93,7 @@ export function AdminUsersClient({ users }: Props) {
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => setDeleteTarget(u)}
+                    tooltip="Delete user"
                   >
                     <Trash2Icon className="text-destructive" />
                     <span className="sr-only">Delete user</span>

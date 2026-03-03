@@ -1,12 +1,8 @@
 "use client"
 
-import {
-  ArrowRightLeftIcon,
-  PlusIcon,
-  ShieldIcon,
-  Trash2Icon,
-} from "lucide-react"
+import { PlusIcon, ShieldIcon, Trash2Icon, XIcon } from "lucide-react"
 import { useState } from "react"
+import type { OrgInvitation } from "@/actions/organizations/get-org-invitations"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
 import {
@@ -17,15 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/common/table"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/common/tooltip"
+
+import { CancelInvitationDialog } from "./cancel-invitation-dialog"
 import { ChangeRoleDialog } from "./change-role-dialog"
 import { InviteMemberDialog } from "./invite-member-dialog"
 import { RemoveMemberDialog } from "./remove-member-dialog"
-import { TransferOwnershipDialog } from "./transfer-ownership-dialog"
 
 export interface OrgMember {
   id: string
@@ -42,6 +34,7 @@ interface Props {
   members: OrgMember[]
   currentUserRole: string
   currentUserId: string
+  pendingInvitations: OrgInvitation[]
 }
 
 const roleBadgeVariant: Record<string, "default" | "secondary" | "outline"> = {
@@ -59,11 +52,12 @@ export function MembersTable({
   members,
   currentUserRole,
   currentUserId,
+  pendingInvitations,
 }: Props) {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [roleTarget, setRoleTarget] = useState<OrgMember | null>(null)
-  const [transferTarget, setTransferTarget] = useState<OrgMember | null>(null)
   const [removeTarget, setRemoveTarget] = useState<OrgMember | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<OrgInvitation | null>(null)
 
   const isOwner = currentUserRole === "owner"
   const isAdmin = currentUserRole === "admin"
@@ -83,10 +77,6 @@ export function MembersTable({
     if (isOwner) return true
     if (isAdmin && m.role === "member") return true
     return false
-  }
-
-  function canTransfer(m: OrgMember) {
-    return isOwner && m.userId !== currentUserId
   }
 
   return (
@@ -138,49 +128,26 @@ export function MembersTable({
                 <TableCell>
                   <div className="flex items-center justify-end gap-element">
                     {canChangeRole(m) && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setRoleTarget(m)}
-                          >
-                            <ShieldIcon />
-                            <span className="sr-only">Change role</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Change role</TooltipContent>
-                      </Tooltip>
-                    )}
-                    {canTransfer(m) && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setTransferTarget(m)}
-                          >
-                            <ArrowRightLeftIcon />
-                            <span className="sr-only">Transfer ownership</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Transfer ownership</TooltipContent>
-                      </Tooltip>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setRoleTarget(m)}
+                        tooltip="Change role"
+                      >
+                        <ShieldIcon />
+                        <span className="sr-only">Change role</span>
+                      </Button>
                     )}
                     {canRemove(m) && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setRemoveTarget(m)}
-                          >
-                            <Trash2Icon className="text-destructive" />
-                            <span className="sr-only">Remove member</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Remove member</TooltipContent>
-                      </Tooltip>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setRemoveTarget(m)}
+                        tooltip="Remove member"
+                      >
+                        <Trash2Icon className="text-destructive" />
+                        <span className="sr-only">Remove member</span>
+                      </Button>
                     )}
                   </div>
                 </TableCell>
@@ -211,19 +178,7 @@ export function MembersTable({
         onOpenChange={(open) => {
           if (!open) setRoleTarget(null)
         }}
-      />
-
-      <TransferOwnershipDialog
-        organizationId={organizationId}
-        member={
-          transferTarget
-            ? { id: transferTarget.id, userName: transferTarget.userName }
-            : null
-        }
-        open={!!transferTarget}
-        onOpenChange={(open) => {
-          if (!open) setTransferTarget(null)
-        }}
+        canTransferOwnership={isOwner}
       />
 
       <RemoveMemberDialog
@@ -236,6 +191,62 @@ export function MembersTable({
         open={!!removeTarget}
         onOpenChange={(open) => {
           if (!open) setRemoveTarget(null)
+        }}
+      />
+
+      {pendingInvitations.length > 0 && (
+        <>
+          <p className="text-label text-muted-foreground">
+            {pendingInvitations.length} pending{" "}
+            {pendingInvitations.length === 1 ? "invitation" : "invitations"}
+          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingInvitations.map((inv) => (
+                <TableRow key={inv.id}>
+                  <TableCell className="text-foreground">{inv.email}</TableCell>
+                  <TableCell>
+                    <Badge variant={roleBadgeVariant[inv.role] ?? "outline"}>
+                      {roleLabel(inv.role)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setCancelTarget(inv)}
+                        tooltip="Cancel invitation"
+                      >
+                        <XIcon className="text-destructive" />
+                        <span className="sr-only">Cancel invitation</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </>
+      )}
+
+      <CancelInvitationDialog
+        organizationId={organizationId}
+        invitation={
+          cancelTarget
+            ? { id: cancelTarget.id, email: cancelTarget.email }
+            : null
+        }
+        open={!!cancelTarget}
+        onOpenChange={(open) => {
+          if (!open) setCancelTarget(null)
         }}
       />
     </div>

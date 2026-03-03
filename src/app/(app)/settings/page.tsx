@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getMemberRole } from "@/actions/organizations/get-member-role"
+import { getOrgInvitations } from "@/actions/organizations/get-org-invitations"
 import { getOrganization } from "@/actions/organizations/get-organization"
 import { Separator } from "@/components/common/separator"
 import { MembersTable } from "@/components/organizations/members-table"
@@ -26,7 +27,10 @@ export default async function SettingsPage() {
     redirect("/home")
   }
 
-  const orgData = await getOrganization(activeOrgId)
+  const [orgData, pendingInvitations] = await Promise.all([
+    getOrganization(activeOrgId),
+    getOrgInvitations(activeOrgId),
+  ])
 
   return (
     <div className="flex flex-1 flex-col px-page py-page">
@@ -52,6 +56,7 @@ export default async function SettingsPage() {
             members={orgData.members}
             currentUserRole={orgData.currentUserRole}
             currentUserId={user.id}
+            pendingInvitations={pendingInvitations}
           />
         </section>
       </div>

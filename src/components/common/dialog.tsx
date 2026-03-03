@@ -4,6 +4,12 @@ import { XIcon } from "lucide-react"
 import { Dialog as DialogPrimitive } from "radix-ui"
 import type * as React from "react"
 import { Button } from "@/components/common/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/common/tooltip"
 import { cn } from "@/lib/util"
 
 function Dialog({
@@ -67,13 +73,20 @@ function DialogContent({
       >
         {children}
         {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
-          >
-            <XIcon />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DialogPrimitive.Close
+                  data-slot="dialog-close"
+                  className="absolute top-6 right-6 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
+                >
+                  <XIcon />
+                  <span className="sr-only">Close</span>
+                </DialogPrimitive.Close>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Close</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </DialogPrimitive.Content>
     </DialogPortal>

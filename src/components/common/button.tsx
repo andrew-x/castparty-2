@@ -1,9 +1,17 @@
+"use client"
+
 import { cva, type VariantProps } from "class-variance-authority"
 import Link from "next/link"
 import { Slot } from "radix-ui"
 import type * as React from "react"
 
 import { Spinner } from "@/components/common/spinner"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/common/tooltip"
 import { cn } from "@/lib/util"
 
 const buttonVariants = cva(
@@ -45,6 +53,7 @@ type ButtonSharedProps = VariantProps<typeof buttonVariants> & {
   loading?: boolean
   leftSection?: React.ReactNode
   rightSection?: React.ReactNode
+  tooltip?: string
   className?: string
 }
 
@@ -70,6 +79,7 @@ function Button({
   loading = false,
   leftSection,
   rightSection,
+  tooltip,
   children,
   ...rest
 }: ButtonProps) {
@@ -90,29 +100,43 @@ function Button({
     </>
   )
 
+  let element: React.ReactElement
+
   if (rest.href != null) {
     const { href, ...linkRest } = rest as Omit<
       ButtonLinkProps,
       keyof ButtonSharedProps | "children"
     >
-    return (
+    element = (
       <Link {...sharedProps} href={href} {...linkRest}>
         {content}
       </Link>
     )
+  } else {
+    const { disabled, ...buttonRest } = rest as Omit<
+      ButtonBaseProps,
+      keyof ButtonSharedProps | "children"
+    >
+    const Comp = asChild ? Slot.Root : "button"
+    element = (
+      <Comp {...sharedProps} disabled={disabled || loading} {...buttonRest}>
+        {content}
+      </Comp>
+    )
   }
 
-  const { disabled, ...buttonRest } = rest as Omit<
-    ButtonBaseProps,
-    keyof ButtonSharedProps | "children"
-  >
-  const Comp = asChild ? Slot.Root : "button"
+  if (tooltip) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{element}</TooltipTrigger>
+          <TooltipContent>{tooltip}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
 
-  return (
-    <Comp {...sharedProps} disabled={disabled || loading} {...buttonRest}>
-      {content}
-    </Comp>
-  )
+  return element
 }
 
 export { Button, buttonVariants }
