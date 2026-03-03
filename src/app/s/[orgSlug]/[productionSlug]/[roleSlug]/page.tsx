@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
 import { getPublicOrg } from "@/actions/submissions/get-public-org"
 import { getPublicProduction } from "@/actions/submissions/get-public-production"
 import { getPublicRole } from "@/actions/submissions/get-public-role"
+import { NotFoundEntity } from "@/components/submissions/not-found-entity"
 import { SubmissionForm } from "@/components/submissions/submission-form"
 
 export async function generateMetadata({
@@ -37,13 +37,13 @@ export default async function SubmitRolePage({
   const { orgSlug, productionSlug, roleSlug } = await params
 
   const org = await getPublicOrg(orgSlug)
-  if (!org) notFound()
+  if (!org) return <NotFoundEntity entity="organization" />
 
   const production = await getPublicProduction(org.id, productionSlug)
-  if (!production) notFound()
+  if (!production) return <NotFoundEntity entity="production" />
 
   const role = await getPublicRole(production.id, roleSlug)
-  if (!role) notFound()
+  if (!role) return <NotFoundEntity entity="role" />
 
   return (
     <div className="flex flex-col gap-section">

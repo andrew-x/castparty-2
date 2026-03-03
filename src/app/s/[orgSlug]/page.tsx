@@ -1,6 +1,5 @@
 import { ClapperboardIcon, UserIcon } from "lucide-react"
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
 import { getPublicOrg } from "@/actions/submissions/get-public-org"
 import { getPublicProductions } from "@/actions/submissions/get-public-productions"
 import { Button } from "@/components/common/button"
@@ -11,6 +10,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/common/empty"
+import { NotFoundEntity } from "@/components/submissions/not-found-entity"
 
 export async function generateMetadata({
   params,
@@ -33,7 +33,7 @@ export default async function SubmitOrgPage({
 
   const org = await getPublicOrg(orgSlug)
 
-  if (!org) notFound()
+  if (!org) return <NotFoundEntity entity="organization" />
 
   const productions = await getPublicProductions(org.id)
 
