@@ -1,0 +1,23 @@
+# Codex CLI project configuration for Castparty
+# See: https://developers.openai.com/codex/config-basic/
+
+# Use the best available coding model
+model = "gpt-5-codex"
+
+# Pause before running commands that modify files or the environment
+approval_policy = "on-request"
+
+# Allow writes within the workspace; no network access from commands
+sandbox_mode = "workspace-write"
+
+# Our AGENTS.md + rules exceed the 32KB default
+project_doc_max_bytes = 65536
+
+# Also read CLAUDE.md so both tools share the same instruction source
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+# Model reasoning -- use high effort for this codebase
+model_reasoning_effort = "high"
+
+# Pragmatic personality -- matches the project's direct communication style
+personality = "pragmatic"

@@ -3,11 +3,6 @@
 import { CheckIcon, CopyIcon } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/common/button"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/common/tooltip"
 
 interface Props {
   value: string
@@ -23,19 +18,17 @@ export function CopyButton({ value }: Props) {
     })
   }
 
+  const label = copied ? "Copied" : "Copy link"
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={handleCopy}
-          aria-label={copied ? "Copied" : "Copy link"}
-        >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{copied ? "Copied" : "Copy link"}</TooltipContent>
-    </Tooltip>
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      onClick={handleCopy}
+      aria-label={label}
+      tooltip={label}
+    >
+      {copied ? <CheckIcon /> : <CopyIcon />}
+    </Button>
   )
 }
