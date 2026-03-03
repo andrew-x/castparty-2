@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useCallback, useState } from "react"
+import { useState } from "react"
 import type { UserInvitation } from "@/actions/organizations/get-user-invitations"
 import { Button } from "@/components/common/button"
 import { CreateOrgForm } from "@/components/onboarding/create-org-form"
@@ -33,14 +33,14 @@ export function OnboardingFlow({ pendingInvitations = [] }: Props) {
     (inv) => !resolvedIds.has(inv.id),
   )
 
-  const handleAccept = useCallback((id: string) => {
+  const handleAccept = (id: string) => {
     setResolvedIds((prev) => new Set(prev).add(id))
     setAcceptedCount((prev) => prev + 1)
-  }, [])
+  }
 
-  const handleIgnore = useCallback((id: string) => {
+  const handleIgnore = (id: string) => {
     setResolvedIds((prev) => new Set(prev).add(id))
-  }, [])
+  }
 
   function handleFinish() {
     router.refresh()

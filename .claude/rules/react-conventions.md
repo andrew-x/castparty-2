@@ -19,6 +19,10 @@ Switch to a named `interface Props` (not `type Props`) when:
 
 Use judgment — there is no hard threshold.
 
+## Memoization
+
+See `react-compiler.md` — the React Compiler handles memoization automatically.
+
 ## Styling
 
 Prefer Tailwind utility classes for all styling.
