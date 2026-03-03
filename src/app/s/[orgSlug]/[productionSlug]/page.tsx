@@ -1,6 +1,5 @@
 import { UserIcon } from "lucide-react"
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
 import { getPublicOrg } from "@/actions/submissions/get-public-org"
 import { getPublicProduction } from "@/actions/submissions/get-public-production"
 import { Button } from "@/components/common/button"
@@ -11,6 +10,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/common/empty"
+import { NotFoundEntity } from "@/components/submissions/not-found-entity"
 
 export async function generateMetadata({
   params,
@@ -36,10 +36,10 @@ export default async function SubmitProductionPage({
   const { orgSlug, productionSlug } = await params
 
   const org = await getPublicOrg(orgSlug)
-  if (!org) notFound()
+  if (!org) return <NotFoundEntity entity="organization" />
 
   const production = await getPublicProduction(org.id, productionSlug)
-  if (!production) notFound()
+  if (!production) return <NotFoundEntity entity="production" />
 
   return (
     <div className="flex flex-col gap-section">
