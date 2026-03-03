@@ -4,7 +4,7 @@ import { and, eq, not } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { member, organization } from "@/lib/db/schema"
+import { OrganizationProfile, member, organization } from "@/lib/db/schema"
 import { RESERVED_SLUGS } from "@/lib/slug"
 
 export const updateOrganization = secureActionClient
@@ -25,10 +25,23 @@ export const updateOrganization = secureActionClient
         .refine((s) => !/^\d+$/.test(s), "URL ID cannot be purely numeric.")
         .refine((s) => !RESERVED_SLUGS.has(s), "This URL ID is reserved.")
         .optional(),
+      description: z.string().trim().max(500),
+      websiteUrl: z.string().trim().url().or(z.literal("")),
+      isOrganizationProfileOpen: z.boolean(),
     }),
   )
   .action(
-    async ({ parsedInput: { organizationId, name, slug }, ctx: { user } }) => {
+    async ({
+      parsedInput: {
+        organizationId,
+        name,
+        slug,
+        description,
+        websiteUrl,
+        isOrganizationProfileOpen,
+      },
+      ctx: { user },
+    }) => {
       const membership = await db
         .select({ role: member.role })
         .from(member)
@@ -56,10 +69,29 @@ export const updateOrganization = secureActionClient
         }
       }
 
-      await db
-        .update(organization)
-        .set({ name, ...(slug ? { slug } : {}) })
-        .where(eq(organization.id, organizationId))
+      await Promise.all([
+        db
+          .update(organization)
+          .set({ name, ...(slug ? { slug } : {}) })
+          .where(eq(organization.id, organizationId)),
+        db
+          .insert(OrganizationProfile)
+          .values({
+            id: organizationId,
+            description,
+            websiteUrl,
+            isOrganizationProfileOpen,
+          })
+          .onConflictDoUpdate({
+            target: OrganizationProfile.id,
+            set: {
+              description,
+              websiteUrl,
+              isOrganizationProfileOpen,
+              updatedAt: new Date(),
+            },
+          }),
+      ])
 
       return { success: true }
     },

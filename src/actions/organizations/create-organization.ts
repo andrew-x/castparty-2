@@ -4,6 +4,8 @@ import { headers } from "next/headers"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
+import db from "@/lib/db/db"
+import { OrganizationProfile } from "@/lib/db/schema"
 import { nameToSlug, RESERVED_SLUGS } from "@/lib/slug"
 
 export const createOrganization = secureActionClient
@@ -39,6 +41,11 @@ export const createOrganization = secureActionClient
     if (!org) {
       throw new Error("Failed to create organization.")
     }
+
+    await db
+      .insert(OrganizationProfile)
+      .values({ id: org.id, isOrganizationProfileOpen: true })
+      .onConflictDoNothing()
 
     await auth.api.setActiveOrganization({
       body: { organizationId: org.id },

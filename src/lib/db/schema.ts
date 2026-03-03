@@ -236,7 +236,7 @@ export const OrganizationProfile = pgTable("organization_profile", {
 
   websiteUrl: text().notNull().default(""),
   description: text().notNull().default(""),
-  isAuditionBoardOpen: boolean().default(false).notNull(),
+  isOrganizationProfileOpen: boolean().default(false).notNull(),
 
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
