@@ -32,7 +32,11 @@ export const removePipelineStage = secureActionClient
       },
     })
 
-    if (!stage || stage.role.production.organizationId !== orgId) {
+    if (
+      !stage ||
+      !stage.role ||
+      stage.role.production.organizationId !== orgId
+    ) {
       throw new Error("Stage not found.")
     }
 
@@ -40,9 +44,11 @@ export const removePipelineStage = secureActionClient
       throw new Error("System stages cannot be removed.")
     }
 
+    const { role } = stage
+
     // Find the APPLIED stage for this role to reassign submissions
     const appliedStage = await db.query.PipelineStage.findFirst({
-      where: (s) => and(eq(s.roleId, stage.roleId), eq(s.type, "APPLIED")),
+      where: (s) => and(eq(s.roleId, role.id), eq(s.type, "APPLIED")),
       columns: { id: true },
     })
 

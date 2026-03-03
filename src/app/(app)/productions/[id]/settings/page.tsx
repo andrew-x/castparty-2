@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
-import { getRolesWithSubmissions } from "@/actions/productions/get-roles-with-submissions"
+import { getProductionStages } from "@/actions/productions/get-production-stages"
+import { Separator } from "@/components/common/separator"
+import { DefaultStagesEditor } from "@/components/productions/default-stages-editor"
 import { ProductionSettingsForm } from "@/components/productions/production-settings-form"
 
 export async function generateMetadata({
@@ -29,25 +31,26 @@ export default async function ProductionSettingsPage({
     notFound()
   }
 
-  const roles = await getRolesWithSubmissions(production.id)
+  const stages = await getProductionStages(production.id)
 
   return (
-    <div className="flex flex-col gap-section px-page py-section">
-      <div>
-        <p className="text-caption text-muted-foreground">{production.name}</p>
-        <h1 className="font-serif text-title">Settings</h1>
-      </div>
+    <div className="flex flex-col gap-section">
+      <section className="flex flex-col gap-group">
+        <h2 className="font-serif text-heading">Production</h2>
+        <ProductionSettingsForm
+          productionId={production.id}
+          orgSlug={production.organization.slug}
+          currentName={production.name}
+          currentSlug={production.slug}
+        />
+      </section>
 
-      <ProductionSettingsForm
-        productionId={production.id}
-        orgSlug={production.organization.slug}
-        currentProductionSlug={production.slug}
-        roles={roles.map((r) => ({
-          id: r.id,
-          name: r.name,
-          slug: r.slug,
-        }))}
-      />
+      <Separator />
+
+      <section className="flex flex-col gap-group">
+        <h2 className="font-serif text-heading">Pipeline Stages</h2>
+        <DefaultStagesEditor productionId={production.id} stages={stages} />
+      </section>
     </div>
   )
 }

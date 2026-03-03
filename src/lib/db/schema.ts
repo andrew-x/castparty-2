@@ -257,7 +257,6 @@ export const Production = pgTable(
 
     location: text().notNull().default(""),
     formFields: jsonb().$type<CustomForm[]>().notNull().default([]),
-    stages: jsonb().array().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
@@ -309,9 +308,7 @@ export const PipelineStage = pgTable("pipeline_stage", {
   productionId: text()
     .notNull()
     .references(() => Production.id, { onDelete: "cascade" }),
-  roleId: text()
-    .notNull()
-    .references(() => Role.id, { onDelete: "cascade" }),
+  roleId: text().references(() => Role.id, { onDelete: "cascade" }),
 
   name: text().notNull(),
   order: integer().notNull(),

@@ -1,0 +1,262 @@
+"use client"
+
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { GripVerticalIcon, XIcon } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useAction } from "next-safe-action/hooks"
+import { useState } from "react"
+import { addProductionStage } from "@/actions/productions/add-production-stage"
+import { removeProductionStage } from "@/actions/productions/remove-production-stage"
+import { reorderProductionStages } from "@/actions/productions/reorder-production-stages"
+import { Button } from "@/components/common/button"
+import { Input } from "@/components/common/input"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/common/tooltip"
+
+interface StageData {
+  id: string
+  name: string
+  order: number
+  type: "APPLIED" | "SELECTED" | "REJECTED" | "CUSTOM"
+}
+
+interface Props {
+  productionId: string
+  stages: StageData[]
+}
+
+function SortableStage({
+  stage,
+  onRemove,
+}: {
+  stage: StageData
+  onRemove: (id: string) => void
+}) {
+  const {
+    setNodeRef,
+    setActivatorNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: stage.id })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-element px-3 py-1.5"
+    >
+      <button
+        ref={setActivatorNodeRef}
+        type="button"
+        className="flex cursor-grab items-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVerticalIcon className="size-4" />
+      </button>
+      <span className="flex-1 text-foreground text-label">{stage.name}</span>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-6"
+        onClick={() => onRemove(stage.id)}
+        tooltip="Remove stage"
+      >
+        <XIcon className="size-3" />
+      </Button>
+    </div>
+  )
+}
+
+function FixedStage({ stage }: { stage: StageData }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-element px-3 py-1.5">
+          <span className="flex-1 text-label text-muted-foreground">
+            {stage.name}
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>Required for all roles</TooltipContent>
+    </Tooltip>
+  )
+}
+
+export function DefaultStagesEditor({ productionId, stages }: Props) {
+  const router = useRouter()
+  const [newStageName, setNewStageName] = useState("")
+
+  const appliedStage = stages.find((s) => s.type === "APPLIED")
+  const selectedStage = stages.find((s) => s.type === "SELECTED")
+  const rejectedStage = stages.find((s) => s.type === "REJECTED")
+  const [customStages, setCustomStages] = useState(
+    stages.filter((s) => s.type === "CUSTOM"),
+  )
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  const { execute: executeReorder } = useAction(reorderProductionStages, {
+    onError() {
+      // Rollback: restore from server state on next refresh
+      router.refresh()
+    },
+  })
+
+  const { execute: executeAdd, isPending: isAdding } = useAction(
+    addProductionStage,
+    {
+      onSuccess() {
+        setNewStageName("")
+        router.refresh()
+      },
+    },
+  )
+
+  const { execute: executeRemove } = useAction(removeProductionStage, {
+    onSuccess() {
+      router.refresh()
+    },
+    onError() {
+      // Rollback: restore from server state
+      router.refresh()
+    },
+  })
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = customStages.findIndex((s) => s.id === active.id)
+    const newIndex = customStages.findIndex((s) => s.id === over.id)
+    const reordered = arrayMove(customStages, oldIndex, newIndex)
+    setCustomStages(reordered)
+    executeReorder({
+      productionId,
+      stageIds: reordered.map((s) => s.id),
+    })
+  }
+
+  function handleAdd() {
+    const trimmed = newStageName.trim()
+    if (!trimmed) return
+    executeAdd({ productionId, name: trimmed })
+  }
+
+  function handleRemove(stageId: string) {
+    setCustomStages((prev) => prev.filter((s) => s.id !== stageId))
+    executeRemove({ productionId, stageId })
+  }
+
+  return (
+    <div className="flex flex-col gap-group">
+      <p className="text-label text-muted-foreground">
+        These are the default pipeline stages for new roles. Updating them will
+        not change any role pipelines that have already been created.
+      </p>
+
+      <div className="flex flex-col rounded-lg border">
+        {appliedStage && (
+          <div className="border-b bg-muted/50 px-3 py-2">
+            <FixedStage stage={appliedStage} />
+          </div>
+        )}
+
+        <div className="flex flex-col">
+          <p className="px-3 pt-2 pb-1 text-caption font-medium text-muted-foreground">
+            Custom stages
+          </p>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={customStages.map((s) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {customStages.map((stage) => (
+                <SortableStage
+                  key={stage.id}
+                  stage={stage}
+                  onRemove={handleRemove}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+
+          {customStages.length === 0 && (
+            <p className="px-3 py-2 text-caption text-muted-foreground">
+              No custom stages yet.
+            </p>
+          )}
+
+          <div className="flex items-center gap-element border-t px-3 py-2">
+            <Input
+              type="text"
+              placeholder="New stage name"
+              value={newStageName}
+              onChange={(e) => setNewStageName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  handleAdd()
+                }
+              }}
+              className="h-8 flex-1"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAdd}
+              loading={isAdding}
+              disabled={!newStageName.trim()}
+            >
+              Add
+            </Button>
+          </div>
+        </div>
+
+        {(selectedStage || rejectedStage) && (
+          <div className="flex flex-col border-t bg-muted/50 px-3 py-2">
+            {selectedStage && <FixedStage stage={selectedStage} />}
+            {rejectedStage && <FixedStage stage={rejectedStage} />}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
