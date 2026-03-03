@@ -1,22 +1,8 @@
 "use client"
 
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core"
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
+import { move } from "@dnd-kit/helpers"
+import { DragDropProvider, type DragEndEvent } from "@dnd-kit/react"
+import { useSortable } from "@dnd-kit/react/sortable"
 import { GripVerticalIcon, XIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
@@ -46,39 +32,28 @@ interface Props {
 
 function SortableStage({
   stage,
+  index,
   onRemove,
 }: {
   stage: StageData
+  index: number
   onRemove: (id: string) => void
 }) {
-  const {
-    setNodeRef,
-    setActivatorNodeRef,
-    attributes,
-    listeners,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: stage.id })
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  }
+  const { ref, handleRef, isDragSource } = useSortable({
+    id: stage.id,
+    index,
+  })
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
+      ref={ref}
       className="flex items-center gap-element px-3 py-1.5"
+      style={{ opacity: isDragSource ? 0.4 : 1 }}
     >
       <button
-        ref={setActivatorNodeRef}
+        ref={handleRef}
         type="button"
         className="flex cursor-grab items-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
       >
         <GripVerticalIcon className="size-4" />
       </button>
@@ -122,13 +97,6 @@ export function DefaultStagesEditor({ productionId, stages }: Props) {
     stages.filter((s) => s.type === "CUSTOM"),
   )
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
-
   const { execute: executeReorder } = useAction(reorderProductionStages, {
     onError() {
       // Rollback: restore from server state on next refresh
@@ -156,13 +124,10 @@ export function DefaultStagesEditor({ productionId, stages }: Props) {
     },
   })
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
+  function handleDragEnd(event: Parameters<DragEndEvent>[0]) {
+    if (event.canceled) return
 
-    const oldIndex = customStages.findIndex((s) => s.id === active.id)
-    const newIndex = customStages.findIndex((s) => s.id === over.id)
-    const reordered = arrayMove(customStages, oldIndex, newIndex)
+    const reordered = move(customStages, event)
     setCustomStages(reordered)
     executeReorder({
       productionId,
@@ -199,24 +164,16 @@ export function DefaultStagesEditor({ productionId, stages }: Props) {
           <p className="px-3 pt-2 pb-1 text-caption font-medium text-muted-foreground">
             Custom stages
           </p>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={customStages.map((s) => s.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {customStages.map((stage) => (
-                <SortableStage
-                  key={stage.id}
-                  stage={stage}
-                  onRemove={handleRemove}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          <DragDropProvider onDragEnd={handleDragEnd}>
+            {customStages.map((stage, index) => (
+              <SortableStage
+                key={stage.id}
+                stage={stage}
+                index={index}
+                onRemove={handleRemove}
+              />
+            ))}
+          </DragDropProvider>
 
           {customStages.length === 0 && (
             <p className="px-3 py-2 text-caption text-muted-foreground">
