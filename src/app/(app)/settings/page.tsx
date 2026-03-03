@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { getMemberRole } from "@/actions/organizations/get-member-role"
 import { getOrgInvitations } from "@/actions/organizations/get-org-invitations"
 import { getOrganization } from "@/actions/organizations/get-organization"
+import { getOrganizationProfile } from "@/actions/organizations/get-organization-profile"
 import { Separator } from "@/components/common/separator"
 import { MembersTable } from "@/components/organizations/members-table"
 import { OrgSettingsForm } from "@/components/organizations/org-settings-form"
@@ -27,9 +28,10 @@ export default async function SettingsPage() {
     redirect("/home")
   }
 
-  const [orgData, pendingInvitations] = await Promise.all([
+  const [orgData, pendingInvitations, profile] = await Promise.all([
     getOrganization(activeOrgId),
     getOrgInvitations(activeOrgId),
+    getOrganizationProfile(activeOrgId),
   ])
 
   return (
@@ -38,11 +40,14 @@ export default async function SettingsPage() {
         <h1 className="font-serif text-title">Settings</h1>
 
         <section className="flex flex-col gap-group">
-          <h2 className="font-serif text-heading">General</h2>
+          <h2 className="font-serif text-heading">Organization Profile</h2>
           <OrgSettingsForm
             organizationId={activeOrgId}
             currentName={orgData.organization.name}
             currentSlug={orgData.organization.slug}
+            currentDescription={profile.description}
+            currentWebsiteUrl={profile.websiteUrl}
+            currentIsOrganizationProfileOpen={profile.isOrganizationProfileOpen}
             auditionUrl={getAppUrl(`/s/${orgData.organization.slug}`)}
           />
         </section>

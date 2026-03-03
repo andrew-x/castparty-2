@@ -12,11 +12,16 @@ import { Button } from "@/components/common/button"
 import { CopyButton } from "@/components/common/copy-button"
 import {
   Field,
+  FieldContent,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldTitle,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { Switch } from "@/components/common/switch"
+import { Textarea } from "@/components/common/textarea"
 import { getAppUrl } from "@/lib/url"
 
 const schema = z.object({
@@ -30,12 +35,18 @@ const schema = z.object({
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "Use only lowercase letters, numbers, and hyphens.",
     ),
+  description: z.string().trim().max(500),
+  websiteUrl: z.string().trim().url().or(z.literal("")),
+  isOrganizationProfileOpen: z.boolean(),
 })
 
 interface Props {
   organizationId: string
   currentName: string
   currentSlug: string
+  currentDescription: string
+  currentWebsiteUrl: string
+  currentIsOrganizationProfileOpen: boolean
   auditionUrl: string
 }
 
@@ -43,12 +54,21 @@ export function OrgSettingsForm({
   organizationId,
   currentName,
   currentSlug,
+  currentDescription,
+  currentWebsiteUrl,
+  currentIsOrganizationProfileOpen,
   auditionUrl,
 }: Props) {
   const router = useRouter()
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { name: currentName, slug: currentSlug },
+    defaultValues: {
+      name: currentName,
+      slug: currentSlug,
+      description: currentDescription,
+      websiteUrl: currentWebsiteUrl,
+      isOrganizationProfileOpen: currentIsOrganizationProfileOpen,
+    },
   })
 
   const { execute, isPending } = useAction(updateOrganization, {
@@ -64,9 +84,13 @@ export function OrgSettingsForm({
     },
   })
 
-  const watchedName = form.watch("name")
-  const watchedSlug = form.watch("slug")
-  const hasChanges = watchedName !== currentName || watchedSlug !== currentSlug
+  const watched = form.watch()
+  const hasChanges =
+    watched.name !== currentName ||
+    watched.slug !== currentSlug ||
+    watched.description !== currentDescription ||
+    watched.websiteUrl !== currentWebsiteUrl ||
+    watched.isOrganizationProfileOpen !== currentIsOrganizationProfileOpen
 
   return (
     <form
@@ -87,6 +111,23 @@ export function OrgSettingsForm({
                 onChange={(event) => {
                   field.onChange(event.target.value)
                 }}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="description"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor={field.name}>About</FieldLabel>
+              <Textarea
+                {...field}
+                id={field.name}
+                placeholder="Tell candidates about your organization"
+                aria-invalid={fieldState.invalid}
               />
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
             </Field>
@@ -118,6 +159,50 @@ export function OrgSettingsForm({
             </Field>
           )}
         />
+
+        <Controller
+          name="websiteUrl"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor={field.name}>Website</FieldLabel>
+              <p className="text-caption text-muted-foreground">
+                Your organization's external website, outside of Castparty.
+              </p>
+              <Input
+                {...field}
+                id={field.name}
+                type="url"
+                placeholder="https://your-theatre.org"
+                aria-invalid={fieldState.invalid}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="isOrganizationProfileOpen"
+          control={form.control}
+          render={({ field }) => (
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>Organization profile open</FieldTitle>
+                <FieldDescription>
+                  When on, your organization page shows all open roles across
+                  all productions. When off, candidates can only reach auditions
+                  via direct links.
+                </FieldDescription>
+              </FieldContent>
+              <Switch
+                id={field.name}
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </Field>
+          )}
+        />
+
         <div className="flex flex-col gap-group pt-block">
           <div className="flex flex-col gap-element">
             <p className="font-medium text-foreground text-label">

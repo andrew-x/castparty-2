@@ -1,0 +1,1 @@
+ALTER TABLE "organization_profile" RENAME COLUMN "is_audition_board_open" TO "is_organization_profile_open";

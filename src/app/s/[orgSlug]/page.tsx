@@ -1,6 +1,7 @@
-import { ClapperboardIcon, UserIcon } from "lucide-react"
+import { ClapperboardIcon, GlobeIcon, LockIcon, UserIcon } from "lucide-react"
 import type { Metadata } from "next"
 import { getPublicOrg } from "@/actions/submissions/get-public-org"
+import { getPublicOrgProfile } from "@/actions/submissions/get-public-org-profile"
 import { getPublicProductions } from "@/actions/submissions/get-public-productions"
 import { Button } from "@/components/common/button"
 import {
@@ -35,13 +36,58 @@ export default async function SubmitOrgPage({
 
   if (!org) return <NotFoundEntity entity="organization" />
 
+  const { isOrganizationProfileOpen, description, websiteUrl } =
+    await getPublicOrgProfile(org.id)
+
+  if (!isOrganizationProfileOpen) {
+    return (
+      <div className="flex flex-col gap-section">
+        <div>
+          <h1 className="font-serif text-title">{org.name}</h1>
+        </div>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <LockIcon />
+            </EmptyMedia>
+            <EmptyTitle>Not accepting auditions</EmptyTitle>
+            <EmptyDescription>
+              {org.name} is not currently accepting auditions. Check back later
+              or contact the production team directly.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
+    )
+  }
+
   const productions = await getPublicProductions(org.id)
 
   return (
     <div className="flex flex-col gap-section">
-      <div>
-        <h1 className="font-serif text-title">{org.name}</h1>
-        <p className="mt-2 text-body text-muted-foreground">Open auditions</p>
+      <div className="flex flex-col gap-block">
+        <div>
+          <h1 className="font-serif text-title">{org.name}</h1>
+          <p className="mt-2 text-body text-muted-foreground">Open auditions</p>
+        </div>
+        {(description || websiteUrl) && (
+          <div className="flex flex-col gap-element">
+            {description && (
+              <p className="text-body text-muted-foreground">{description}</p>
+            )}
+            {websiteUrl && (
+              <a
+                href={websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-label text-muted-foreground hover:text-foreground"
+              >
+                <GlobeIcon className="size-3.5" />
+                {websiteUrl.replace(/^https?:\/\//, "")}
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {productions.length === 0 ? (
