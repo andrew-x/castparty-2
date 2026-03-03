@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function NewProductionPage() {
   return (
-    <div className="flex flex-col gap-section px-page py-section">
+    <div className="flex flex-col gap-group px-page py-section">
       <div className="mx-auto w-full max-w-xl">
         <h1 className="font-serif text-title">New production</h1>
         <p className="mt-2 text-body text-muted-foreground">

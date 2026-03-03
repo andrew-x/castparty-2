@@ -17,7 +17,7 @@ export default async function ProductionLayout({
   }
 
   return (
-    <div className="flex flex-col gap-section px-page py-section">
+    <div className="flex flex-col gap-group px-page py-section">
       <div>
         <h1 className="font-serif text-title">{production.name}</h1>
         {production.description && (

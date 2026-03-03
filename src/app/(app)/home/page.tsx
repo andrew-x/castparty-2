@@ -14,7 +14,7 @@ export default async function HomePage() {
   ])
 
   return (
-    <div className="flex flex-col gap-section px-page py-section">
+    <div className="flex flex-col gap-group px-page py-section">
       <h1 className="font-serif text-title">Welcome, {user?.name}.</h1>
 
       {productions.length > 0 && (
