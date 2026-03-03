@@ -42,7 +42,7 @@ export default async function ProductionsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-section px-page py-section">
+    <div className="flex flex-col gap-group px-page py-section">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-title">Productions</h1>
         <Button href="/productions/new">Create production</Button>

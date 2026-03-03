@@ -36,7 +36,7 @@ export default async function CandidatesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-section px-page py-section">
+    <div className="flex flex-col gap-group px-page py-section">
       <h1 className="font-serif text-title">Candidates</h1>
       <CandidatesTable candidates={candidates} />
     </div>
