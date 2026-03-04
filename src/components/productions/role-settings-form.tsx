@@ -1,6 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
+import { LinkIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { Controller, useForm } from "react-hook-form"
@@ -11,15 +12,19 @@ import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
 import {
   Field,
+  FieldContent,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldTitle,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
-import { ShareLink } from "@/components/common/share-link"
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
+import { CopyButton } from "@/components/common/copy-button"
 import { getAppUrl } from "@/lib/url"
+import { cn } from "@/lib/util"
 
 const schema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100),
@@ -162,25 +167,6 @@ export function RoleSettingsForm({
         />
 
         <Controller
-          name="isOpen"
-          control={form.control}
-          render={({ field }) => (
-            <Field>
-              <div className="flex items-center gap-element">
-                <Switch
-                  id={field.name}
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-                <FieldLabel htmlFor={field.name}>
-                  Accepting submissions
-                </FieldLabel>
-              </div>
-            </Field>
-          )}
-        />
-
-        <Controller
           name="slug"
           control={form.control}
           render={({ field, fieldState }) => (
@@ -203,12 +189,79 @@ export function RoleSettingsForm({
           )}
         />
 
-        <ShareLink
-          title="Audition page"
-          description="Share this link with candidates so they can audition for this role."
-          url={getAppUrl(`/s/${orgSlug}/${productionSlug}/${currentSlug}`)}
-          href={`/s/${orgSlug}/${productionSlug}/${currentSlug}`}
+        <Controller
+          name="isOpen"
+          control={form.control}
+          render={({ field }) => (
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>Accepting submissions</FieldTitle>
+                <FieldDescription>
+                  When on, candidates can find and submit to this role. When
+                  off, the audition page for this role is hidden.
+                </FieldDescription>
+              </FieldContent>
+              <Switch
+                id={field.name}
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </Field>
+          )}
         />
+
+        <div className="flex flex-col gap-group pt-block">
+          <div className="flex flex-col gap-element">
+            <div className="flex items-center gap-element">
+              <p className="font-medium text-foreground text-label">
+                Audition page
+              </p>
+              {!watched.isOpen && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-caption text-muted-foreground">
+                  Disabled
+                </span>
+              )}
+            </div>
+            <p className="text-caption text-muted-foreground">
+              {watched.isOpen
+                ? "Share this link with candidates so they can audition for this role."
+                : "Open submissions to share this link."}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-element rounded-md border bg-muted px-group py-element">
+            <p
+              className={cn(
+                "flex-1 break-all font-mono text-caption",
+                watched.isOpen
+                  ? "text-foreground"
+                  : "text-muted-foreground line-through",
+              )}
+            >
+              {getAppUrl(`/s/${orgSlug}/${productionSlug}/${currentSlug}`)}
+            </p>
+            <div
+              className={cn(
+                "flex items-center gap-element",
+                !watched.isOpen && "pointer-events-none invisible",
+              )}
+            >
+              <CopyButton
+                value={getAppUrl(
+                  `/s/${orgSlug}/${productionSlug}/${currentSlug}`,
+                )}
+              />
+              <Button
+                href={`/s/${orgSlug}/${productionSlug}/${currentSlug}`}
+                variant="ghost"
+                size="sm"
+                leftSection={<LinkIcon />}
+              >
+                View page
+              </Button>
+            </div>
+          </div>
+        </div>
 
         {form.formState.errors.root && (
           <Alert variant="destructive">
@@ -217,15 +270,15 @@ export function RoleSettingsForm({
             </AlertDescription>
           </Alert>
         )}
-        <Button
-          type="submit"
-          variant="outline"
-          size="sm"
-          loading={isUpdating || isUpdatingSlug}
-          disabled={!hasChanges}
-        >
-          Save
-        </Button>
+        <div className="flex justify-center">
+          <Button
+            type="submit"
+            loading={isUpdating || isUpdatingSlug}
+            disabled={!hasChanges}
+          >
+            Save
+          </Button>
+        </div>
       </FieldGroup>
     </form>
   )
