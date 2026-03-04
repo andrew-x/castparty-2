@@ -3,6 +3,7 @@ import { getProduction } from "@/actions/productions/get-production"
 import { getProductionStages } from "@/actions/productions/get-production-stages"
 import { Separator } from "@/components/common/separator"
 import { DefaultStagesEditor } from "@/components/productions/default-stages-editor"
+import { DefaultFormFieldsEditor } from "@/components/productions/form-fields-editor"
 import { ProductionSettingsForm } from "@/components/productions/production-settings-form"
 
 export async function generateMetadata({
@@ -51,6 +52,16 @@ export default async function ProductionSettingsPage({
       <section className="flex flex-col gap-group">
         <h2 className="font-serif text-heading">Pipeline Stages</h2>
         <DefaultStagesEditor productionId={production.id} stages={stages} />
+      </section>
+
+      <Separator />
+
+      <section className="flex flex-col gap-group">
+        <h2 className="font-serif text-heading">Application form</h2>
+        <DefaultFormFieldsEditor
+          productionId={production.id}
+          fields={production.formFields}
+        />
       </section>
     </div>
   )

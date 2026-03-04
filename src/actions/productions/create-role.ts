@@ -29,7 +29,7 @@ export const createRole = secureActionClient
       // Verify the production belongs to the user's organization
       const production = await db.query.Production.findFirst({
         where: (p) => and(eq(p.id, productionId), eq(p.organizationId, orgId)),
-        columns: { id: true },
+        columns: { id: true, formFields: true },
       })
       if (!production) throw new Error("Production not found.")
 
@@ -47,6 +47,10 @@ export const createRole = secureActionClient
         name,
         slug,
         description: description || "",
+        formFields: production.formFields.map((f) => ({
+          ...f,
+          id: generateId("ff"),
+        })),
       })
 
       // Try to copy stages from the production template

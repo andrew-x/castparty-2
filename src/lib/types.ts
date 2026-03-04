@@ -9,6 +9,7 @@ export type CustomForm = {
   type: CustomFormFieldType
   label: string
   description: string
+  required: boolean
   options: string[] // For SELECT and MULTISELECT types
 }
 
