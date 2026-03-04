@@ -52,11 +52,14 @@ export function OrgSwitcher({ user, organizations, activeOrgId }: Props) {
 
   const activeOrg = organizations.find((o) => o.id === activeOrgId)
 
-  const { execute: switchOrg } = useAction(setActiveOrganization, {
-    onSuccess() {
-      router.refresh()
+  const { execute: switchOrg, isPending: isSwitching } = useAction(
+    setActiveOrganization,
+    {
+      onSuccess() {
+        router.refresh()
+      },
     },
-  })
+  )
 
   function handleSwitch(orgId: string) {
     setPopoverOpen(false)
@@ -80,7 +83,12 @@ export function OrgSwitcher({ user, organizations, activeOrgId }: Props) {
     <>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
-          <SidebarMenuButton size="lg" className="w-full" tooltip={user.name}>
+          <SidebarMenuButton
+            size="lg"
+            className="w-full"
+            tooltip={user.name}
+            disabled={isSwitching}
+          >
             <Avatar size="sm">
               {user.image && <AvatarImage src={user.image} alt={user.name} />}
               <AvatarFallback>{getInitials(user.name)}</AvatarFallback>

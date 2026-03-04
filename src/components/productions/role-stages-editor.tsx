@@ -35,11 +35,15 @@ export function RoleStagesEditor({ roleId, stages }: Props) {
     },
   )
 
+  const [removingStageId, setRemovingStageId] = useState<string | null>(null)
+
   const { execute: executeRemove } = useAction(removePipelineStage, {
     onSuccess() {
+      setRemovingStageId(null)
       router.refresh()
     },
     onError() {
+      setRemovingStageId(null)
       router.refresh()
     },
   })
@@ -49,6 +53,7 @@ export function RoleStagesEditor({ roleId, stages }: Props) {
   }
 
   function handleRemove(stageId: string) {
+    setRemovingStageId(stageId)
     setLocalStages((prev) => prev.filter((s) => s.id !== stageId))
     executeRemove({ stageId })
   }
@@ -68,6 +73,7 @@ export function RoleStagesEditor({ roleId, stages }: Props) {
       onRemove={handleRemove}
       onReorder={handleReorder}
       isAdding={isAdding}
+      removingStageId={removingStageId}
     />
   )
 }

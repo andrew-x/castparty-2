@@ -254,12 +254,11 @@ Action-connected forms use a single adapter hook instead of separate `useForm` +
 
 ```tsx
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { formResolver } from "@/lib/schemas/resolve"
 
 const { form, action, handleSubmitWithAction } = useHookFormAction(
   myAction,
-  // biome-ignore lint/suspicious/noExplicitAny: form schema is a subset of action schema
-  zodResolver(myFormSchema) as any,
+  formResolver(myFormSchema),
   {
     formProps: { defaultValues: { name: "" } },
     actionProps: {
@@ -338,22 +337,12 @@ The action file imports and uses `submissionActionSchema`; the form component im
 )}
 ```
 
-### `as any` cast on `zodResolver`
-
-Because the form schema intentionally has fewer fields than the action schema, TypeScript sees a type mismatch. Cast with `as any` and add a biome-ignore comment:
-
-```tsx
-// biome-ignore lint/suspicious/noExplicitAny: form schema is a subset of action schema
-zodResolver(myFormSchema) as any,
-```
-
-This is the one sanctioned use of `any` in the codebase — the comment documents exactly why.
-
 ### Exception: auth forms
 
 Forms that call the Better Auth client SDK directly (`authClient.signIn.email`, `authClient.signUp.email`) don't go through `next-safe-action` and don't use `useHookFormAction`. Standard `useForm` is correct for those. See `src/components/auth/` for examples.
 
 *Updated: 2026-03-04 — Added Form Patterns section (useHookFormAction, centralized schemas, schema split)*
+*Updated: 2026-03-04 — Replaced zodResolver-as-any pattern with formResolver from @/lib/schemas/resolve; removed as-any-cast subsection; corrected backend directory example to reflect actual actions/ directories*
 
 ## Backend Patterns
 
@@ -363,10 +352,11 @@ Business logic lives in `src/actions/`, organized by feature area:
 
 ```
 src/actions/
-├── productions/     # Production CRUD, settings
-├── auditions/       # Audition scheduling, submissions
-├── casting/         # Casting decisions, callbacks
-└── ...
+├── productions/     # Production and role CRUD, pipeline stage management
+├── submissions/     # Public submission flow, submission status updates
+├── organizations/   # Org management, members, invitations, profiles
+├── candidates/      # Candidate queries
+└── admin/           # Admin user management
 ```
 
 ### Server actions with next-safe-action (writes)

@@ -124,7 +124,7 @@ export function RoleSettingsForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>URL ID</FieldLabel>
+              <FieldLabel htmlFor={field.name}>URL slug</FieldLabel>
               <p className="text-caption text-muted-foreground">
                 This controls the URL for this role's audition page.
               </p>
@@ -148,9 +148,9 @@ export function RoleSettingsForm({
           render={({ field }) => (
             <Field orientation="horizontal">
               <FieldContent>
-                <FieldTitle>Accepting submissions</FieldTitle>
+                <FieldTitle>Open for auditions</FieldTitle>
                 <FieldDescription>
-                  When on, candidates can find and submit to this role. When
+                  When on, candidates can find and audition for this role. When
                   off, the audition page for this role is hidden.
                 </FieldDescription>
               </FieldContent>

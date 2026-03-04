@@ -1,6 +1,6 @@
 # Documentation Index
 
-> **Status:** Active development — auth, organizations, productions, candidates, public submission flow, and admin are shipped.
+> **Status:** Active development — auth, organizations, productions, candidates, public submission flow, configurable pipeline stages, role Kanban board, and admin are shipped.
 > **Maintained by:** Librarian agent (`.claude/agents/librarian.md`)
 
 | Document | Read when you need to... |

@@ -17,14 +17,21 @@
 ```
 src/
 ├── actions/             # Backend business logic, organized by feature area
-│   └── [feature]/       # e.g., productions/, auditions/, casting/
+│   └── [feature]/       # productions/, submissions/, organizations/, candidates/, admin/
 ├── app/
 │   ├── (app)/           # Authenticated route group — guarded by (app)/layout.tsx
 │   │   ├── layout.tsx   # Auth guard + SidebarProvider shell
-│   │   └── home/        # Post-login landing
+│   │   ├── home/        # Post-login landing
+│   │   └── productions/
+│   │       └── [id]/
+│   │           ├── (production)/  # Route group: shared production layout
+│   │           │   ├── page.tsx   # Production detail
+│   │           │   └── settings/  # Production settings
+│   │           └── roles/
+│   │               └── [roleId]/  # Role Kanban board
 │   ├── api/             # API route handlers
 │   ├── auth/            # Login / signup / forgot-password pages
-│   ├── submit/          # Public submission flow (unauthenticated)
+│   ├── s/               # Public submission flow (unauthenticated)
 │   ├── layout.tsx       # Root layout — fonts, <html>/<body> wrapper
 │   └── page.tsx         # Landing page (/)
 ├── components/
@@ -132,15 +139,20 @@ Schema lives in `src/lib/db/schema.ts`. Drizzle relational API (`db.query`) is t
 
 | Table | Scoped to | Key columns / constraints |
 |-------|-----------|--------------------------|
-| `Production` | Organization | `organizationId`, `name`, `slug` (unique per org) |
-| `Role` | Production | `productionId`, `name`, `slug` (unique per production) |
-| `PipelineStage` | Role | `roleId`, `name`, `slug`, `position`, `isSystem`, `isTerminal` |
+| `UserProfile` | User | `id` (FK → user, PK) — extended user metadata; currently empty (reserved for future fields) |
+| `OrganizationProfile` | Organization | `id` (FK → organization, PK), `websiteUrl`, `description`, `isOrganizationProfileOpen` — public-facing org info |
+| `Production` | Organization | `organizationId`, `name`, `slug` (unique per org), `isOpen`, `formFields` (JSONB custom form) |
+| `Role` | Production | `productionId`, `name`, `slug` (unique per production), `isOpen`, `formFields` (JSONB custom form) |
+| `PipelineStage` | Production + Role | `organizationId`, `productionId`, `roleId` (nullable — null = production template stage), `name`, `order`, `type` enum (`APPLIED`/`SELECTED`/`REJECTED`/`CUSTOM`) |
 | `Candidate` | Organization | `organizationId`, `firstName`, `lastName`, `email` (unique per org) |
 | `Submission` | Role + Candidate | `roleId`, `candidateId`, `stageId` — links a candidate to a role at a pipeline stage |
-| `StatusChange` | Submission | `submissionId`, `fromStageId`, `toStageId`, `changedById` — full audit trail |
+| `PipelineUpdate` | Submission | `submissionId`, `fromStage`, `toStage`, `changeByUserId` — full audit trail of stage transitions |
 
 Candidate records are deduplicated by `(organizationId, email)` — the same person applying to multiple roles in the same org shares one Candidate row.
+
+`PipelineStage` rows with `roleId = null` are production-template stages — they define the default pipeline that new roles in that production inherit. Role-scoped stages have a non-null `roleId`.
 
 *Updated: 2026-02-28 — Replaced stale placeholders with actual data flow and external services*
 *Updated: 2026-03-01 — Added Better Auth plugins, expanded directory layout, fixed component directories, added Data Model section*
 *Updated: 2026-03-04 — Added useHookFormAction adapter layer to data flow; added src/lib/schemas/ to directory layout and key files*
+*Updated: 2026-03-04 — Fixed submit/ → s/ route, added (production) route group, corrected PipelineStage columns (order/type enum, no slug/isSystem/isTerminal), StatusChange → PipelineUpdate with correct column names, added UserProfile and OrganizationProfile tables, noted production-template stages (roleId = null)*

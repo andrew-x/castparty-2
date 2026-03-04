@@ -25,8 +25,12 @@ export const createSubmission = publicActionClient
       // Validate the full ownership chain: role → production → org
       const role = await db.query.Role.findFirst({
         where: (r) => eq(r.id, roleId),
-        with: { production: { columns: { id: true, organizationId: true } } },
-        columns: { id: true, productionId: true },
+        with: {
+          production: {
+            columns: { id: true, organizationId: true, isOpen: true },
+          },
+        },
+        columns: { id: true, productionId: true, isOpen: true },
       })
 
       if (
@@ -35,6 +39,14 @@ export const createSubmission = publicActionClient
         role.production.organizationId !== orgId
       ) {
         throw new Error("This role is not available for submissions.")
+      }
+
+      if (!role.production.isOpen) {
+        throw new Error("This production is not accepting auditions right now.")
+      }
+
+      if (!role.isOpen) {
+        throw new Error("This role is not open for auditions right now.")
       }
 
       // Resolve the APPLIED stage for this role

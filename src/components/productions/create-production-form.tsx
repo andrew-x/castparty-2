@@ -30,6 +30,8 @@ type FormValues = z.infer<typeof createProductionFormSchema>
 
 type Step = "details" | "stages" | "roles"
 
+const STEPS = ["details", "stages", "roles"] as const
+
 const DEFAULT_CUSTOM_STAGES: StageData[] = [
   { id: "tmp-screening", name: "Screening", order: 1, type: "CUSTOM" },
   { id: "tmp-audition", name: "Audition", order: 2, type: "CUSTOM" },
@@ -167,6 +169,10 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
         handleSubmit as any,
       )}
     >
+      <p className="text-caption text-muted-foreground">
+        Step {STEPS.indexOf(step) + 1} of {STEPS.length}
+      </p>
+
       {step === "details" && (
         <FieldGroup>
           <Controller
@@ -215,7 +221,7 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
               return (
                 <Field data-invalid={fieldState.invalid || undefined}>
                   <FieldLabel htmlFor={field.name}>
-                    URL ID (optional)
+                    URL slug (optional)
                   </FieldLabel>
                   <Input
                     {...field}
@@ -237,8 +243,8 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
             }}
           />
           <div className="flex justify-end gap-element">
-            <Button type="button" variant="outline" asChild>
-              <a href="/productions">Cancel</a>
+            <Button type="button" variant="outline" href="/productions">
+              Cancel
             </Button>
             <Button type="button" onClick={handleNextToStages}>
               Continue
@@ -251,10 +257,11 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
         <FieldGroup>
           <div className="flex flex-col gap-block">
             <div>
-              <h2 className="font-medium text-heading">Pipeline stages</h2>
+              <h2 className="font-medium text-heading">Casting pipeline</h2>
               <p className="text-caption text-muted-foreground">
-                These are the default pipeline stages for all new roles. You can
-                customize these later, or set up different stages per role.
+                Define the steps candidates move through during your casting
+                process. You can customize these later, or set up different
+                stages per role.
               </p>
             </div>
 

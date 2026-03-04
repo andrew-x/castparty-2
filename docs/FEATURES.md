@@ -10,14 +10,14 @@
 | Onboarding | `shipped` | `src/app/onboarding/page.tsx` | Multi-step flow for new users: create an organization then optionally invite team members; shown when user has no active organization |
 | Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | Org settings (rename), members table, invite/remove/role-change; owner/admin only |
 | Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | Grid of production cards for the active org; empty state with create CTA |
-| Production Detail | `shipped` | `src/app/(app)/productions/[id]/page.tsx` | Production overview with roles list and inline role creation |
+| Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | Production overview with roles list and inline role creation |
 | Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | Form to create a new production with optional roles |
 | Admin Panel | `shipped` | `src/app/admin/page.tsx` | Internal user management (list, create, change password, delete); bypasses org scope |
 | Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | Filterable table of all candidates (performers) in the active organization |
-| Public Submission Flow | `shipped` | `src/app/submit/[orgSlug]/page.tsx` | Public-facing casting call pages where candidates discover orgs, productions, and roles via URL slugs and submit auditions |
-| Production Settings | `shipped` | `src/app/(app)/productions/[id]/settings/page.tsx` | Edit production details, manage roles, configure pipeline stages |
+| Public Submission Flow | `shipped` | `src/app/s/[orgSlug]/page.tsx` | Public-facing casting call pages where candidates discover orgs, productions, and roles via URL slugs and submit auditions |
+| Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | Edit production details, manage roles, configure pipeline stages |
 | URL Slugs | `shipped` | `src/lib/slug.ts` | Auto-generated URL-friendly identifiers for orgs, productions, and roles; used in public submission URLs |
-| Pipeline Stages | `shipped` | `src/lib/pipeline.ts` | Configurable casting pipeline per role with system stages (Inbound, Cast, Rejected) and custom user-defined stages |
+| Pipeline Stages | `shipped` | `src/lib/pipeline.ts` | Configurable casting pipeline per role with system stages (Applied, Selected, Rejected) and custom user-defined stages; production-level template pipeline inherited by new roles |
 | Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop moves candidates between pipeline stages |
 | Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | Multi-org switching in sidebar footer; lets users switch between organizations they belong to |
 | Landing Page | `shipped` | `src/app/page.tsx` | Single-screen hero with Castparty branding, tagline, and CTA link to /auth |
@@ -184,25 +184,26 @@ OnboardingFlow (client)
 
 | File | Role |
 |------|------|
-| `src/app/(app)/layout.tsx` | Server component; auth guard + `SidebarProvider` root; reads `sidebar_state` cookie to restore open/closed state |
-| `src/components/app/app-sidebar.tsx` | Client component; renders the full sidebar — logo header, nav items with active highlighting, user footer |
-| `src/components/app/app-header.tsx` | Client component; thin 48px top bar with `SidebarTrigger` and a vertical `Separator` |
+| `src/app/(app)/layout.tsx` | Server component; auth guard + `SidebarProvider` root; reads `sidebar_state` cookie to restore open/closed state; inlines a mobile-only 48px header with `SidebarTrigger` |
+| `src/components/app/app-sidebar.tsx` | Client component; renders the full sidebar — logo header, nav items with active highlighting, org switcher + pending invites footer |
 
 **How it works:**
 
 ```
 (app)/layout.tsx  (server)
   ├── getCurrentUser() → redirect /auth if unauthenticated
+  ├── hasAnyOrganization() → redirect /onboarding if no org
   ├── reads sidebar_state cookie → defaultOpen
   └── <SidebarProvider defaultOpen={defaultOpen}>
         ├── <AppSidebar user={...} />   (client)
-        │     ├── SidebarHeader  — logo + "Castparty" link to /home
-        │     ├── SidebarContent — nav items (Home / Productions / Candidates)
+        │     ├── SidebarHeader  — logo (expanded) / icon (collapsed) + toggle buttons
+        │     ├── SidebarContent — nav items (Home / Productions / Candidates / Settings*)
         │     │     └── isActive() — pathname === href || startsWith(href + "/")
-        │     ├── SidebarFooter  — Avatar + name + email (non-interactive)
+        │     │     * Settings shown only when activeOrgRole is "owner" or "admin"
+        │     ├── SidebarFooter  — PendingInvitesButton + OrgSwitcher
         │     └── SidebarRail    — drag-resize handle
         └── <SidebarInset>
-              ├── <AppHeader />   (client) — SidebarTrigger + Separator
+              ├── mobile-only 48px header (SidebarTrigger, md:hidden)
               └── {children}
 ```
 
@@ -226,11 +227,12 @@ OnboardingFlow (client)
 
 - **User data flows top-down from the layout** — `(app)/layout.tsx` fetches the current user once and passes `{ name, email, image }` as props to `AppSidebar`. This avoids a second `getCurrentUser()` call inside the sidebar and keeps the client component free of server-side data fetching.
 
-- **`src/components/app/` directory for shell components** — layout-level components that belong to the authenticated app shell live here, separate from `src/components/common/` (generic primitives) and `src/components/auth/` (auth-specific). See `docs/ARCHITECTURE.md` for the full component directory conventions.
+- **`src/components/app/` directory for shell components** — layout-level components that belong to the authenticated app shell (`AppSidebar`) live here, separate from `src/components/common/` (generic primitives) and `src/components/auth/` (auth-specific). See `docs/ARCHITECTURE.md` for the full component directory conventions.
 
 **Integration points:** All routes under `src/app/(app)/` inherit this layout. Auth enforcement is handled here — see the Auth Flow section above. The `getCurrentUser()` helper lives in `src/lib/auth`.
 
 *Updated: 2026-02-28 — Initial sidebar layout documentation*
+*Updated: 2026-03-04 — Removed AppHeader (inlined in layout as mobile-only trigger), corrected sidebar footer (OrgSwitcher + PendingInvitesButton), added Settings nav conditional, added onboarding redirect*
 
 ---
 
@@ -274,10 +276,11 @@ All three pages share the same centered full-viewport layout pattern (see Archit
 
 | File | Role |
 |------|------|
-| `src/app/submit/[orgSlug]/page.tsx` | Lists an org's productions with open roles |
-| `src/app/submit/[orgSlug]/[productionSlug]/page.tsx` | Lists roles for a specific production |
-| `src/app/submit/[orgSlug]/[productionSlug]/[roleSlug]/page.tsx` | Renders the submission form for a specific role |
+| `src/app/s/[orgSlug]/page.tsx` | Lists an org's productions with open roles |
+| `src/app/s/[orgSlug]/[productionSlug]/page.tsx` | Lists roles for a specific production |
+| `src/app/s/[orgSlug]/[productionSlug]/[roleSlug]/page.tsx` | Renders the submission form for a specific role |
 | `src/actions/submissions/get-public-org.ts` | Unauthenticated fetch: org by slug |
+| `src/actions/submissions/get-public-org-profile.ts` | Unauthenticated fetch: org profile (website, description, open status) by org slug |
 | `src/actions/submissions/get-public-production.ts` | Unauthenticated fetch: production by org+production slug |
 | `src/actions/submissions/get-public-productions.ts` | Unauthenticated fetch: all productions for an org |
 | `src/actions/submissions/get-public-role.ts` | Unauthenticated fetch: role by production+role slug |
@@ -288,52 +291,60 @@ All three pages share the same centered full-viewport layout pattern (see Archit
 Three-tier URL structure:
 
 ```
-/submit/[orgSlug]                                → org page (list productions)
-/submit/[orgSlug]/[productionSlug]               → production page (list roles)
-/submit/[orgSlug]/[productionSlug]/[roleSlug]    → role page (submission form)
+/s/[orgSlug]                                → org page (list productions)
+/s/[orgSlug]/[productionSlug]               → production page (list roles)
+/s/[orgSlug]/[productionSlug]/[roleSlug]    → role page (submission form)
 ```
 
-Each page is a server component that calls its corresponding public server function (no auth required). The final page renders the `SubmissionForm` client component. On submit, `SubmissionForm` uses `useHookFormAction(createSubmission, zodResolver(submissionFormSchema))`. The form schema (`submissionFormSchema` in `src/lib/schemas/submission.ts`) captures user-entered fields only; server IDs (`orgId`, `productionId`, `roleId`) are injected in the submit handler via `action.execute({ ...v, orgId, productionId, roleId })`. The `create-submission` action runs via `publicActionClient` — it looks up the role's Inbound pipeline stage, upserts a Candidate record keyed by `(organizationId, email)`, then inserts a Submission linked to that stage.
+Each page is a server component that calls its corresponding public server function (no auth required). The final page renders the `SubmissionForm` client component. On submit, `SubmissionForm` uses `useHookFormAction(createSubmission, zodResolver(submissionFormSchema))`. The form schema (`submissionFormSchema` in `src/lib/schemas/submission.ts`) captures user-entered fields only; server IDs (`orgId`, `productionId`, `roleId`) are injected in the submit handler via `action.execute({ ...v, orgId, productionId, roleId })`. The `create-submission` action runs via `publicActionClient` — it looks up the role's Applied pipeline stage, upserts a Candidate record keyed by `(organizationId, email)`, then inserts a Submission linked to that stage.
 
 **Architecture decisions:** Uses `publicActionClient` (no auth required — these routes are intentionally open). Candidate deduplication by email means the same person submitting to multiple roles in the same org is treated as one candidate in the database.
 
-**Integration points:** Depends on URL Slugs (see `src/lib/slug.ts`) for resolving org/production/role from path params. Links into the Pipeline Stages system — new submissions always land in the Inbound stage. See also `docs/DECISIONS.md` ADR-006 (URL slug rationale) and ADR-007 (pipeline stages rationale).
+**Integration points:** Depends on URL Slugs (see `src/lib/slug.ts`) for resolving org/production/role from path params. Links into the Pipeline Stages system — new submissions always land in the Applied stage. See also `docs/DECISIONS.md` ADR-006 (URL slug rationale) and ADR-007 (pipeline stages rationale).
 
 *Updated: 2026-03-01 — Initial public submission flow documentation*
+*Updated: 2026-03-04 — Fixed route prefix /submit/ → /s/, added get-public-org-profile.ts, fixed Applied stage reference*
 
 ---
 
 ## Pipeline Stages
 
-**Overview:** Each role in a production has its own configurable casting pipeline. Three system stages are created automatically when a role is created: Inbound (receives new submissions), Cast (terminal — accepted), and Rejected (terminal — declined). Production teams can add custom stages between Inbound and the terminal stages to model their callback and evaluation process.
+**Overview:** Each role in a production has its own configurable casting pipeline. Three system stages are created automatically when a role is created: Applied (receives new submissions), Selected (accepted), and Rejected (declined). Production teams can add custom stages between Applied and the terminal stages to model their callback and evaluation process. Productions also get a template pipeline — a production-level set of stages that new roles inherit when created.
 
 **Key files:**
 
 | File | Role |
 |------|------|
-| `src/lib/pipeline.ts` | Defines system stage constants and `buildSystemStages()` factory |
+| `src/lib/pipeline.ts` | Defines `SYSTEM_STAGES`, `DEFAULT_PRODUCTION_STAGES` constants and factory functions: `buildSystemStages()`, `buildProductionStages()`, `buildCustomProductionStages()`, `buildStagesFromTemplate()` |
 | `src/actions/productions/add-pipeline-stage.ts` | Mutation: add a custom stage to a role's pipeline |
-| `src/actions/productions/remove-pipeline-stage.ts` | Mutation: remove a custom stage (system stages are protected) |
-| `src/actions/submissions/update-submission-status.ts` | Mutation: move a submission to a new stage; creates a StatusChange audit record |
+| `src/actions/productions/remove-pipeline-stage.ts` | Mutation: remove a custom stage (system-type stages are protected) |
+| `src/actions/productions/add-production-stage.ts` | Mutation: add a stage to the production-level template pipeline |
+| `src/actions/productions/remove-production-stage.ts` | Mutation: remove a stage from the production-level template |
+| `src/actions/productions/reorder-production-stages.ts` | Mutation: reorder production template stages |
+| `src/actions/productions/reorder-role-stages.ts` | Mutation: reorder a role's pipeline stages |
+| `src/actions/submissions/update-submission-status.ts` | Mutation: move a submission to a new stage; creates a PipelineUpdate audit record |
 
 **How it works:**
 
-System stages are seeded at role creation via `buildSystemStages(roleId)` from `src/lib/pipeline.ts`:
+Stage types are defined by a `pipelineStageTypeEnum` with values `APPLIED`, `SELECTED`, `REJECTED`, `CUSTOM`. System stages seeded at role creation via `buildSystemStages()`:
 
-| Stage | Position | isTerminal | isSystem |
-|-------|----------|-----------|---------|
-| Inbound | 0 | false | true |
-| Cast | 1000 | true | true |
-| Rejected | 1001 | true | true |
+| Stage | Order | Type |
+|-------|-------|------|
+| Applied | 0 | `APPLIED` |
+| Selected | 1000 | `SELECTED` |
+| Rejected | 1001 | `REJECTED` |
 
-Custom stages are inserted at positions between 1 and 999. Position ordering determines the visual pipeline sequence. Terminal stages cannot be removed (`isSystem` flag enforced in the remove action). Every stage transition writes a `StatusChange` row recording `fromStageId`, `toStageId`, `changedById`, and `changedAt` for a full audit trail.
+Custom stages are inserted at orders between 1 and 999. The `order` integer column determines the visual pipeline sequence. Non-`CUSTOM` stages are protected from removal. Every stage transition writes a `PipelineUpdate` row recording `fromStage`, `toStage`, `submissionId`, and `changeByUserId` for a full audit trail.
 
-**Architecture decisions:** Per-role pipelines (rather than per-production) allow different roles in the same production to have different evaluation criteria — a lead role might have three callback rounds while an ensemble role goes straight from Inbound to Cast. Terminal stage positions (1000/1001) leave a large range (1–999) for custom stages without requiring renumbering. See `docs/DECISIONS.md` ADR-007 for full rationale.
+**Production-template pipeline:** Each production also carries a set of template stages (`roleId = null`). When a new role is created, it inherits the production's template via `buildStagesFromTemplate()`. The default production template (`DEFAULT_PRODUCTION_STAGES`) is: Applied → Screening → Audition → Callback → Selected → Rejected. Teams can customize this per-production before adding roles.
 
-**Integration points:** New submissions from the Public Submission Flow always land in Inbound. The Production Settings page (`src/app/(app)/productions/[id]/settings/page.tsx`) is the UI entry point for managing stages. Role settings (name, description, slug, open/closed) are updated via `src/actions/productions/update-role.ts`, which handles all role mutations including slug changes (a previously separate `update-role-slug.ts` action was merged here).
+**Architecture decisions:** Per-role pipelines (rather than per-production) allow different roles in the same production to have different evaluation criteria — a lead role might have three callback stages while an ensemble role goes straight from Applied to Selected. Terminal stage orders (1000/1001) leave a large range (1–999) for custom stages without requiring renumbering. See `docs/DECISIONS.md` ADR-007 for full rationale.
+
+**Integration points:** New submissions from the Public Submission Flow always land in the Applied stage. The Production Settings page (`src/app/(app)/productions/[id]/(production)/settings/page.tsx`) is the UI entry point for managing both role and production-template stages. Role settings (name, description, slug, open/closed) are updated via `src/actions/productions/update-role.ts`.
 
 *Updated: 2026-03-01 — Initial pipeline stages documentation*
 *Updated: 2026-03-04 — Note consolidated role action (update-role handles all role mutations including slug)*
+*Updated: 2026-03-04 — Corrected stage names (Applied/Selected/Rejected), replaced isSystem/isTerminal with type enum, added production-template pipeline tier, fixed StatusChange → PipelineUpdate, updated entry point paths*
 
 ---
 
@@ -372,7 +383,7 @@ RolePage (server)
 
 **Optimistic updates:** Column state lives entirely in client `useState`. On drag start, the current state is snapshotted. `onDragOver` updates it immediately via dnd-kit's `move()` helper — the card visually moves as soon as it crosses a column boundary. `onDragEnd` fires the server action. If the action errors, `onError` calls `router.refresh()`, which triggers a server re-fetch; the prop-sync guard at the top of `RoleSubmissions` (`if (submissions !== prevSubmissions)`) then resets local state from the fresh server data. Canceling a drag (e.g. Escape key) also restores the snapshot.
 
-**Terminal stages:** All pipeline stages, including Cast (Selected) and Rejected, are draggable. The previous terminal-stage guard in `update-submission-status.ts` was removed. This was intentional: casting directors need to be able to correct mistakes (e.g., accidentally rejecting someone) without a workaround. The audit trail in `PipelineUpdate` records every stage transition regardless.
+**Terminal stages:** All pipeline stages, including Selected and Rejected, are draggable. The previous terminal-stage guard in `update-submission-status.ts` was removed. This was intentional: casting directors need to be able to correct mistakes (e.g., accidentally rejecting someone) without a workaround. The audit trail in `PipelineUpdate` records every stage transition regardless.
 
 **Architecture decisions:**
 

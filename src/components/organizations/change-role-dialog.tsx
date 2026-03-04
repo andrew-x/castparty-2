@@ -57,6 +57,7 @@ export function ChangeRoleDialog({
   useEffect(() => {
     if (targetMember && targetMember.role !== "owner") {
       form.reset({ role: targetMember.role as "admin" | "member" })
+      form.clearErrors("root")
     }
   }, [targetMember, form])
 

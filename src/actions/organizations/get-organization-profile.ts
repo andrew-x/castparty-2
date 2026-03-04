@@ -2,36 +2,33 @@
 
 import { eq } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
+import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import { OrganizationProfile } from "@/lib/db/schema"
 
 export async function getOrganizationProfile(organizationId: string) {
   await checkAuth()
 
-  let profile = await db.query.OrganizationProfile.findFirst({
+  const profile = await db.query.OrganizationProfile.findFirst({
     where: (p) => eq(p.id, organizationId),
   })
 
-  if (!profile) {
-    await db
-      .insert(OrganizationProfile)
-      .values({ id: organizationId, isOrganizationProfileOpen: true })
-      .onConflictDoNothing()
+  if (profile) return profile
 
-    profile = await db.query.OrganizationProfile.findFirst({
-      where: (p) => eq(p.id, organizationId),
-    })
-  }
+  const [inserted] = await db
+    .insert(OrganizationProfile)
+    .values({ id: organizationId, isOrganizationProfileOpen: true })
+    .onConflictDoNothing()
+    .returning()
 
-  // Profile is guaranteed after insert+re-fetch; fallback for safety
   return (
-    profile ?? {
+    inserted ?? {
       id: organizationId,
       websiteUrl: "",
       description: "",
       isOrganizationProfileOpen: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: day().toDate(),
+      updatedAt: day().toDate(),
     }
   )
 }

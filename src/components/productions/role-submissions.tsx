@@ -146,8 +146,11 @@ function KanbanColumn({
   })
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: kanban column is not a form fieldset
     <div
       ref={ref}
+      role="group"
+      aria-label={`${stage.name} column`}
       className={cn(
         "flex w-70 shrink-0 flex-col rounded-lg bg-muted/30 p-block transition-colors",
         isDropTarget && "bg-muted/60",

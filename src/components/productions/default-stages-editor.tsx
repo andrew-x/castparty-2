@@ -29,10 +29,12 @@ function SortableStage({
   stage,
   index,
   onRemove,
+  isRemoving,
 }: {
   stage: StageData
   index: number
   onRemove: (id: string) => void
+  isRemoving?: boolean
 }) {
   const { ref, handleRef, isDragSource } = useSortable({
     id: stage.id,
@@ -48,6 +50,7 @@ function SortableStage({
       <button
         ref={handleRef}
         type="button"
+        aria-label="Drag to reorder"
         className="flex cursor-grab items-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
       >
         <GripVerticalIcon className="size-4" />
@@ -58,6 +61,7 @@ function SortableStage({
         size="icon"
         className="size-6"
         onClick={() => onRemove(stage.id)}
+        disabled={isRemoving}
         tooltip="Remove stage"
       >
         <XIcon className="size-3" />
@@ -70,11 +74,14 @@ function FixedStage({ stage }: { stage: StageData }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="flex items-center gap-element px-3 py-1.5">
+        <button
+          type="button"
+          className="flex w-full items-center gap-element px-3 py-1.5 text-left"
+        >
           <span className="flex-1 text-label text-muted-foreground">
             {stage.name}
           </span>
-        </div>
+        </button>
       </TooltipTrigger>
       <TooltipContent>Required for all roles</TooltipContent>
     </Tooltip>
@@ -89,6 +96,7 @@ interface StagesEditorProps {
   onRemove: (id: string) => void
   onReorder: (reordered: StageData[]) => void
   isAdding?: boolean
+  removingStageId?: string | null
   description?: string
 }
 
@@ -98,6 +106,7 @@ export function StagesEditor({
   onRemove,
   onReorder,
   isAdding,
+  removingStageId,
   description,
 }: StagesEditorProps) {
   const [newStageName, setNewStageName] = useState("")
@@ -152,6 +161,7 @@ export function StagesEditor({
                 stage={stage}
                 index={index}
                 onRemove={onRemove}
+                isRemoving={removingStageId === stage.id}
               />
             ))}
           </DragDropProvider>
@@ -228,11 +238,15 @@ export function DefaultStagesEditor({
     },
   )
 
+  const [removingStageId, setRemovingStageId] = useState<string | null>(null)
+
   const { execute: executeRemove } = useAction(removeProductionStage, {
     onSuccess() {
+      setRemovingStageId(null)
       router.refresh()
     },
     onError() {
+      setRemovingStageId(null)
       router.refresh()
     },
   })
@@ -242,6 +256,7 @@ export function DefaultStagesEditor({
   }
 
   function handleRemove(stageId: string) {
+    setRemovingStageId(stageId)
     setLocalStages((prev) => prev.filter((s) => s.id !== stageId))
     executeRemove({ productionId, stageId })
   }
@@ -261,7 +276,8 @@ export function DefaultStagesEditor({
       onRemove={handleRemove}
       onReorder={handleReorder}
       isAdding={isAdding}
-      description="These are the default pipeline stages for new roles. Updating them will not change any role pipelines that have already been created."
+      removingStageId={removingStageId}
+      description="These are the default casting stages for new roles. Updating them will not change any role pipelines that have already been created."
     />
   )
 }

@@ -128,7 +128,7 @@ export function OrgSettingsForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>URL ID</FieldLabel>
+              <FieldLabel htmlFor={field.name}>URL slug</FieldLabel>
               <p className="text-caption text-muted-foreground">
                 This controls the URL for your organization. Pick something
                 short and easy to remember, like your organization name or
@@ -176,7 +176,7 @@ export function OrgSettingsForm({
           render={({ field }) => (
             <Field orientation="horizontal">
               <FieldContent>
-                <FieldTitle>Organization profile open</FieldTitle>
+                <FieldTitle>Show audition page publicly</FieldTitle>
                 <FieldDescription>
                   When on, your organization page shows all open roles across
                   all productions. When off, candidates can only reach auditions

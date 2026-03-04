@@ -26,7 +26,7 @@ export default function Home() {
           </p>
         </div>
         <Button href="/auth" size="lg">
-          Get Started
+          Get started
         </Button>
       </div>
     </main>

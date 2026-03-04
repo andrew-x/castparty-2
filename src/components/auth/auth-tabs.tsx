@@ -21,11 +21,11 @@ export function AuthTabs({
         <TabsTrigger value="signup">Sign up</TabsTrigger>
       </TabsList>
       <TabsContent value="login" className="flex flex-col gap-group pt-group">
-        <h1 className="font-serif text-heading">Welcome back</h1>
+        <h2 className="font-serif text-heading">Welcome back</h2>
         <LoginForm />
       </TabsContent>
       <TabsContent value="signup" className="flex flex-col gap-group pt-group">
-        <h1 className="font-serif text-heading">Create your account</h1>
+        <h2 className="font-serif text-heading">Create your account</h2>
         <SignUpForm />
       </TabsContent>
     </Tabs>
