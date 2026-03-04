@@ -40,6 +40,7 @@ export default async function SubmitProductionPage({
 
   const production = await getPublicProduction(org.id, productionSlug)
   if (!production) return <NotFoundEntity entity="production" />
+  if (!production.isOpen) return <NotFoundEntity entity="production" />
 
   return (
     <div className="flex flex-col gap-section">

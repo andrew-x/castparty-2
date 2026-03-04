@@ -42,6 +42,7 @@ export default async function ProductionSettingsPage({
           orgSlug={production.organization.slug}
           currentName={production.name}
           currentSlug={production.slug}
+          isOpen={production.isOpen}
         />
       </section>
 
