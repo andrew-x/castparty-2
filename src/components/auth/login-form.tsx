@@ -18,7 +18,7 @@ import { Input } from "@/components/common/input"
 import { authClient } from "@/lib/auth/auth-client"
 
 const loginSchema = z.object({
-  email: z.email("Enter a valid email address."),
+  email: z.string().trim().email("Enter a valid email address."),
   password: z.string().min(1, "Password is required."),
 })
 

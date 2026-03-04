@@ -9,7 +9,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/common/breadcrumb"
+import { PreviewLinkButtons } from "@/components/common/preview-link-buttons"
 import { RoleTabNav } from "@/components/productions/role-tab-nav"
+import { getAppUrl } from "@/lib/url"
 
 export default async function RoleLayout({
   params,
@@ -48,7 +50,15 @@ export default async function RoleLayout({
       </Breadcrumb>
 
       <div>
-        <h1 className="font-serif text-title">{role.name}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-serif text-title">{role.name}</h1>
+          <PreviewLinkButtons
+            url={getAppUrl(
+              `/s/${role.production.organization.slug}/${role.production.slug}/${role.slug}`,
+            )}
+            href={`/s/${role.production.organization.slug}/${role.production.slug}/${role.slug}`}
+          />
+        </div>
         {role.description && (
           <p className="mt-2 text-body text-muted-foreground">
             {role.description}

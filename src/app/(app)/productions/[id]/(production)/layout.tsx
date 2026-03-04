@@ -9,7 +9,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/common/breadcrumb"
+import { PreviewLinkButtons } from "@/components/common/preview-link-buttons"
 import { ProductionTabNav } from "@/components/productions/production-tab-nav"
+import { getAppUrl } from "@/lib/url"
 
 export default async function ProductionLayout({
   params,
@@ -41,7 +43,15 @@ export default async function ProductionLayout({
         </BreadcrumbList>
       </Breadcrumb>
       <div>
-        <h1 className="font-serif text-title">{production.name}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-serif text-title">{production.name}</h1>
+          <PreviewLinkButtons
+            url={getAppUrl(
+              `/s/${production.organization.slug}/${production.slug}`,
+            )}
+            href={`/s/${production.organization.slug}/${production.slug}`}
+          />
+        </div>
         {production.description && (
           <p className="mt-2 text-body text-muted-foreground">
             {production.description}

@@ -89,5 +89,3 @@ export async function generateUniqueSlug(
   // Extremely unlikely fallback: use full CUID
   return `${base}-${createId()}`
 }
-
-export { RESERVED_SLUGS }

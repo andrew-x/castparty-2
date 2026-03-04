@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/common/input"
 
 const forgotPasswordSchema = z.object({
-  email: z.email("Enter a valid email address."),
+  email: z.string().trim().email("Enter a valid email address."),
 })
 
 export function ForgotPasswordForm() {
