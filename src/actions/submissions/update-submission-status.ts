@@ -40,20 +40,6 @@ export const updateSubmissionStatus = secureActionClient
       throw new Error("Submission not found.")
     }
 
-    // Prevent transitions from terminal stages
-    const currentStage = await db.query.PipelineStage.findFirst({
-      where: (s) => eq(s.id, submission.stageId),
-      columns: { type: true },
-    })
-    if (
-      currentStage?.type === "SELECTED" ||
-      currentStage?.type === "REJECTED"
-    ) {
-      throw new Error(
-        "This submission is in a final stage and cannot be moved.",
-      )
-    }
-
     // Verify the target stage belongs to the same role
     const targetStage = await db.query.PipelineStage.findFirst({
       where: (s) => and(eq(s.id, stageId), eq(s.roleId, submission.roleId)),
