@@ -7,16 +7,17 @@ import { cn } from "@/lib/util"
 
 interface Props {
   productionId: string
+  roleId: string
 }
 
 const tabs = [
-  { label: "Roles", segment: "" },
+  { label: "Submissions", segment: "" },
   { label: "Settings", segment: "/settings" },
 ] as const
 
-export function ProductionTabNav({ productionId }: Props) {
+export function RoleTabNav({ productionId, roleId }: Props) {
   const pathname = usePathname()
-  const basePath = `/productions/${productionId}`
+  const basePath = `/productions/${productionId}/roles/${roleId}`
 
   return (
     <nav>
