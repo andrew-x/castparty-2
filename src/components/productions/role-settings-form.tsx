@@ -91,6 +91,11 @@ export function RoleSettingsForm({
   )
 
   const watched = form.watch()
+  const hasChanges =
+    watched.name !== currentName ||
+    watched.description !== currentDescription ||
+    watched.slug !== currentSlug ||
+    watched.isOpen !== currentIsOpen
 
   async function onSubmit(values: z.infer<typeof schema>) {
     const roleChanged =

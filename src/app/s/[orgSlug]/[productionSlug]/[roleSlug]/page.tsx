@@ -41,6 +41,7 @@ export default async function SubmitRolePage({
 
   const production = await getPublicProduction(org.id, productionSlug)
   if (!production) return <NotFoundEntity entity="production" />
+  if (!production.isOpen) return <NotFoundEntity entity="production" />
 
   const role = await getPublicRole(production.id, roleSlug)
   if (!role) return <NotFoundEntity entity="role" />
