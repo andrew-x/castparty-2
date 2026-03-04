@@ -24,10 +24,14 @@ export const updateProduction = secureActionClient
         )
         .refine((s) => !/^\d+$/.test(s), "URL ID cannot be purely numeric.")
         .refine((s) => !RESERVED_SLUGS.has(s), "This URL ID is reserved."),
+      isOpen: z.boolean().optional(),
     }),
   )
   .action(
-    async ({ parsedInput: { productionId, name, slug }, ctx: { user } }) => {
+    async ({
+      parsedInput: { productionId, name, slug, isOpen },
+      ctx: { user },
+    }) => {
       const orgId = user.activeOrganizationId
       if (!orgId) throw new Error("No active organization.")
 
@@ -50,7 +54,7 @@ export const updateProduction = secureActionClient
 
       await db
         .update(Production)
-        .set({ name, slug })
+        .set({ name, slug, ...(isOpen !== undefined && { isOpen }) })
         .where(eq(Production.id, productionId))
 
       return { success: true }
