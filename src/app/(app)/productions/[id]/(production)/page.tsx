@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
 import { getRolesWithSubmissions } from "@/actions/productions/get-roles-with-submissions"
-import { RolesAccordion } from "@/components/productions/roles-accordion"
+import { RolesList } from "@/components/productions/roles-list"
 
 export async function generateMetadata({
   params,
@@ -29,15 +29,16 @@ export default async function ProductionPage({
     notFound()
   }
 
-  const orgSlug = production.organization.slug
   const roles = await getRolesWithSubmissions(production.id)
 
   return (
-    <RolesAccordion
-      orgSlug={orgSlug}
-      productionSlug={production.slug}
+    <RolesList
       productionId={production.id}
-      initialRoles={roles}
+      roles={roles.map((r) => ({
+        id: r.id,
+        name: r.name,
+        submissionCount: r.submissions.length,
+      }))}
     />
   )
 }

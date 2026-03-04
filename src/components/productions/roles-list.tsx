@@ -1,7 +1,8 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { PlusIcon, UserIcon } from "lucide-react"
+import { ChevronRightIcon, PlusIcon, UserIcon } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useState } from "react"
@@ -9,8 +10,8 @@ import { Controller, useForm } from "react-hook-form"
 import { z } from "zod/v4"
 import { createRole } from "@/actions/productions/create-role"
 import { Alert, AlertDescription } from "@/components/common/alert"
+import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
-import { CopyButton } from "@/components/common/copy-button"
 import {
   Empty,
   EmptyContent,
@@ -27,33 +28,24 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { Textarea } from "@/components/common/textarea"
-import { getAppUrl } from "@/lib/url"
 
 const addRoleSchema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100),
   description: z.string().trim().optional(),
 })
 
-interface Role {
+interface RoleRow {
   id: string
   name: string
-  slug: string
-  description: string | null
+  submissionCount: number
 }
 
 interface Props {
-  orgSlug: string
-  productionSlug: string
   productionId: string
-  initialRoles: Role[]
+  roles: RoleRow[]
 }
 
-export function RolesList({
-  orgSlug,
-  productionSlug,
-  productionId,
-  initialRoles,
-}: Props) {
+export function RolesList({ productionId, roles }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
 
@@ -163,7 +155,7 @@ export function RolesList({
         </form>
       )}
 
-      {initialRoles.length === 0 && !showForm && (
+      {roles.length === 0 && !showForm && (
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -186,37 +178,23 @@ export function RolesList({
         </Empty>
       )}
 
-      {initialRoles.length > 0 && (
+      {roles.length > 0 && (
         <div className="flex flex-col gap-element">
-          {initialRoles.map((role) => (
-            <div
+          {roles.map((role) => (
+            <Link
               key={role.id}
-              className="flex items-start gap-element rounded-lg border p-group"
+              href={`/productions/${productionId}/roles/${role.id}`}
+              className="flex items-center gap-element rounded-lg border p-group transition-colors hover:bg-muted/50"
             >
               <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
                 <UserIcon className="size-4 text-foreground" />
               </div>
-              <div className="flex min-w-0 flex-col gap-1">
-                <h3 className="font-medium text-foreground text-label">
-                  {role.name}
-                </h3>
-                {role.description && (
-                  <p className="text-caption text-muted-foreground">
-                    {role.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-element">
-                  <p className="break-all font-mono text-caption text-muted-foreground">
-                    /s/{orgSlug}/{productionSlug}/{role.slug}
-                  </p>
-                  <CopyButton
-                    value={getAppUrl(
-                      `/s/${orgSlug}/${productionSlug}/${role.slug}`,
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
+              <span className="min-w-0 flex-1 font-medium text-foreground text-label">
+                {role.name}
+              </span>
+              <Badge variant="secondary">{role.submissionCount}</Badge>
+              <ChevronRightIcon className="size-4 text-muted-foreground" />
+            </Link>
           ))}
         </div>
       )}
