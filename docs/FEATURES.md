@@ -18,6 +18,7 @@
 | Production Settings | `shipped` | `src/app/(app)/productions/[id]/settings/page.tsx` | Edit production details, manage roles, configure pipeline stages |
 | URL Slugs | `shipped` | `src/lib/slug.ts` | Auto-generated URL-friendly identifiers for orgs, productions, and roles; used in public submission URLs |
 | Pipeline Stages | `shipped` | `src/lib/pipeline.ts` | Configurable casting pipeline per role with system stages (Inbound, Cast, Rejected) and custom user-defined stages |
+| Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop moves candidates between pipeline stages |
 | Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | Multi-org switching in sidebar footer; lets users switch between organizations they belong to |
 | Landing Page | `shipped` | `src/app/page.tsx` | Single-screen hero with Castparty branding, tagline, and CTA link to /auth |
 | 404 Page | `shipped` | `src/app/not-found.tsx` | Theatrical "didn't make the callback list" copy with decorative 404 display |
@@ -333,3 +334,56 @@ Custom stages are inserted at positions between 1 and 999. Position ordering det
 
 *Updated: 2026-03-01 — Initial pipeline stages documentation*
 *Updated: 2026-03-04 — Note consolidated role action (update-role handles all role mutations including slug)*
+
+---
+
+## Role Submissions Kanban
+
+**Overview:** The role submissions page (`/productions/[id]/roles/[roleId]`) presents all submissions for a role as a horizontal Kanban board. Each pipeline stage is a column; each submission is a draggable card. Casting directors can triage candidates by dragging cards between columns, which moves the submission to that pipeline stage. Clicking a card opens the `SubmissionDetailSheet` for a full view. This replaced a tabbed list UI because boards make the pipeline state immediately visible — casting directors need to see the whole funnel at once, not one stage at a time.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/app/(app)/productions/[id]/roles/[roleId]/page.tsx` | Server component; fetches role + submissions via `getRoleWithSubmissions`, renders `RoleSubmissions` |
+| `src/components/productions/role-submissions.tsx` | Client component; owns Kanban state, `DragDropProvider`, column layout, and `SubmissionDetailSheet` trigger |
+| `src/actions/submissions/update-submission-status.ts` | Mutation: moves a submission to a new pipeline stage; writes a `PipelineUpdate` audit record |
+| `src/lib/submission-helpers.ts` | Shared types (`PipelineStageData`, `SubmissionWithCandidate`) and badge/label helpers |
+
+**How it works:**
+
+```
+RolePage (server)
+  └── getRoleWithSubmissions(roleId) → { submissions, pipelineStages }
+      └── RoleSubmissions (client)
+            ├── buildColumns()  — groups submissions by stageId into a Record<stageId, submissions[]>
+            ├── DragDropProvider (@dnd-kit/react v0.3)
+            │     ├── onDragStart  — snapshot columns into previousColumns ref
+            │     ├── onDragOver   — move() helper updates column state optimistically
+            │     └── onDragEnd    — if cross-column, calls updateSubmissionStatus action;
+            │                        if canceled or error, restores previousColumns snapshot
+            ├── KanbanColumn (one per stage)
+            │     └── useDroppable({ type: "column", accept: "item" })
+            │           └── KanbanCard (one per submission)
+            │                 └── useSortable({ type: "item", group: stageId })
+            │                       onClick → setSelectedSubmission (if not dragging)
+            └── SubmissionDetailSheet (portal, controlled by selectedSubmission state)
+```
+
+**Optimistic updates:** Column state lives entirely in client `useState`. On drag start, the current state is snapshotted. `onDragOver` updates it immediately via dnd-kit's `move()` helper — the card visually moves as soon as it crosses a column boundary. `onDragEnd` fires the server action. If the action errors, `onError` calls `router.refresh()`, which triggers a server re-fetch; the prop-sync guard at the top of `RoleSubmissions` (`if (submissions !== prevSubmissions)`) then resets local state from the fresh server data. Canceling a drag (e.g. Escape key) also restores the snapshot.
+
+**Terminal stages:** All pipeline stages, including Cast (Selected) and Rejected, are draggable. The previous terminal-stage guard in `update-submission-status.ts` was removed. This was intentional: casting directors need to be able to correct mistakes (e.g., accidentally rejecting someone) without a workaround. The audit trail in `PipelineUpdate` records every stage transition regardless.
+
+**Architecture decisions:**
+
+- **@dnd-kit/react v0.3 (the React-specific package), not @dnd-kit/core.** The `@dnd-kit/react` package provides `DragDropProvider`, `useDroppable`, and `useSortable` as React hooks with built-in collision detection. The `move()` helper from `@dnd-kit/helpers` handles cross-column reordering in one call, eliminating custom bookkeeping.
+
+- **Optimistic UI over server-driven updates.** Moving a card should feel instant. The server action is a fire-and-forget after the visual update. Errors roll back via `router.refresh()` + prop-sync rather than showing an error modal — keeping the interaction fast for the common case (success) while recovering gracefully on failure.
+
+- **Prop-sync pattern instead of `useEffect`.** The `if (submissions !== prevSubmissions)` guard in `RoleSubmissions` synchronizes server-refreshed props back into local column state without triggering an extra render cycle. This is the React team's recommended pattern for derived state that also needs to stay in sync with external data.
+
+- **`isDragSource` click guard on `KanbanCard`.** A click fires on `pointerup` regardless of whether a drag occurred. Checking `isDragSource` ensures `setSelectedSubmission` only runs if the user tapped (not dragged) the card, preventing the detail sheet from opening mid-drag.
+
+**Integration points:** Depends on Pipeline Stages for column structure — stages come from `getRoleWithSubmissions` alongside the submissions. `SubmissionDetailSheet` (existing component, unchanged) is reused for the card detail view. The `updateSubmissionStatus` action writes to the same `PipelineUpdate` table used by all other stage transitions. See the Pipeline Stages section above for stage type definitions and audit trail details.
+
+*Updated: 2026-03-04 — Documented Kanban board replacing tabbed submission list; terminal stage unlock; optimistic drag-and-drop with @dnd-kit/react v0.3*

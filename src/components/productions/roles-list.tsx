@@ -10,7 +10,6 @@ import { Controller, useForm } from "react-hook-form"
 import { z } from "zod/v4"
 import { createRole } from "@/actions/productions/create-role"
 import { Alert, AlertDescription } from "@/components/common/alert"
-import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
 import {
   Empty,
@@ -34,10 +33,16 @@ const addRoleSchema = z.object({
   description: z.string().trim().optional(),
 })
 
+interface StageCount {
+  name: string
+  type: "APPLIED" | "SELECTED" | "REJECTED" | "CUSTOM"
+  count: number
+}
+
 interface RoleRow {
   id: string
   name: string
-  submissionCount: number
+  stageCounts: StageCount[]
 }
 
 interface Props {
@@ -189,11 +194,31 @@ export function RolesList({ productionId, roles }: Props) {
               <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
                 <UserIcon className="size-4 text-foreground" />
               </div>
-              <span className="min-w-0 flex-1 font-medium text-foreground text-label">
-                {role.name}
-              </span>
-              <Badge variant="secondary">{role.submissionCount}</Badge>
-              <ChevronRightIcon className="size-4 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <span className="font-medium text-foreground text-label">
+                  {role.name}
+                </span>
+                {role.stageCounts.length > 0 && (
+                  <div className="mt-1 flex gap-group">
+                    {role.stageCounts.map((stage) => (
+                      <div
+                        key={stage.name}
+                        className="flex flex-col items-center"
+                      >
+                        <span className="text-caption text-muted-foreground">
+                          {stage.name}
+                        </span>
+                        <span
+                          className={`font-medium text-caption ${stage.count > 0 ? "text-foreground" : "text-muted-foreground/50"}`}
+                        >
+                          {stage.count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
             </Link>
           ))}
         </div>

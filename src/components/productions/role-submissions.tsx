@@ -1,19 +1,40 @@
 "use client"
 
-import { useState } from "react"
+import { CollisionPriority } from "@dnd-kit/abstract"
+import { move } from "@dnd-kit/helpers"
+import { DragDropProvider, useDroppable } from "@dnd-kit/react"
+import { useSortable } from "@dnd-kit/react/sortable"
+import { useRouter } from "next/navigation"
+import { useAction } from "next-safe-action/hooks"
+import { useRef, useState } from "react"
+import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Badge } from "@/components/common/badge"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/common/tabs"
+import { Button } from "@/components/common/button"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
-import { SubmissionList } from "@/components/productions/submission-list"
+import day from "@/lib/dayjs"
 import type {
   PipelineStageData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
+import { cn } from "@/lib/util"
+
+type ColumnItems = Record<string, SubmissionWithCandidate[]>
+
+function buildColumns(
+  submissions: SubmissionWithCandidate[],
+  stages: PipelineStageData[],
+): ColumnItems {
+  const columns: ColumnItems = {}
+  for (const stage of stages) {
+    columns[stage.id] = []
+  }
+  for (const sub of submissions) {
+    if (columns[sub.stageId]) {
+      columns[sub.stageId].push(sub)
+    }
+  }
+  return columns
+}
 
 interface Props {
   submissions: SubmissionWithCandidate[]
@@ -21,55 +42,82 @@ interface Props {
 }
 
 export function RoleSubmissions({ submissions, pipelineStages }: Props) {
+  const router = useRouter()
+  const [columns, setColumns] = useState(() =>
+    buildColumns(submissions, pipelineStages),
+  )
+  const previousColumns = useRef(columns)
   const [selectedSubmission, setSelectedSubmission] =
     useState<SubmissionWithCandidate | null>(null)
 
+  // Sync columns from props when server data changes (e.g., after router.refresh())
+  const [prevSubmissions, setPrevSubmissions] = useState(submissions)
+  if (submissions !== prevSubmissions) {
+    setPrevSubmissions(submissions)
+    setColumns(buildColumns(submissions, pipelineStages))
+  }
+
+  const { execute: executeStatusChange } = useAction(updateSubmissionStatus, {
+    onSuccess() {
+      router.refresh()
+    },
+    onError() {
+      router.refresh()
+    },
+  })
+
   if (submissions.length === 0) {
     return (
-      <p className="text-caption text-muted-foreground">No submissions yet.</p>
+      <p className="text-caption text-muted-foreground">No candidates yet.</p>
     )
   }
 
   return (
     <>
-      <Tabs defaultValue="all">
-        <TabsList variant="line" className="flex-wrap">
-          <TabsTrigger value="all">
-            All{" "}
-            <Badge variant="secondary" className="ml-1">
-              {submissions.length}
-            </Badge>
-          </TabsTrigger>
-          {pipelineStages.map((stage) => {
-            const count = submissions.filter(
-              (s) => s.stageId === stage.id,
-            ).length
-            if (count === 0) return null
-            return (
-              <TabsTrigger key={stage.id} value={stage.id}>
-                {stage.name}{" "}
-                <Badge variant="secondary" className="ml-1">
-                  {count}
-                </Badge>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
-        <TabsContent value="all">
-          <SubmissionList
-            submissions={submissions}
-            onSelect={setSelectedSubmission}
-          />
-        </TabsContent>
-        {pipelineStages.map((stage) => (
-          <TabsContent key={stage.id} value={stage.id}>
-            <SubmissionList
-              submissions={submissions.filter((s) => s.stageId === stage.id)}
+      <DragDropProvider
+        onDragStart={() => {
+          previousColumns.current = columns
+        }}
+        onDragOver={(event) => {
+          setColumns((current) => move(current, event))
+        }}
+        onDragEnd={(event) => {
+          if (event.canceled) {
+            setColumns(previousColumns.current)
+            return
+          }
+
+          const { source } = event.operation
+          if (!source) return
+
+          // dnd-kit's Sortable exposes initialGroup/group but the base
+          // Draggable type doesn't include them — cast to access.
+          const sortable = source as unknown as {
+            initialGroup?: string
+            group?: string
+          }
+          const fromGroup = sortable.initialGroup
+          const toGroup = sortable.group
+
+          if (fromGroup && toGroup && fromGroup !== toGroup) {
+            executeStatusChange({
+              submissionId: String(source.id),
+              stageId: toGroup,
+            })
+          }
+        }}
+      >
+        <div className="flex gap-group overflow-x-auto pb-2">
+          {pipelineStages.map((stage) => (
+            <KanbanColumn
+              key={stage.id}
+              stage={stage}
+              items={columns[stage.id] ?? []}
               onSelect={setSelectedSubmission}
             />
-          </TabsContent>
-        ))}
-      </Tabs>
+          ))}
+        </div>
+      </DragDropProvider>
 
       <SubmissionDetailSheet
         submission={selectedSubmission}
@@ -78,5 +126,96 @@ export function RoleSubmissions({ submissions, pipelineStages }: Props) {
         onStageChange={setSelectedSubmission}
       />
     </>
+  )
+}
+
+function KanbanColumn({
+  stage,
+  items,
+  onSelect,
+}: {
+  stage: PipelineStageData
+  items: SubmissionWithCandidate[]
+  onSelect: (s: SubmissionWithCandidate) => void
+}) {
+  const { ref, isDropTarget } = useDroppable({
+    id: stage.id,
+    type: "column",
+    accept: "item",
+    collisionPriority: CollisionPriority.Low,
+  })
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex w-70 shrink-0 flex-col rounded-lg bg-muted/30 p-block transition-colors",
+        isDropTarget && "bg-muted/60",
+      )}
+    >
+      <div className="flex items-center justify-between px-1 pb-block">
+        <span className="font-medium text-foreground text-label">
+          {stage.name}
+        </span>
+        <Badge variant="secondary">{items.length}</Badge>
+      </div>
+      <div className="flex flex-col gap-block">
+        {items.map((submission, index) => (
+          <KanbanCard
+            key={submission.id}
+            submission={submission}
+            index={index}
+            column={stage.id}
+            onSelect={onSelect}
+          />
+        ))}
+        {items.length === 0 && (
+          <p className="py-4 text-center text-caption text-muted-foreground">
+            No candidates
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function KanbanCard({
+  submission,
+  index,
+  column,
+  onSelect,
+}: {
+  submission: SubmissionWithCandidate
+  index: number
+  column: string
+  onSelect: (s: SubmissionWithCandidate) => void
+}) {
+  const { ref, isDragSource } = useSortable({
+    id: submission.id,
+    index,
+    type: "item",
+    accept: "item",
+    group: column,
+  })
+
+  return (
+    <Button
+      ref={ref}
+      variant="ghost"
+      onClick={() => {
+        if (!isDragSource) onSelect(submission)
+      }}
+      className={cn(
+        "h-auto w-full cursor-grab flex-col items-start rounded-lg border border-border bg-card p-block text-left hover:bg-muted/50 active:cursor-grabbing",
+        isDragSource && "opacity-40",
+      )}
+    >
+      <p className="font-medium text-foreground text-label">
+        {submission.firstName} {submission.lastName}
+      </p>
+      <p className="text-caption text-muted-foreground">
+        {day(submission.createdAt).format("LL")}
+      </p>
+    </Button>
   )
 }
