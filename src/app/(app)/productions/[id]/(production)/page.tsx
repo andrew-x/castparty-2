@@ -37,7 +37,11 @@ export default async function ProductionPage({
       roles={roles.map((r) => ({
         id: r.id,
         name: r.name,
-        submissionCount: r.submissions.length,
+        stageCounts: r.pipelineStages.map((stage) => ({
+          name: stage.name,
+          type: stage.type,
+          count: r.submissions.filter((s) => s.stageId === stage.id).length,
+        })),
       }))}
     />
   )
