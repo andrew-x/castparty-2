@@ -1,10 +1,8 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
-import { useAction } from "next-safe-action/hooks"
-import { Controller, useForm } from "react-hook-form"
-import { z } from "zod/v4"
+import { Controller } from "react-hook-form"
 import { updateOrganization } from "@/actions/organizations/update-organization"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -21,23 +19,9 @@ import { Input } from "@/components/common/input"
 import { ShareLink } from "@/components/common/share-link"
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
+import { updateOrgFormSchema } from "@/lib/schemas/organization"
+import { formResolver } from "@/lib/schemas/resolve"
 import { getAppUrl } from "@/lib/url"
-
-const schema = z.object({
-  name: z.string().trim().min(1, "Organization name is required.").max(100),
-  slug: z
-    .string()
-    .trim()
-    .min(3, "Must be at least 3 characters.")
-    .max(60, "Must be at most 60 characters.")
-    .regex(
-      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Use only lowercase letters, numbers, and hyphens.",
-    ),
-  description: z.string().trim().max(500),
-  websiteUrl: z.string().trim().url().or(z.literal("")),
-  isOrganizationProfileOpen: z.boolean(),
-})
 
 interface Props {
   organizationId: string
@@ -59,29 +43,33 @@ export function OrgSettingsForm({
   auditionUrl,
 }: Props) {
   const router = useRouter()
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      name: currentName,
-      slug: currentSlug,
-      description: currentDescription,
-      websiteUrl: currentWebsiteUrl,
-      isOrganizationProfileOpen: currentIsOrganizationProfileOpen,
+  const { form, action } = useHookFormAction(
+    updateOrganization,
+    formResolver(updateOrgFormSchema),
+    {
+      formProps: {
+        defaultValues: {
+          name: currentName,
+          slug: currentSlug,
+          description: currentDescription,
+          websiteUrl: currentWebsiteUrl,
+          isOrganizationProfileOpen: currentIsOrganizationProfileOpen,
+        },
+      },
+      actionProps: {
+        onSuccess() {
+          router.refresh()
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ??
+              "We couldn't update the organization. Try again.",
+          })
+        },
+      },
     },
-  })
-
-  const { execute, isPending } = useAction(updateOrganization, {
-    onSuccess() {
-      router.refresh()
-    },
-    onError({ error }) {
-      form.setError("root", {
-        message:
-          error.serverError ??
-          "We couldn't update the organization. Try again.",
-      })
-    },
-  })
+  )
 
   const watched = form.watch()
   const hasChanges =
@@ -93,7 +81,9 @@ export function OrgSettingsForm({
 
   return (
     <form
-      onSubmit={form.handleSubmit((v) => execute({ ...v, organizationId }))}
+      onSubmit={form.handleSubmit((v) =>
+        action.execute({ ...v, organizationId }),
+      )}
     >
       <FieldGroup>
         <Controller
@@ -220,7 +210,7 @@ export function OrgSettingsForm({
           type="submit"
           variant="outline"
           size="sm"
-          loading={isPending}
+          loading={action.isPending}
           disabled={!hasChanges}
         >
           Save

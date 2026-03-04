@@ -1,15 +1,13 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { LinkIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useAction } from "next-safe-action/hooks"
-import { Controller, useForm } from "react-hook-form"
-import { z } from "zod/v4"
+import { Controller } from "react-hook-form"
 import { updateRole } from "@/actions/productions/update-role"
-import { updateRoleSlug } from "@/actions/productions/update-role-slug"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
+import { CopyButton } from "@/components/common/copy-button"
 import {
   Field,
   FieldContent,
@@ -22,24 +20,10 @@ import {
 import { Input } from "@/components/common/input"
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
-import { CopyButton } from "@/components/common/copy-button"
+import { formResolver } from "@/lib/schemas/resolve"
+import { updateRoleFormSchema } from "@/lib/schemas/role"
 import { getAppUrl } from "@/lib/url"
 import { cn } from "@/lib/util"
-
-const schema = z.object({
-  name: z.string().trim().min(1, "Role name is required.").max(100),
-  description: z.string().trim(),
-  slug: z
-    .string()
-    .trim()
-    .min(3, "URL ID must be at least 3 characters.")
-    .max(60, "URL ID must be at most 60 characters.")
-    .regex(
-      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Lowercase letters, numbers, and hyphens only.",
-    ),
-  isOpen: z.boolean(),
-})
 
 interface Props {
   roleId: string
@@ -61,36 +45,28 @@ export function RoleSettingsForm({
   currentIsOpen,
 }: Props) {
   const router = useRouter()
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      name: currentName,
-      description: currentDescription,
-      slug: currentSlug,
-      isOpen: currentIsOpen,
-    },
-  })
-
-  const { execute: executeUpdate, isPending: isUpdating } = useAction(
+  const { form, action } = useHookFormAction(
     updateRole,
+    formResolver(updateRoleFormSchema),
     {
-      onError({ error }) {
-        form.setError("root", {
-          message:
-            error.serverError ?? "We couldn't update the role. Try again.",
-        })
+      formProps: {
+        defaultValues: {
+          name: currentName,
+          description: currentDescription,
+          slug: currentSlug,
+          isOpen: currentIsOpen,
+        },
       },
-    },
-  )
-
-  const { execute: executeSlugUpdate, isPending: isUpdatingSlug } = useAction(
-    updateRoleSlug,
-    {
-      onError({ error }) {
-        form.setError("slug", {
-          message:
-            error.serverError ?? "We couldn't update the URL ID. Try again.",
-        })
+      actionProps: {
+        onSuccess() {
+          router.refresh()
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ?? "We couldn't update the role. Try again.",
+          })
+        },
       },
     },
   )
@@ -102,35 +78,12 @@ export function RoleSettingsForm({
     watched.slug !== currentSlug ||
     watched.isOpen !== currentIsOpen
 
-  async function onSubmit(values: z.infer<typeof schema>) {
-    const roleChanged =
-      values.name !== currentName ||
-      values.description !== currentDescription ||
-      values.isOpen !== currentIsOpen
-    const slugChanged = values.slug !== currentSlug
-
-    if (roleChanged) {
-      executeUpdate({
-        roleId,
-        name: values.name,
-        description: values.description,
-        isOpen: values.isOpen,
-      })
-    }
-
-    if (slugChanged) {
-      executeSlugUpdate({ roleId, slug: values.slug })
-    }
-
-    router.refresh()
-  }
-
   const auditionUrl = getAppUrl(
     `/s/${orgSlug}/${productionSlug}/${watched.slug || currentSlug}`,
   )
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
+    <form onSubmit={form.handleSubmit((v) => action.execute({ ...v, roleId }))}>
       <FieldGroup>
         <Controller
           name="name"
@@ -273,7 +226,7 @@ export function RoleSettingsForm({
         <div className="flex justify-center">
           <Button
             type="submit"
-            loading={isUpdating || isUpdatingSlug}
+            loading={action.isPending}
             disabled={!hasChanges}
           >
             Save

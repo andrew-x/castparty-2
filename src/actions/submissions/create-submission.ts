@@ -1,28 +1,15 @@
 "use server"
 
 import { and, eq } from "drizzle-orm"
-import { z } from "zod/v4"
 import { publicActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Candidate, Submission } from "@/lib/db/schema"
+import { submissionActionSchema } from "@/lib/schemas/submission"
 import { generateId } from "@/lib/util"
 
 export const createSubmission = publicActionClient
   .metadata({ action: "create-submission" })
-  .inputSchema(
-    z.object({
-      orgId: z.string().min(1),
-      productionId: z.string().min(1),
-      roleId: z.string().min(1),
-      firstName: z.string().trim().min(1, "First name is required.").max(100),
-      lastName: z.string().trim().min(1, "Last name is required.").max(100),
-      email: z
-        .string()
-        .trim()
-        .pipe(z.email({ error: "Enter a valid email." })),
-      phone: z.string().trim().optional(),
-    }),
-  )
+  .inputSchema(submissionActionSchema)
   .action(
     async ({
       parsedInput: {

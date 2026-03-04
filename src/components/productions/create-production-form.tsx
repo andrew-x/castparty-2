@@ -1,12 +1,11 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { PlusIcon, TrashIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useAction } from "next-safe-action/hooks"
 import { useEffect, useRef, useState } from "react"
-import { Controller, useFieldArray, useForm } from "react-hook-form"
-import { z } from "zod/v4"
+import { Controller, useFieldArray } from "react-hook-form"
+import type { z } from "zod/v4"
 import { createProduction } from "@/actions/productions/create-production"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -22,49 +21,12 @@ import {
   type StageData,
   StagesEditor,
 } from "@/components/productions/default-stages-editor"
+import { createProductionFormSchema } from "@/lib/schemas/production"
+import { formResolver } from "@/lib/schemas/resolve"
 import { slugify } from "@/lib/slugify"
 import { getAppUrl } from "@/lib/url"
 
-const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-
-const RESERVED_SLUGS = new Set([
-  "new",
-  "create",
-  "edit",
-  "delete",
-  "settings",
-  "admin",
-  "api",
-  "submit",
-  "auth",
-  "home",
-])
-
-const slugRule = z
-  .string()
-  .trim()
-  .min(3, "URL ID must be at least 3 characters.")
-  .max(60, "URL ID must be at most 60 characters.")
-  .regex(
-    SLUG_REGEX,
-    "URL ID can only contain lowercase letters, numbers, and hyphens.",
-  )
-  .refine((s) => !/^\d+$/.test(s), "URL ID cannot be purely numeric.")
-  .refine((s) => !RESERVED_SLUGS.has(s), "This URL ID is reserved.")
-
-const schema = z.object({
-  name: z.string().trim().min(1, "Production name is required.").max(100),
-  description: z.string().trim().optional(),
-  slug: slugRule.optional().or(z.literal("")),
-  roles: z.array(
-    z.object({
-      name: z.string().trim().min(1, "Role name is required.").max(100),
-      description: z.string().trim().optional(),
-    }),
-  ),
-})
-
-type FormValues = z.infer<typeof schema>
+type FormValues = z.infer<typeof createProductionFormSchema>
 
 type Step = "details" | "stages" | "roles"
 
@@ -93,10 +55,29 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
   )
   const slugTouchedRef = useRef(false)
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: "", description: "", slug: "", roles: [] },
-  })
+  const { form, action } = useHookFormAction(
+    createProduction,
+    formResolver(createProductionFormSchema),
+    {
+      formProps: {
+        defaultValues: { name: "", description: "", slug: "", roles: [] },
+      },
+      actionProps: {
+        onSuccess({ data }) {
+          if (data?.id) {
+            router.push(`/productions/${data.id}`)
+          }
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ??
+              "We couldn't create the production. Try again.",
+          })
+        },
+      },
+    },
+  )
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -110,20 +91,6 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
       form.setValue("slug", slugify(nameValue))
     }
   }, [nameValue, form])
-
-  const { execute, isPending } = useAction(createProduction, {
-    onSuccess({ data }) {
-      if (data?.id) {
-        router.push(`/productions/${data.id}`)
-      }
-    },
-    onError({ error }) {
-      form.setError("root", {
-        message:
-          error.serverError ?? "We couldn't create the production. Try again.",
-      })
-    },
-  })
 
   async function handleNextToStages() {
     const valid = await form.trigger(["name", "description", "slug"])
@@ -177,7 +144,7 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
     const slug = values.slug?.trim() || undefined
     const stageNames = customStages.map((s) => s.name)
 
-    execute({
+    action.execute({
       name: values.name,
       description: values.description || undefined,
       slug,
@@ -194,7 +161,12 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
   ]
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)}>
+    <form
+      onSubmit={form.handleSubmit(
+        // biome-ignore lint/suspicious/noExplicitAny: form validates against createProductionFormSchema
+        handleSubmit as any,
+      )}
+    >
       {step === "details" && (
         <FieldGroup>
           <Controller
@@ -418,7 +390,7 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
             >
               Back
             </Button>
-            <Button type="submit" loading={isPending}>
+            <Button type="submit" loading={action.isPending}>
               {fields.length > 0
                 ? "Create production with roles"
                 : "Create production"}

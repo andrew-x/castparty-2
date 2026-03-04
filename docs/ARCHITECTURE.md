@@ -38,7 +38,9 @@ src/
 │   ├── admin/           # Admin panel components
 │   └── onboarding/      # Onboarding flow components
 ├── hooks/               # Shared custom React hooks
-├── lib/                 # Server-side utilities (auth, db, slug, pipeline, etc.)
+├── lib/
+│   ├── schemas/         # Centralized Zod schemas — form schemas + action schemas per feature
+│   └── ...              # Other server-side utilities (auth, db, slug, pipeline, etc.)
 └── styles/
     └── globals.scss     # Tailwind import + theme tokens (CSS custom properties)
 ```
@@ -72,13 +74,19 @@ Browser
   └── Next.js App Router (RSC)
         ├── Server components → plain async functions in src/actions/
         │     └── checkAuth() + Drizzle queries → Neon (PostgreSQL)
-        ├── Client components → next-safe-action actions in src/actions/
-        │     └── secureActionClient (auth + validation + logging) → Neon
+        ├── Client form components
+        │     └── useHookFormAction (adapter layer)
+        │           ├── react-hook-form (local form state, validation via zodResolver)
+        │           └── next-safe-action actions in src/actions/
+        │                 └── secureActionClient (auth + validation + logging) → Neon
         └── Client components → authClient.* (Better Auth browser SDK)
               └── → /api/auth/[...all] route handler
 ```
 
+**Form / action schema split:** Every feature in `src/lib/schemas/` exports two Zod schemas — a form schema (user-input fields only, used by `zodResolver`) and an action schema (extends with IDs and server refinements, used by `next-safe-action`). The adapter hook `useHookFormAction` bridges the two without manual wiring. See `docs/CONVENTIONS.md#form-patterns` for the full pattern.
+
 - `src/actions/` — Backend business logic organized by feature area; the boundary between UI and data
+- `src/lib/schemas/` — Centralized Zod schemas: `slug.ts`, `organization.ts`, `production.ts`, `role.ts`, `submission.ts`; barrel at `index.ts`
 - `src/lib/action.ts` — next-safe-action client setup (`publicActionClient`, `secureActionClient`)
 - `src/lib/auth.ts` — Better Auth server instance; `getCurrentUser()` reads the session from request headers
 - `src/lib/auth/auth-client.ts` — Better Auth browser client; used in form components
@@ -135,3 +143,4 @@ Candidate records are deduplicated by `(organizationId, email)` — the same per
 
 *Updated: 2026-02-28 — Replaced stale placeholders with actual data flow and external services*
 *Updated: 2026-03-01 — Added Better Auth plugins, expanded directory layout, fixed component directories, added Data Model section*
+*Updated: 2026-03-04 — Added useHookFormAction adapter layer to data flow; added src/lib/schemas/ to directory layout and key files*

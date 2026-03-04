@@ -153,8 +153,8 @@ GET /onboarding
 OnboardingFlow (client)
   step = "create-org"
     └── <CreateOrgForm onComplete={handleOrgCreated} />
-          createOrganization action → onComplete(organizationId)
-          → setOrgId(organizationId); setStep("invite-team")
+          useHookFormAction(createOrganization, zodResolver(createOrgFormSchema))
+          → onComplete(organizationId) → setOrgId; setStep("invite-team")
 
   step = "invite-team"
     └── <InviteTeamForm organizationId={orgId} />
@@ -293,7 +293,7 @@ Three-tier URL structure:
 /submit/[orgSlug]/[productionSlug]/[roleSlug]    → role page (submission form)
 ```
 
-Each page is a server component that calls its corresponding public server function (no auth required). The final page renders the `SubmissionForm` client component. On submit, `create-submission` runs via `publicActionClient` — it looks up the role's Inbound pipeline stage, upserts a Candidate record keyed by `(organizationId, email)`, then inserts a Submission linked to that stage.
+Each page is a server component that calls its corresponding public server function (no auth required). The final page renders the `SubmissionForm` client component. On submit, `SubmissionForm` uses `useHookFormAction(createSubmission, zodResolver(submissionFormSchema))`. The form schema (`submissionFormSchema` in `src/lib/schemas/submission.ts`) captures user-entered fields only; server IDs (`orgId`, `productionId`, `roleId`) are injected in the submit handler via `action.execute({ ...v, orgId, productionId, roleId })`. The `create-submission` action runs via `publicActionClient` — it looks up the role's Inbound pipeline stage, upserts a Candidate record keyed by `(organizationId, email)`, then inserts a Submission linked to that stage.
 
 **Architecture decisions:** Uses `publicActionClient` (no auth required — these routes are intentionally open). Candidate deduplication by email means the same person submitting to multiple roles in the same org is treated as one candidate in the database.
 
@@ -330,9 +330,10 @@ Custom stages are inserted at positions between 1 and 999. Position ordering det
 
 **Architecture decisions:** Per-role pipelines (rather than per-production) allow different roles in the same production to have different evaluation criteria — a lead role might have three callback rounds while an ensemble role goes straight from Inbound to Cast. Terminal stage positions (1000/1001) leave a large range (1–999) for custom stages without requiring renumbering. See `docs/DECISIONS.md` ADR-007 for full rationale.
 
-**Integration points:** New submissions from the Public Submission Flow always land in Inbound. The Production Settings page (`src/app/(app)/productions/[id]/settings/page.tsx`) is the UI entry point for managing stages.
+**Integration points:** New submissions from the Public Submission Flow always land in Inbound. The Production Settings page (`src/app/(app)/productions/[id]/settings/page.tsx`) is the UI entry point for managing stages. Role settings (name, description, slug, open/closed) are updated via `src/actions/productions/update-role.ts`, which handles all role mutations including slug changes (a previously separate `update-role-slug.ts` action was merged here).
 
 *Updated: 2026-03-01 — Initial pipeline stages documentation*
+*Updated: 2026-03-04 — Note consolidated role action (update-role handles all role mutations including slug)*
 
 ---
 

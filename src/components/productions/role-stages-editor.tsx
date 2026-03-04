@@ -7,8 +7,8 @@ import { addPipelineStage } from "@/actions/productions/add-pipeline-stage"
 import { removePipelineStage } from "@/actions/productions/remove-pipeline-stage"
 import { reorderRoleStages } from "@/actions/productions/reorder-role-stages"
 import {
-  StagesEditor,
   type StageData,
+  StagesEditor,
 } from "@/components/productions/default-stages-editor"
 
 interface Props {
