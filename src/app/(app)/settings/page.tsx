@@ -4,6 +4,7 @@ import { getMemberRole } from "@/actions/organizations/get-member-role"
 import { getOrgInvitations } from "@/actions/organizations/get-org-invitations"
 import { getOrganization } from "@/actions/organizations/get-organization"
 import { getOrganizationProfile } from "@/actions/organizations/get-organization-profile"
+import { Page, PageContent, PageHeader } from "@/components/common/page"
 import { Separator } from "@/components/common/separator"
 import { MembersTable } from "@/components/organizations/members-table"
 import { OrgSettingsForm } from "@/components/organizations/org-settings-form"
@@ -35,36 +36,39 @@ export default async function SettingsPage() {
   ])
 
   return (
-    <div className="flex flex-1 flex-col px-page py-page">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-section">
-        <h1 className="font-serif text-title">Settings</h1>
+    <Page>
+      <PageHeader title="Settings" />
+      <PageContent>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-section">
+          <section className="flex flex-col gap-group">
+            <h2 className="font-serif text-heading">Organization Profile</h2>
+            <OrgSettingsForm
+              organizationId={activeOrgId}
+              currentName={orgData.organization.name}
+              currentSlug={orgData.organization.slug}
+              currentDescription={profile.description}
+              currentWebsiteUrl={profile.websiteUrl}
+              currentIsOrganizationProfileOpen={
+                profile.isOrganizationProfileOpen
+              }
+              auditionUrl={getAppUrl(`/s/${orgData.organization.slug}`)}
+            />
+          </section>
 
-        <section className="flex flex-col gap-group">
-          <h2 className="font-serif text-heading">Organization Profile</h2>
-          <OrgSettingsForm
-            organizationId={activeOrgId}
-            currentName={orgData.organization.name}
-            currentSlug={orgData.organization.slug}
-            currentDescription={profile.description}
-            currentWebsiteUrl={profile.websiteUrl}
-            currentIsOrganizationProfileOpen={profile.isOrganizationProfileOpen}
-            auditionUrl={getAppUrl(`/s/${orgData.organization.slug}`)}
-          />
-        </section>
+          <Separator />
 
-        <Separator />
-
-        <section className="flex flex-col gap-group">
-          <h2 className="font-serif text-heading">Members</h2>
-          <MembersTable
-            organizationId={activeOrgId}
-            members={orgData.members}
-            currentUserRole={orgData.currentUserRole}
-            currentUserId={user.id}
-            pendingInvitations={pendingInvitations}
-          />
-        </section>
-      </div>
-    </div>
+          <section className="flex flex-col gap-group">
+            <h2 className="font-serif text-heading">Members</h2>
+            <MembersTable
+              organizationId={activeOrgId}
+              members={orgData.members}
+              currentUserRole={orgData.currentUserRole}
+              currentUserId={user.id}
+              pendingInvitations={pendingInvitations}
+            />
+          </section>
+        </div>
+      </PageContent>
+    </Page>
   )
 }

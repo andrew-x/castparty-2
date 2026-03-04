@@ -69,6 +69,7 @@
   --spacing-group: 1.5rem; /* 24px — between related groups */
   --spacing-block: 0.75rem; /* 12px — between block-level items */
   --spacing-element: 0.5rem; /* 8px  — between tightly coupled elements */
+  --spacing-tight: 0.25rem; /* 4px  — minimal separation (e.g. breadcrumbs to title) */
 
   /* === shadcn variable → Tailwind utility mappings === */
   --color-background: var(--background);

@@ -9,6 +9,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/common/empty"
+import { Page, PageContent, PageHeader } from "@/components/common/page"
 
 export const metadata: Metadata = {
   title: "Candidates — Castparty",
@@ -17,28 +18,29 @@ export const metadata: Metadata = {
 export default async function CandidatesPage() {
   const candidates = await getCandidates()
 
-  if (candidates.length === 0) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-page">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <UsersIcon />
-            </EmptyMedia>
-            <EmptyTitle>No candidates yet</EmptyTitle>
-            <EmptyDescription>
-              Candidates will appear here as they submit for your productions.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-col gap-group px-page py-section">
-      <h1 className="font-serif text-title">Candidates</h1>
-      <CandidatesTable candidates={candidates} />
-    </div>
+    <Page>
+      <PageHeader title="Candidates" />
+      <PageContent>
+        {candidates.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center">
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <UsersIcon />
+                </EmptyMedia>
+                <EmptyTitle>No candidates yet</EmptyTitle>
+                <EmptyDescription>
+                  Candidates will appear here as they submit for your
+                  productions.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </div>
+        ) : (
+          <CandidatesTable candidates={candidates} />
+        )}
+      </PageContent>
+    </Page>
   )
 }
