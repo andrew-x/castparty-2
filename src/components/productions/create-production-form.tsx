@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { PlusIcon, TrashIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod/v4"
 import { createProduction } from "@/actions/productions/create-production"
@@ -18,10 +18,44 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { Textarea } from "@/components/common/textarea"
+import {
+  type StageData,
+  StagesEditor,
+} from "@/components/productions/default-stages-editor"
+import { slugify } from "@/lib/slugify"
+import { getAppUrl } from "@/lib/url"
+
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+const RESERVED_SLUGS = new Set([
+  "new",
+  "create",
+  "edit",
+  "delete",
+  "settings",
+  "admin",
+  "api",
+  "submit",
+  "auth",
+  "home",
+])
+
+const slugRule = z
+  .string()
+  .trim()
+  .min(3, "URL ID must be at least 3 characters.")
+  .max(60, "URL ID must be at most 60 characters.")
+  .regex(
+    SLUG_REGEX,
+    "URL ID can only contain lowercase letters, numbers, and hyphens.",
+  )
+  .refine((s) => !/^\d+$/.test(s), "URL ID cannot be purely numeric.")
+  .refine((s) => !RESERVED_SLUGS.has(s), "This URL ID is reserved.")
 
 const schema = z.object({
   name: z.string().trim().min(1, "Production name is required.").max(100),
   description: z.string().trim().optional(),
+  slug: slugRule.optional().or(z.literal("")),
   roles: z.array(
     z.object({
       name: z.string().trim().min(1, "Role name is required.").max(100),
@@ -32,19 +66,50 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-export function CreateProductionForm() {
+type Step = "details" | "stages" | "roles"
+
+const DEFAULT_CUSTOM_STAGES: StageData[] = [
+  { id: "tmp-screening", name: "Screening", order: 1, type: "CUSTOM" },
+  { id: "tmp-audition", name: "Audition", order: 2, type: "CUSTOM" },
+  { id: "tmp-callback", name: "Callback", order: 3, type: "CUSTOM" },
+]
+
+const SYSTEM_STAGES: StageData[] = [
+  { id: "sys-applied", name: "Applied", order: 0, type: "APPLIED" },
+  { id: "sys-selected", name: "Selected", order: 1000, type: "SELECTED" },
+  { id: "sys-rejected", name: "Rejected", order: 1001, type: "REJECTED" },
+]
+
+let tempIdCounter = 0
+function nextTempId() {
+  return `tmp-${++tempIdCounter}`
+}
+
+export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
   const router = useRouter()
-  const [step, setStep] = useState<"details" | "roles">("details")
+  const [step, setStep] = useState<Step>("details")
+  const [customStages, setCustomStages] = useState<StageData[]>(
+    DEFAULT_CUSTOM_STAGES,
+  )
+  const slugTouchedRef = useRef(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", description: "", roles: [] },
+    defaultValues: { name: "", description: "", slug: "", roles: [] },
   })
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "roles",
   })
+
+  // Auto-fill slug from name while user hasn't manually edited it
+  const nameValue = form.watch("name")
+  useEffect(() => {
+    if (!slugTouchedRef.current) {
+      form.setValue("slug", slugify(nameValue))
+    }
+  }, [nameValue, form])
 
   const { execute, isPending } = useAction(createProduction, {
     onSuccess({ data }) {
@@ -60,25 +125,73 @@ export function CreateProductionForm() {
     },
   })
 
-  async function handleNext() {
-    const valid = await form.trigger(["name", "description"])
+  async function handleNextToStages() {
+    const valid = await form.trigger(["name", "description", "slug"])
     if (valid) {
-      setStep("roles")
+      setStep("stages")
     }
   }
 
-  function handleBack() {
+  async function handleNextToRoles() {
+    setStep("roles")
+  }
+
+  function handleBackToDetails() {
     setStep("details")
+  }
+
+  function handleBackToStages() {
+    setStep("stages")
+  }
+
+  function handleSlugChange(value: string) {
+    if (value === "") {
+      // User cleared the slug, resume auto-filling
+      slugTouchedRef.current = false
+      form.setValue("slug", slugify(nameValue))
+    } else {
+      slugTouchedRef.current = true
+      form.setValue("slug", value)
+    }
+  }
+
+  // --- Stages callbacks ---
+  function handleAddStage(name: string) {
+    const maxOrder = Math.max(0, ...customStages.map((s) => s.order))
+    setCustomStages((prev) => [
+      ...prev,
+      { id: nextTempId(), name, order: maxOrder + 1, type: "CUSTOM" },
+    ])
+  }
+
+  function handleRemoveStage(id: string) {
+    setCustomStages((prev) => prev.filter((s) => s.id !== id))
+  }
+
+  function handleReorderStages(reordered: StageData[]) {
+    setCustomStages(reordered.filter((s) => s.type === "CUSTOM"))
   }
 
   function handleSubmit(values: FormValues) {
     const roles = values.roles.filter((r) => r.name.trim().length > 0)
+    const slug = values.slug?.trim() || undefined
+    const stageNames = customStages.map((s) => s.name)
+
     execute({
       name: values.name,
       description: values.description || undefined,
+      slug,
+      customStages: stageNames,
       roles: roles.length > 0 ? roles : undefined,
     })
   }
+
+  const allStages: StageData[] = [
+    SYSTEM_STAGES[0],
+    ...customStages,
+    SYSTEM_STAGES[1],
+    SYSTEM_STAGES[2],
+  ]
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)}>
@@ -120,11 +233,76 @@ export function CreateProductionForm() {
               </Field>
             )}
           />
+          <Controller
+            name="slug"
+            control={form.control}
+            render={({ field, fieldState }) => {
+              const previewSlug = field.value || "your-production"
+              const previewUrl = getAppUrl(`/s/${orgSlug}/${previewSlug}`)
+
+              return (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel htmlFor={field.name}>
+                    URL ID (optional)
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id={field.name}
+                    type="text"
+                    placeholder="e.g. our-town"
+                    aria-invalid={fieldState.invalid}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                  />
+                  <p className="text-caption text-muted-foreground">
+                    Your audition page will be at{" "}
+                    <strong className="break-all">{previewUrl}</strong>
+                  </p>
+                  {fieldState.error && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )
+            }}
+          />
           <div className="flex justify-end gap-element">
             <Button type="button" variant="outline" asChild>
               <a href="/productions">Cancel</a>
             </Button>
-            <Button type="button" onClick={handleNext}>
+            <Button type="button" onClick={handleNextToStages}>
+              Continue
+            </Button>
+          </div>
+        </FieldGroup>
+      )}
+
+      {step === "stages" && (
+        <FieldGroup>
+          <div className="flex flex-col gap-block">
+            <div>
+              <h2 className="font-medium text-heading">Pipeline stages</h2>
+              <p className="text-caption text-muted-foreground">
+                These are the default pipeline stages for all new roles. You can
+                customize these later, or set up different stages per role.
+              </p>
+            </div>
+
+            <StagesEditor
+              stages={allStages}
+              onAdd={handleAddStage}
+              onRemove={handleRemoveStage}
+              onReorder={handleReorderStages}
+            />
+          </div>
+
+          <div className="flex justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBackToDetails}
+            >
+              Back
+            </Button>
+            <Button type="button" onClick={handleNextToRoles}>
               Continue
             </Button>
           </div>
@@ -233,7 +411,11 @@ export function CreateProductionForm() {
           )}
 
           <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={handleBack}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBackToStages}
+            >
               Back
             </Button>
             <Button type="submit" loading={isPending}>
