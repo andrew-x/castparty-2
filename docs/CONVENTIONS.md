@@ -246,6 +246,115 @@ flex min-h-svh flex-col items-center justify-center px-4
 
 `min-h-svh` (small viewport height) is used instead of `min-h-screen` to avoid the iOS Safari URL-bar resize glitch.
 
+## Form Patterns
+
+Action-connected forms use a single adapter hook instead of separate `useForm` + `useAction` hooks. This keeps form state and action execution co-located and eliminates manual wiring between the two.
+
+### `useHookFormAction` — standard hook for action-connected forms
+
+```tsx
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
+import { zodResolver } from "@hookform/resolvers/zod"
+
+const { form, action, handleSubmitWithAction } = useHookFormAction(
+  myAction,
+  // biome-ignore lint/suspicious/noExplicitAny: form schema is a subset of action schema
+  zodResolver(myFormSchema) as any,
+  {
+    formProps: { defaultValues: { name: "" } },
+    actionProps: {
+      onSuccess() { /* navigate, refresh, etc. */ },
+      onError({ error }) {
+        form.setError("root", {
+          message: error.serverError ?? "Something went wrong. Try again.",
+        })
+      },
+    },
+  },
+)
+```
+
+The hook returns `form` (a standard `react-hook-form` `UseFormReturn`) and `action` (a `useAction` return with `isPending`, `execute`, etc.). Never combine a separate `useForm` + `useAction` for forms that submit to a `next-safe-action` action.
+
+### Centralized schemas (`src/lib/schemas/`)
+
+All Zod schemas live in `src/lib/schemas/[feature].ts`, not inline in form or action files. The barrel re-exports everything from `src/lib/schemas/index.ts`.
+
+| File | Contents |
+|------|----------|
+| `src/lib/schemas/slug.ts` | `slugSchema`, `slugSchemaStrict` — reused across form/action schemas |
+| `src/lib/schemas/organization.ts` | Org and invite create/update schemas |
+| `src/lib/schemas/production.ts` | Production create/update schemas |
+| `src/lib/schemas/role.ts` | Role update schemas |
+| `src/lib/schemas/submission.ts` | Submission form/action schemas |
+
+**Form schema vs action schema split.** Every feature defines two schemas:
+
+- **Form schema** — user-input fields only (what the form collects). Used as the `zodResolver` argument.
+- **Action schema** — extends the form schema with server-only fields (IDs from props/context) via `.extend()`, and stricter server-side refinements via `.refine()`. Used as the `next-safe-action` `.inputSchema()` argument.
+
+```ts
+// src/lib/schemas/submission.ts
+export const submissionFormSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required.").max(100),
+  email: z.string().trim().email("Enter a valid email."),
+  // ...
+})
+
+export const submissionActionSchema = submissionFormSchema.extend({
+  orgId: z.string().min(1),       // injected from props, not user input
+  productionId: z.string().min(1),
+  roleId: z.string().min(1),
+})
+```
+
+The action file imports and uses `submissionActionSchema`; the form component imports and uses `submissionFormSchema`.
+
+### Submit handlers
+
+**Use `handleSubmitWithAction`** when the form fields exactly match the action input (no ID injection needed):
+
+```tsx
+<form onSubmit={handleSubmitWithAction}>
+```
+
+**Use `form.handleSubmit((v) => action.execute(...))`** when you need to inject IDs from props or transform values before executing:
+
+```tsx
+<form onSubmit={form.handleSubmit((v) => action.execute({ ...v, orgId, roleId }))}>
+```
+
+### Loading and error state
+
+- **Loading indicator:** `action.isPending` — not a separate state variable.
+- **Validation errors:** Mapped automatically to fields by the adapter via `zodResolver`.
+- **Server errors:** Use `form.setError("root", { message: ... })` in `onError`. Display with `form.formState.errors.root`:
+
+```tsx
+{form.formState.errors.root && (
+  <Alert variant="destructive">
+    <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
+  </Alert>
+)}
+```
+
+### `as any` cast on `zodResolver`
+
+Because the form schema intentionally has fewer fields than the action schema, TypeScript sees a type mismatch. Cast with `as any` and add a biome-ignore comment:
+
+```tsx
+// biome-ignore lint/suspicious/noExplicitAny: form schema is a subset of action schema
+zodResolver(myFormSchema) as any,
+```
+
+This is the one sanctioned use of `any` in the codebase — the comment documents exactly why.
+
+### Exception: auth forms
+
+Forms that call the Better Auth client SDK directly (`authClient.signIn.email`, `authClient.signUp.email`) don't go through `next-safe-action` and don't use `useHookFormAction`. Standard `useForm` is correct for those. See `src/components/auth/` for examples.
+
+*Updated: 2026-03-04 — Added Form Patterns section (useHookFormAction, centralized schemas, schema split)*
+
 ## Backend Patterns
 
 ### Directory structure

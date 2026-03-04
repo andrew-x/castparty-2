@@ -1,7 +1,6 @@
 "use server"
 
 import { and, eq } from "drizzle-orm"
-import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { PipelineStage, Production, Role } from "@/lib/db/schema"
@@ -10,31 +9,13 @@ import {
   buildProductionStages,
   buildStagesFromTemplate,
 } from "@/lib/pipeline"
+import { createProductionActionSchema } from "@/lib/schemas/production"
 import { generateUniqueSlug, nameToSlug, validateSlug } from "@/lib/slug"
 import { generateId } from "@/lib/util"
 
-const roleSchema = z.object({
-  name: z.string().trim().min(1, "Role name is required.").max(100),
-  description: z.string().trim().optional(),
-})
-
-const createProductionSchema = z.object({
-  name: z.string().trim().min(1, "Production name is required.").max(100),
-  description: z.string().trim().optional(),
-  slug: z
-    .string()
-    .trim()
-    .min(3)
-    .max(60)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-    .optional(),
-  customStages: z.array(z.string().trim().min(1).max(100)).optional(),
-  roles: z.array(roleSchema).optional(),
-})
-
 export const createProduction = secureActionClient
   .metadata({ action: "create-production" })
-  .inputSchema(createProductionSchema)
+  .inputSchema(createProductionActionSchema)
   .action(
     async ({
       parsedInput: { name, description, roles, slug, customStages },

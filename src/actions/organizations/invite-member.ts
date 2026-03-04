@@ -2,27 +2,18 @@
 
 import { and, desc, eq, gte } from "drizzle-orm"
 import { headers } from "next/headers"
-import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
 import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import { invitation, member } from "@/lib/db/schema"
+import { inviteActionSchema } from "@/lib/schemas/organization"
 
 const MAX_REJECTED_INVITES = 3
 
 export const inviteMember = secureActionClient
   .metadata({ action: "invite-member" })
-  .inputSchema(
-    z.object({
-      organizationId: z.string().min(1),
-      email: z
-        .string()
-        .trim()
-        .pipe(z.email({ error: "Enter a valid email." })),
-      role: z.enum(["admin", "member"]),
-    }),
-  )
+  .inputSchema(inviteActionSchema)
   .action(
     async ({
       parsedInput: { organizationId, email, role },

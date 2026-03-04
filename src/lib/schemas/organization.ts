@@ -1,0 +1,34 @@
+import { z } from "zod/v4"
+import { slugSchema, slugSchemaStrict } from "./slug"
+
+export const createOrgFormSchema = z.object({
+  name: z.string().trim().min(1, "Organization name is required."),
+  slug: slugSchema,
+})
+
+export const createOrgActionSchema = z.object({
+  name: z.string().trim().min(1, "Organization name is required.").max(100),
+  slug: slugSchemaStrict.optional(),
+})
+
+export const updateOrgFormSchema = z.object({
+  name: z.string().trim().min(1, "Organization name is required.").max(100),
+  slug: slugSchema,
+  description: z.string().trim().max(500),
+  websiteUrl: z.string().trim().url().or(z.literal("")),
+  isOrganizationProfileOpen: z.boolean(),
+})
+
+export const updateOrgActionSchema = updateOrgFormSchema.extend({
+  organizationId: z.string().min(1),
+  slug: slugSchemaStrict.optional(),
+})
+
+export const inviteFormSchema = z.object({
+  email: z.string().trim().email("Enter a valid email."),
+})
+
+export const inviteActionSchema = inviteFormSchema.extend({
+  organizationId: z.string().min(1),
+  role: z.enum(["admin", "member"]),
+})

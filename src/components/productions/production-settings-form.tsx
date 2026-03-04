@@ -1,11 +1,9 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { LinkIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useAction } from "next-safe-action/hooks"
-import { Controller, useForm } from "react-hook-form"
-import { z } from "zod/v4"
+import { Controller } from "react-hook-form"
 import { updateProduction } from "@/actions/productions/update-production"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -21,22 +19,10 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { Switch } from "@/components/common/switch"
+import { updateProductionFormSchema } from "@/lib/schemas/production"
+import { formResolver } from "@/lib/schemas/resolve"
 import { getAppUrl } from "@/lib/url"
 import { cn } from "@/lib/util"
-
-const schema = z.object({
-  name: z.string().trim().min(1, "Production name is required.").max(100),
-  slug: z
-    .string()
-    .trim()
-    .min(3, "URL ID must be at least 3 characters.")
-    .max(60, "URL ID must be at most 60 characters.")
-    .regex(
-      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Lowercase letters, numbers, and hyphens only.",
-    ),
-  isOpen: z.boolean(),
-})
 
 interface Props {
   productionId: string
@@ -54,22 +40,27 @@ export function ProductionSettingsForm({
   isOpen,
 }: Props) {
   const router = useRouter()
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: currentName, slug: currentSlug, isOpen },
-  })
-
-  const { execute, isPending } = useAction(updateProduction, {
-    onSuccess() {
-      router.refresh()
+  const { form, action } = useHookFormAction(
+    updateProduction,
+    formResolver(updateProductionFormSchema),
+    {
+      formProps: {
+        defaultValues: { name: currentName, slug: currentSlug, isOpen },
+      },
+      actionProps: {
+        onSuccess() {
+          router.refresh()
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ??
+              "We couldn't update the production. Try again.",
+          })
+        },
+      },
     },
-    onError({ error }) {
-      form.setError("root", {
-        message:
-          error.serverError ?? "We couldn't update the production. Try again.",
-      })
-    },
-  })
+  )
 
   const watched = form.watch()
   const hasChanges =
@@ -82,7 +73,7 @@ export function ProductionSettingsForm({
   return (
     <form
       onSubmit={form.handleSubmit((v) =>
-        execute({
+        action.execute({
           productionId,
           name: v.name,
           slug: v.slug,
@@ -209,7 +200,11 @@ export function ProductionSettingsForm({
           </Alert>
         )}
         <div className="flex justify-center">
-          <Button type="submit" loading={isPending} disabled={!hasChanges}>
+          <Button
+            type="submit"
+            loading={action.isPending}
+            disabled={!hasChanges}
+          >
             Save
           </Button>
         </div>

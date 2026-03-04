@@ -1,10 +1,8 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useAction } from "next-safe-action/hooks"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useState } from "react"
-import { Controller, useForm } from "react-hook-form"
-import { z } from "zod/v4"
+import { Controller } from "react-hook-form"
 import { createSubmission } from "@/actions/submissions/create-submission"
 import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -15,15 +13,8 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
-
-const submissionSchema = z.object({
-  firstName: z.string().trim().min(1, "First name is required.").max(100),
-  lastName: z.string().trim().min(1, "Last name is required.").max(100),
-  email: z.string().trim().email("Enter a valid email."),
-  phone: z.string().trim().optional(),
-})
-
-type FormValues = z.infer<typeof submissionSchema>
+import { formResolver } from "@/lib/schemas/resolve"
+import { submissionFormSchema } from "@/lib/schemas/submission"
 
 interface Props {
   orgId: string
@@ -42,22 +33,27 @@ export function SubmissionForm({
 }: Props) {
   const [submitted, setSubmitted] = useState(false)
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(submissionSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", phone: "" },
-  })
-
-  const { execute, isPending } = useAction(createSubmission, {
-    onSuccess() {
-      setSubmitted(true)
+  const { form, action } = useHookFormAction(
+    createSubmission,
+    formResolver(submissionFormSchema),
+    {
+      formProps: {
+        defaultValues: { firstName: "", lastName: "", email: "", phone: "" },
+      },
+      actionProps: {
+        onSuccess() {
+          setSubmitted(true)
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ??
+              "We couldn't submit your audition. Try again.",
+          })
+        },
+      },
     },
-    onError({ error }) {
-      form.setError("root", {
-        message:
-          error.serverError ?? "We couldn't submit your audition. Try again.",
-      })
-    },
-  })
+  )
 
   if (submitted) {
     return (
@@ -83,7 +79,7 @@ export function SubmissionForm({
   return (
     <form
       onSubmit={form.handleSubmit((v) =>
-        execute({ ...v, orgId, productionId, roleId }),
+        action.execute({ ...v, orgId, productionId, roleId }),
       )}
     >
       <FieldGroup>
@@ -158,7 +154,7 @@ export function SubmissionForm({
             </AlertDescription>
           </Alert>
         )}
-        <Button type="submit" loading={isPending} className="w-fit">
+        <Button type="submit" loading={action.isPending} className="w-fit">
           Submit audition
         </Button>
       </FieldGroup>

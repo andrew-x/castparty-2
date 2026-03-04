@@ -1,35 +1,14 @@
 "use server"
 
 import { and, eq, not } from "drizzle-orm"
-import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { OrganizationProfile, member, organization } from "@/lib/db/schema"
-import { RESERVED_SLUGS } from "@/lib/slug"
+import { member, OrganizationProfile, organization } from "@/lib/db/schema"
+import { updateOrgActionSchema } from "@/lib/schemas/organization"
 
 export const updateOrganization = secureActionClient
   .metadata({ action: "update-organization" })
-  .inputSchema(
-    z.object({
-      organizationId: z.string().min(1),
-      name: z.string().trim().min(1, "Organization name is required.").max(100),
-      slug: z
-        .string()
-        .trim()
-        .min(3, "URL ID must be at least 3 characters.")
-        .max(60, "URL ID must be at most 60 characters.")
-        .regex(
-          /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-          "Lowercase letters, numbers, and hyphens only.",
-        )
-        .refine((s) => !/^\d+$/.test(s), "URL ID cannot be purely numeric.")
-        .refine((s) => !RESERVED_SLUGS.has(s), "This URL ID is reserved.")
-        .optional(),
-      description: z.string().trim().max(500),
-      websiteUrl: z.string().trim().url().or(z.literal("")),
-      isOrganizationProfileOpen: z.boolean(),
-    }),
-  )
+  .inputSchema(updateOrgActionSchema)
   .action(
     async ({
       parsedInput: {

@@ -1,11 +1,9 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
-import { useAction } from "next-safe-action/hooks"
 import { useRef } from "react"
-import { Controller, useForm } from "react-hook-form"
-import { z } from "zod/v4"
+import { Controller } from "react-hook-form"
 import { createOrganization } from "@/actions/organizations/create-organization"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -16,6 +14,8 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { createOrgFormSchema } from "@/lib/schemas/organization"
+import { formResolver } from "@/lib/schemas/resolve"
 import { getAppUrl } from "@/lib/url"
 
 function toUrlId(name: string): string {
@@ -26,47 +26,36 @@ function toUrlId(name: string): string {
     .slice(0, 40)
 }
 
-const createOrgSchema = z.object({
-  name: z.string().trim().min(1, "Organization name is required."),
-  slug: z
-    .string()
-    .trim()
-    .min(3, "URL ID must be at least 3 characters.")
-    .max(60, "URL ID must be at most 60 characters.")
-    .regex(
-      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Lowercase letters, numbers, and hyphens only.",
-    ),
-})
-
 export function CreateOrgForm({
   onComplete,
 }: {
   onComplete?: (organizationId: string) => void
 } = {}) {
   const router = useRouter()
-  const form = useForm<z.infer<typeof createOrgSchema>>({
-    resolver: zodResolver(createOrgSchema),
-    defaultValues: { name: "", slug: "" },
-  })
-
-  const { execute, isPending } = useAction(createOrganization, {
-    onSuccess({ data }) {
-      if (onComplete && data?.organizationId) {
-        onComplete(data.organizationId)
-      } else {
-        router.refresh()
-        router.push("/home")
-      }
+  const { form, action, handleSubmitWithAction } = useHookFormAction(
+    createOrganization,
+    formResolver(createOrgFormSchema),
+    {
+      formProps: { defaultValues: { name: "", slug: "" } },
+      actionProps: {
+        onSuccess({ data }) {
+          if (onComplete && data?.organizationId) {
+            onComplete(data.organizationId)
+          } else {
+            router.refresh()
+            router.push("/home")
+          }
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ??
+              "We couldn't create the organization. Try again.",
+          })
+        },
+      },
     },
-    onError({ error }) {
-      form.setError("root", {
-        message:
-          error.serverError ??
-          "We couldn't create the organization. Try again.",
-      })
-    },
-  })
+  )
 
   const watchedSlug = form.watch("slug")
   const slugManuallyEdited = useRef(false)
@@ -84,7 +73,7 @@ export function CreateOrgForm({
   }
 
   return (
-    <form onSubmit={form.handleSubmit((v) => execute(v))}>
+    <form onSubmit={handleSubmitWithAction}>
       <FieldGroup>
         <Controller
           name="name"
@@ -137,7 +126,7 @@ export function CreateOrgForm({
             </AlertDescription>
           </Alert>
         )}
-        <Button type="submit" loading={isPending} className="w-full">
+        <Button type="submit" loading={action.isPending} className="w-full">
           Create organization
         </Button>
       </FieldGroup>

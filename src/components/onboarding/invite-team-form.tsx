@@ -1,12 +1,10 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { CheckIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useAction } from "next-safe-action/hooks"
 import { useState } from "react"
-import { Controller, useForm } from "react-hook-form"
-import { z } from "zod/v4"
+import { Controller } from "react-hook-form"
 import { inviteMember } from "@/actions/organizations/invite-member"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -17,10 +15,8 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
-
-const inviteSchema = z.object({
-  email: z.string().trim().email("Enter a valid email."),
-})
+import { inviteFormSchema } from "@/lib/schemas/organization"
+import { formResolver } from "@/lib/schemas/resolve"
 
 interface Props {
   organizationId: string
@@ -31,23 +27,26 @@ export function InviteTeamForm({ organizationId, onContinue }: Props) {
   const router = useRouter()
   const [sentEmails, setSentEmails] = useState<string[]>([])
 
-  const form = useForm<z.infer<typeof inviteSchema>>({
-    resolver: zodResolver(inviteSchema),
-    defaultValues: { email: "" },
-  })
-
-  const { execute, isPending } = useAction(inviteMember, {
-    onSuccess() {
-      const email = form.getValues("email")
-      setSentEmails((prev) => [...prev, email])
-      form.reset()
+  const { form, action } = useHookFormAction(
+    inviteMember,
+    formResolver(inviteFormSchema),
+    {
+      formProps: { defaultValues: { email: "" } },
+      actionProps: {
+        onSuccess() {
+          const email = form.getValues("email")
+          setSentEmails((prev) => [...prev, email])
+          form.reset()
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ?? "We couldn't send the invite. Try again.",
+          })
+        },
+      },
     },
-    onError({ error }) {
-      form.setError("root", {
-        message: error.serverError ?? "We couldn't send the invite. Try again.",
-      })
-    },
-  })
+  )
 
   function handleContinue() {
     if (onContinue) {
@@ -62,7 +61,7 @@ export function InviteTeamForm({ organizationId, onContinue }: Props) {
     <div className="flex flex-col gap-block">
       <form
         onSubmit={form.handleSubmit((v) =>
-          execute({ ...v, organizationId, role: "member" }),
+          action.execute({ ...v, organizationId, role: "member" }),
         )}
       >
         <FieldGroup>
@@ -91,7 +90,7 @@ export function InviteTeamForm({ organizationId, onContinue }: Props) {
               </AlertDescription>
             </Alert>
           )}
-          <Button type="submit" loading={isPending} className="w-full">
+          <Button type="submit" loading={action.isPending} className="w-full">
             Send invite
           </Button>
         </FieldGroup>

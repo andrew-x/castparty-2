@@ -1,32 +1,14 @@
 "use server"
 
 import { and, eq, not } from "drizzle-orm"
-import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Production } from "@/lib/db/schema"
-import { RESERVED_SLUGS } from "@/lib/slug"
+import { updateProductionActionSchema } from "@/lib/schemas/production"
 
 export const updateProduction = secureActionClient
   .metadata({ action: "update-production" })
-  .inputSchema(
-    z.object({
-      productionId: z.string().min(1),
-      name: z.string().trim().min(1, "Production name is required.").max(100),
-      slug: z
-        .string()
-        .trim()
-        .min(3, "URL ID must be at least 3 characters.")
-        .max(60, "URL ID must be at most 60 characters.")
-        .regex(
-          /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-          "Lowercase letters, numbers, and hyphens only.",
-        )
-        .refine((s) => !/^\d+$/.test(s), "URL ID cannot be purely numeric.")
-        .refine((s) => !RESERVED_SLUGS.has(s), "This URL ID is reserved."),
-      isOpen: z.boolean().optional(),
-    }),
-  )
+  .inputSchema(updateProductionActionSchema)
   .action(
     async ({
       parsedInput: { productionId, name, slug, isOpen },
