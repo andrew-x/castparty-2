@@ -53,6 +53,37 @@ export function buildProductionStages(
 }
 
 /**
+ * Build production-level template stages from user-provided custom stage names.
+ * System stages (Applied, Selected, Rejected) are always included.
+ */
+export function buildCustomProductionStages(
+  productionId: string,
+  organizationId: string,
+  customStageNames: string[],
+) {
+  const stages = [
+    { name: "Applied", order: 0, type: "APPLIED" as const },
+    ...customStageNames.map((name, i) => ({
+      name,
+      order: i + 1,
+      type: "CUSTOM" as const,
+    })),
+    { name: "Selected", order: 1000, type: "SELECTED" as const },
+    { name: "Rejected", order: 1001, type: "REJECTED" as const },
+  ]
+
+  return stages.map((s) => ({
+    id: generateId("stg"),
+    roleId: null,
+    productionId,
+    organizationId,
+    name: s.name,
+    order: s.order,
+    type: s.type,
+  }))
+}
+
+/**
  * Copy production template stages into role-level stages.
  */
 export function buildStagesFromTemplate(

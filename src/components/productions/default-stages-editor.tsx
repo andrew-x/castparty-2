@@ -18,16 +18,11 @@ import {
   TooltipTrigger,
 } from "@/components/common/tooltip"
 
-interface StageData {
+export interface StageData {
   id: string
   name: string
   order: number
   type: "APPLIED" | "SELECTED" | "REJECTED" | "CUSTOM"
-}
-
-interface Props {
-  productionId: string
-  stages: StageData[]
 }
 
 function SortableStage({
@@ -86,72 +81,58 @@ function FixedStage({ stage }: { stage: StageData }) {
   )
 }
 
-export function DefaultStagesEditor({ productionId, stages }: Props) {
-  const router = useRouter()
+// --- Controlled StagesEditor (shared between creation form and settings) ---
+
+interface StagesEditorProps {
+  stages: StageData[]
+  onAdd: (name: string) => void
+  onRemove: (id: string) => void
+  onReorder: (reordered: StageData[]) => void
+  isAdding?: boolean
+  description?: string
+}
+
+export function StagesEditor({
+  stages,
+  onAdd,
+  onRemove,
+  onReorder,
+  isAdding,
+  description,
+}: StagesEditorProps) {
   const [newStageName, setNewStageName] = useState("")
 
   const appliedStage = stages.find((s) => s.type === "APPLIED")
   const selectedStage = stages.find((s) => s.type === "SELECTED")
   const rejectedStage = stages.find((s) => s.type === "REJECTED")
-  const [customStages, setCustomStages] = useState(
-    stages.filter((s) => s.type === "CUSTOM"),
-  )
-
-  const { execute: executeReorder } = useAction(reorderProductionStages, {
-    onError() {
-      // Rollback: restore from server state on next refresh
-      router.refresh()
-    },
-  })
-
-  const { execute: executeAdd, isPending: isAdding } = useAction(
-    addProductionStage,
-    {
-      onSuccess() {
-        setNewStageName("")
-        router.refresh()
-      },
-    },
-  )
-
-  const { execute: executeRemove } = useAction(removeProductionStage, {
-    onSuccess() {
-      router.refresh()
-    },
-    onError() {
-      // Rollback: restore from server state
-      router.refresh()
-    },
-  })
+  const customStages = stages.filter((s) => s.type === "CUSTOM")
 
   function handleDragEnd(event: Parameters<DragEndEvent>[0]) {
     if (event.canceled) return
 
     const reordered = move(customStages, event)
-    setCustomStages(reordered)
-    executeReorder({
-      productionId,
-      stageIds: reordered.map((s) => s.id),
-    })
+    // Reconstruct the full stages array with system stages
+    const allStages = [
+      ...(appliedStage ? [appliedStage] : []),
+      ...reordered.map((s, i) => ({ ...s, order: i + 1 })),
+      ...(selectedStage ? [selectedStage] : []),
+      ...(rejectedStage ? [rejectedStage] : []),
+    ]
+    onReorder(allStages)
   }
 
   function handleAdd() {
     const trimmed = newStageName.trim()
     if (!trimmed) return
-    executeAdd({ productionId, name: trimmed })
-  }
-
-  function handleRemove(stageId: string) {
-    setCustomStages((prev) => prev.filter((s) => s.id !== stageId))
-    executeRemove({ productionId, stageId })
+    onAdd(trimmed)
+    setNewStageName("")
   }
 
   return (
     <div className="flex flex-col gap-group">
-      <p className="text-label text-muted-foreground">
-        These are the default pipeline stages for new roles. Updating them will
-        not change any role pipelines that have already been created.
-      </p>
+      {description && (
+        <p className="text-label text-muted-foreground">{description}</p>
+      )}
 
       <div className="flex flex-col rounded-lg border">
         {appliedStage && (
@@ -161,7 +142,7 @@ export function DefaultStagesEditor({ productionId, stages }: Props) {
         )}
 
         <div className="flex flex-col">
-          <p className="px-3 pt-2 pb-1 text-caption font-medium text-muted-foreground">
+          <p className="px-3 pt-2 pb-1 font-medium text-caption text-muted-foreground">
             Custom stages
           </p>
           <DragDropProvider onDragEnd={handleDragEnd}>
@@ -170,7 +151,7 @@ export function DefaultStagesEditor({ productionId, stages }: Props) {
                 key={stage.id}
                 stage={stage}
                 index={index}
-                onRemove={handleRemove}
+                onRemove={onRemove}
               />
             ))}
           </DragDropProvider>
@@ -215,5 +196,72 @@ export function DefaultStagesEditor({ productionId, stages }: Props) {
         )}
       </div>
     </div>
+  )
+}
+
+// --- DefaultStagesEditor (settings page wrapper with server actions) ---
+
+interface DefaultStagesEditorProps {
+  productionId: string
+  stages: StageData[]
+}
+
+export function DefaultStagesEditor({
+  productionId,
+  stages,
+}: DefaultStagesEditorProps) {
+  const router = useRouter()
+  const [localStages, setLocalStages] = useState(stages)
+
+  const { execute: executeReorder } = useAction(reorderProductionStages, {
+    onError() {
+      router.refresh()
+    },
+  })
+
+  const { execute: executeAdd, isPending: isAdding } = useAction(
+    addProductionStage,
+    {
+      onSuccess() {
+        router.refresh()
+      },
+    },
+  )
+
+  const { execute: executeRemove } = useAction(removeProductionStage, {
+    onSuccess() {
+      router.refresh()
+    },
+    onError() {
+      router.refresh()
+    },
+  })
+
+  function handleAdd(name: string) {
+    executeAdd({ productionId, name })
+  }
+
+  function handleRemove(stageId: string) {
+    setLocalStages((prev) => prev.filter((s) => s.id !== stageId))
+    executeRemove({ productionId, stageId })
+  }
+
+  function handleReorder(reordered: StageData[]) {
+    setLocalStages(reordered)
+    const customIds = reordered
+      .filter((s) => s.type === "CUSTOM")
+      .map((s) => s.id)
+    executeReorder({ productionId, stageIds: customIds })
+  }
+
+  return (
+    <StagesEditor
+      stages={localStages}
+      onAdd={handleAdd}
+      onRemove={handleRemove}
+      onReorder={handleReorder}
+      isAdding={isAdding}
+      description="These are the default pipeline stages for new roles. Updating them will not change any role pipelines that have already been created."
+    />
   )
 }
