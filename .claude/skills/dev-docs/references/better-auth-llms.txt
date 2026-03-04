@@ -6,15 +6,8 @@
 
 ### Adapters
 
-- [Community Adapters](/llms.txt/docs/adapters/community-adapters.md): Integrate Better Auth with community made database adapters.
 - [Drizzle ORM Adapter](/llms.txt/docs/adapters/drizzle.md): Integrate Better Auth with Drizzle ORM.
-- [MongoDB Adapter](/llms.txt/docs/adapters/mongo.md): Integrate Better Auth with MongoDB.
-- [MS SQL](/llms.txt/docs/adapters/mssql.md): Integrate Better Auth with MS SQL.
-- [MySQL](/llms.txt/docs/adapters/mysql.md): Integrate Better Auth with MySQL.
-- [Other Relational Databases](/llms.txt/docs/adapters/other-relational-databases.md): Integrate Better Auth with other relational databases.
 - [PostgreSQL](/llms.txt/docs/adapters/postgresql.md): Integrate Better Auth with PostgreSQL.
-- [Prisma](/llms.txt/docs/adapters/prisma.md): Integrate Better Auth with Prisma.
-- [SQLite](/llms.txt/docs/adapters/sqlite.md): Integrate Better Auth with SQLite.
 
 ### Authentication
 
@@ -58,10 +51,6 @@
 
 - [Basic Usage](/llms.txt/docs/basic-usage.md): Getting started with Better Auth
 
-### Comparison
-
-- [Comparison](/llms.txt/docs/comparison.md): Comparison of Better Auth versus over other auth libraries and services.
-
 ### Concepts
 
 - [API](/llms.txt/docs/concepts/api.md): Better Auth API.
@@ -80,23 +69,12 @@
 
 ### Examples
 
-- [Astro Example](/llms.txt/docs/examples/astro.md): Better Auth Astro example.
 - [Next.js Example](/llms.txt/docs/examples/next-js.md): Better Auth Next.js example.
-- [Nuxt Example](/llms.txt/docs/examples/nuxt.md): Better Auth Nuxt example.
-- [Remix Example](/llms.txt/docs/examples/remix.md): Better Auth Remix example.
-- [SvelteKit Example](/llms.txt/docs/examples/svelte-kit.md): Better Auth SvelteKit example.
 
 ### Guides
 
-- [Migrating from Auth0 to Better Auth](/llms.txt/docs/guides/auth0-migration-guide.md): A step-by-step guide to transitioning from Auth0 to Better Auth.
-- [Browser Extension Guide](/llms.txt/docs/guides/browser-extension-guide.md): A step-by-step guide to creating a browser extension with Better Auth.
-- [Migrating from Clerk to Better Auth](/llms.txt/docs/guides/clerk-migration-guide.md): A step-by-step guide to transitioning from Clerk to Better Auth.
-- [Create a Database Adapter](/llms.txt/docs/guides/create-a-db-adapter.md): Learn how to create a custom database adapter for Better-Auth
-- [Migrating from Auth.js to Better Auth](/llms.txt/docs/guides/next-auth-migration-guide.md): A step-by-step guide to transitioning from Auth.js to Better Auth.
 - [Optimizing for Performance](/llms.txt/docs/guides/optimizing-for-performance.md): A guide to optimizing your Better Auth application for performance.
 - [SAML SSO with Okta](/llms.txt/docs/guides/saml-sso-with-okta.md): A guide to integrating SAML Single Sign-On (SSO) with Better Auth, featuring Okta
-- [Migrating from Supabase Auth to Better Auth](/llms.txt/docs/guides/supabase-migration-guide.md): A step-by-step guide to transitioning from Supabase Auth to Better Auth.
-- [Migrating from WorkOS to Better Auth](/llms.txt/docs/guides/workos-migration-guide.md): A step-by-step guide to transitioning from WorkOS to Better Auth.
 - [Create your first plugin](/llms.txt/docs/guides/your-first-plugin.md): A step-by-step guide to creating your first Better Auth plugin.
 
 ### Installation
@@ -105,23 +83,7 @@
 
 ### Integrations
 
-- [Astro Integration](/llms.txt/docs/integrations/astro.md): Integrate Better Auth with Astro.
-- [Convex Integration](/llms.txt/docs/integrations/convex.md): Integrate Better Auth with Convex.
-- [Elysia Integration](/llms.txt/docs/integrations/elysia.md): Integrate Better Auth with Elysia.
-- [Expo Integration](/llms.txt/docs/integrations/expo.md): Integrate Better Auth with Expo.
-- [Express Integration](/llms.txt/docs/integrations/express.md): Integrate Better Auth with Express.
-- [Better Auth Fastify Integration Guide](/llms.txt/docs/integrations/fastify.md): Learn how to seamlessly integrate Better Auth with your Fastify application.
-- [Hono Integration](/llms.txt/docs/integrations/hono.md): Integrate Better Auth with Hono.
-- [Lynx Integration](/llms.txt/docs/integrations/lynx.md): Integrate Better Auth with Lynx cross-platform framework.
-- [NestJS Integration](/llms.txt/docs/integrations/nestjs.md): Integrate Better Auth with NestJS.
 - [Next.js integration](/llms.txt/docs/integrations/next.md): Integrate Better Auth with Next.js.
-- [Nitro Integration](/llms.txt/docs/integrations/nitro.md): Integrate Better Auth with Nitro.
-- [Nuxt Integration](/llms.txt/docs/integrations/nuxt.md): Integrate Better Auth with Nuxt.
-- [Remix Integration](/llms.txt/docs/integrations/remix.md): Integrate Better Auth with Remix.
-- [SolidStart Integration](/llms.txt/docs/integrations/solid-start.md): Integrate Better Auth with SolidStart.
-- [SvelteKit Integration](/llms.txt/docs/integrations/svelte-kit.md): Integrate Better Auth with SvelteKit.
-- [TanStack Start Integration](/llms.txt/docs/integrations/tanstack.md): Integrate Better Auth with TanStack Start.
-- [Waku Integration](/llms.txt/docs/integrations/waku.md): Integrate Better Auth with Waku.
 
 ### Introduction
 
@@ -168,12 +130,9 @@
 
 ### Reference
 
-- [Contributing to BetterAuth](/llms.txt/docs/reference/contributing.md): A concise guide to contributing to BetterAuth
 - [FAQ](/llms.txt/docs/reference/faq.md): Frequently asked questions about Better Auth.
 - [Options](/llms.txt/docs/reference/options.md): Better Auth configuration options reference.
-- [Resources](/llms.txt/docs/reference/resources.md): A curated collection of resources to help you learn and master Better Auth.
 - [Security](/llms.txt/docs/reference/security.md): Better Auth security features.
-- [Telemetry](/llms.txt/docs/reference/telemetry.md): Better Auth now collects anonymous telemetry data about general usage.
 - [account_already_linked_to_different_user](/llms.txt/docs/reference/errors/account_already_linked_to_different_user.md): The account is already linked to a different user.
 - [email_doesn't_match](/llms.txt/docs/reference/errors/email_doesn't_match.md): The email doesn't match the email of the account.
 - [email_not_found](/llms.txt/docs/reference/errors/email_not_found.md): The provider did not return an email address.

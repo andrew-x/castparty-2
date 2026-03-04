@@ -79,6 +79,8 @@ When a `<library>-llms.txt` file exists:
 - `references/shadcn-llms.txt` — shadcn/ui component library docs index (components, themes, CLI)
 - `references/better-auth-llms.txt` — Better Auth authentication library docs index
 - `references/drizzle-llms.txt` — Drizzle ORM docs index (schema, queries, migrations, drivers)
+- `references/dndkit-llms.txt` — @dnd-kit drag-and-drop toolkit docs index (React hooks, sortable, sensors, plugins)
+- `references/zod-llms.txt` — Zod v4 schema validation library docs index (schemas, types, error handling, transforms)
 
 ### Curated doc-site indexes
 
@@ -89,6 +91,9 @@ index, find the right URL, `WebFetch` that page.
 **Available curated indexes:**
 - `references/next-safe-action-docs.md` — next-safe-action type-safe Server Actions library (client setup, middleware, hooks, recipes)
 - `references/tailwindcss-docs.md` — Tailwind CSS v4 utility-first CSS framework (installation, core concepts, all utility classes)
+- `references/tanstack-table-docs.md` — @tanstack/react-table data table library (column defs, sorting, filtering, pagination, row selection)
+- `references/react-hook-form-docs.md` — react-hook-form form library (useForm, useController, useFieldArray, validation, form state)
+- `references/biome-docs.md` — Biome linter and formatter (configuration, lint rules, formatter options, CLI)
 
 ### Quick-link libraries
 
@@ -96,7 +101,6 @@ Smaller libraries without a full bundled index. Use these URLs as starting point
 for `WebFetch` when looking something up:
 
 - **Day.js** — `https://day.js.org/docs/en/installation/installation`
-- **Biome** — `https://biomejs.dev/guides/getting-started/`
 - **Lucide React** — `https://lucide.dev/guide/packages/lucide-react`
 
 ### Curated reference files

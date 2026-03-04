@@ -30,17 +30,6 @@ question, then `WebFetch` that URL with a focused extraction prompt.
 ## Framework Guides
 
 - [Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs): Step-by-step Tailwind CSS installation for Next.js projects.
-- [Laravel](https://tailwindcss.com/docs/installation/framework-guides/laravel/vite): Tailwind CSS installation for Laravel projects using Vite.
-- [Nuxt](https://tailwindcss.com/docs/installation/framework-guides/nuxt): Tailwind CSS installation for Nuxt (Vue) projects.
-- [SolidJS](https://tailwindcss.com/docs/installation/framework-guides/solidjs): Tailwind CSS installation for SolidJS projects.
-- [SvelteKit](https://tailwindcss.com/docs/installation/framework-guides/sveltekit): Tailwind CSS installation for SvelteKit projects.
-- [Gatsby](https://tailwindcss.com/docs/installation/framework-guides/gatsby): Tailwind CSS installation for Gatsby projects.
-- [Angular](https://tailwindcss.com/docs/installation/framework-guides/angular): Tailwind CSS installation for Angular projects.
-- [Ruby on Rails](https://tailwindcss.com/docs/installation/framework-guides/ruby-on-rails): Tailwind CSS installation for Ruby on Rails projects.
-- [React Router](https://tailwindcss.com/docs/installation/framework-guides/react-router): Tailwind CSS installation for React Router projects.
-- [TanStack Start](https://tailwindcss.com/docs/installation/framework-guides/tanstack-start): Tailwind CSS installation for TanStack Start projects.
-- [Astro](https://tailwindcss.com/docs/installation/framework-guides/astro): Tailwind CSS installation for Astro projects.
-- [Qwik](https://tailwindcss.com/docs/installation/framework-guides/qwik): Tailwind CSS installation for Qwik projects.
 
 ## Core Concepts
 
