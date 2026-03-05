@@ -3,6 +3,7 @@
 import { and, eq, lt, max } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
+import { MAX_PIPELINE_STAGES } from "@/lib/constants"
 import db from "@/lib/db/db"
 import { PipelineStage } from "@/lib/db/schema"
 import { generateId } from "@/lib/util"
@@ -30,6 +31,17 @@ export const addPipelineStage = secureActionClient
 
     if (!role || role.production.organizationId !== orgId) {
       throw new Error("Role not found.")
+    }
+
+    // Enforce stage limit
+    const allStages = await db.query.PipelineStage.findMany({
+      where: (s) => eq(s.roleId, roleId),
+      columns: { id: true },
+    })
+    if (allStages.length >= MAX_PIPELINE_STAGES) {
+      throw new Error(
+        `A role can have at most ${MAX_PIPELINE_STAGES} pipeline stages.`,
+      )
     }
 
     // Calculate order: max order of non-terminal stages + 1

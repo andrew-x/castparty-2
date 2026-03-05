@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronRightIcon, PlusIcon, UserIcon } from "lucide-react"
+import { LockIcon, PlusIcon, UserIcon } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
@@ -10,6 +10,11 @@ import { Controller, useForm } from "react-hook-form"
 import { z } from "zod/v4"
 import { createRole } from "@/actions/productions/create-role"
 import { Alert, AlertDescription } from "@/components/common/alert"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/common/tooltip"
 import { Button } from "@/components/common/button"
 import {
   Empty,
@@ -42,6 +47,7 @@ interface StageCount {
 interface RoleRow {
   id: string
   name: string
+  isOpen: boolean
   stageCounts: StageCount[]
 }
 
@@ -184,43 +190,66 @@ export function RolesList({ productionId, roles }: Props) {
       )}
 
       {roles.length > 0 && (
-        <div className="flex flex-col gap-element">
-          {roles.map((role) => (
-            <Link
-              key={role.id}
-              href={`/productions/${productionId}/roles/${role.id}`}
-              className="flex items-center gap-element rounded-lg border p-group transition-colors hover:bg-muted/50"
-            >
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
-                <UserIcon className="size-4 text-foreground" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="font-medium text-foreground text-label">
-                  {role.name}
-                </span>
-                {role.stageCounts.length > 0 && (
-                  <div className="mt-1 flex gap-group">
-                    {role.stageCounts.map((stage) => (
-                      <div
-                        key={stage.name}
-                        className="flex flex-col items-center"
-                      >
-                        <span className="text-caption text-muted-foreground">
-                          {stage.name}
-                        </span>
-                        <span
-                          className={`font-medium text-caption ${stage.count > 0 ? "text-foreground" : "text-muted-foreground/50"}`}
-                        >
-                          {stage.count}
-                        </span>
+        <div className="divide-y rounded-lg border">
+          {[...roles]
+            .sort((a, b) => {
+              if (a.isOpen !== b.isOpen) return a.isOpen ? -1 : 1
+              return a.name.localeCompare(b.name)
+            })
+            .map((role) => {
+              const total = role.stageCounts.reduce((s, c) => s + c.count, 0)
+              return (
+                <Link
+                  key={role.id}
+                  href={`/productions/${productionId}/roles/${role.id}`}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+                >
+                  {role.isOpen ? (
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+                      <UserIcon className="size-4 text-brand" />
+                    </div>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                          <LockIcon className="size-4 text-muted-foreground" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>This role is closed</TooltipContent>
+                    </Tooltip>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <span className="font-medium text-foreground text-label">
+                      {role.name}
+                    </span>
+                    {role.stageCounts.length > 0 && (
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        {role.stageCounts.map((stage) => (
+                          <span
+                            key={stage.name}
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-px text-caption ${stage.count > 0 ? "bg-muted text-muted-foreground" : "text-muted-foreground/60"}`}
+                          >
+                            {stage.name}
+                            <span
+                              className={`font-semibold ${stage.count > 0 ? "text-foreground" : "text-muted-foreground/40"}`}
+                            >
+                              {stage.count}
+                            </span>
+                          </span>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
-              <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
-            </Link>
-          ))}
+                  <span className="shrink-0 tabular-nums text-caption text-muted-foreground">
+                    {total === 1
+                      ? "1 candidate"
+                      : total > 0
+                        ? `${total} candidates`
+                        : null}
+                  </span>
+                </Link>
+              )
+            })}
         </div>
       )}
     </div>

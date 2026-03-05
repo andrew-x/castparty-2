@@ -39,7 +39,7 @@ export default async function SettingsPage() {
     <Page>
       <PageHeader title="Settings" />
       <PageContent>
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-section">
+        <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
           <section className="flex flex-col gap-group">
             <h2 className="font-serif text-heading">Organization Profile</h2>
             <OrgSettingsForm

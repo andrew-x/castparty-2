@@ -10,6 +10,7 @@ import { useState } from "react"
 import { addProductionStage } from "@/actions/productions/add-production-stage"
 import { removeProductionStage } from "@/actions/productions/remove-production-stage"
 import { reorderProductionStages } from "@/actions/productions/reorder-production-stages"
+import { MAX_PIPELINE_STAGES } from "@/lib/constants"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
 import {
@@ -130,9 +131,11 @@ export function StagesEditor({
     onReorder(allStages)
   }
 
+  const atLimit = stages.length >= MAX_PIPELINE_STAGES
+
   function handleAdd() {
     const trimmed = newStageName.trim()
-    if (!trimmed) return
+    if (!trimmed || atLimit) return
     onAdd(trimmed)
     setNewStageName("")
   }
@@ -175,7 +178,7 @@ export function StagesEditor({
           <div className="flex items-center gap-element border-t px-3 py-2">
             <Input
               type="text"
-              placeholder="New stage name"
+              placeholder={atLimit ? "Stage limit reached" : "New stage name"}
               value={newStageName}
               onChange={(e) => setNewStageName(e.target.value)}
               onKeyDown={(e) => {
@@ -184,6 +187,7 @@ export function StagesEditor({
                   handleAdd()
                 }
               }}
+              disabled={atLimit}
               className="h-8 flex-1"
             />
             <Button
@@ -191,7 +195,7 @@ export function StagesEditor({
               size="sm"
               onClick={handleAdd}
               loading={isAdding}
-              disabled={!newStageName.trim()}
+              disabled={!newStageName.trim() || atLimit}
             >
               Add
             </Button>

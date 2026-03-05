@@ -3,6 +3,7 @@
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
+import { MAX_PIPELINE_STAGES } from "@/lib/constants"
 import db from "@/lib/db/db"
 import { PipelineStage, Production } from "@/lib/db/schema"
 import { generateId } from "@/lib/util"
@@ -26,18 +27,20 @@ export const addProductionStage = secureActionClient
     })
     if (!production) throw new Error("Production not found.")
 
-    // Find current max order of custom stages for this production template
-    const existing = await db.query.PipelineStage.findMany({
-      where: (s) =>
-        and(
-          eq(s.productionId, productionId),
-          isNull(s.roleId),
-          eq(s.type, "CUSTOM"),
-        ),
-      columns: { order: true },
+    // Find all production template stages (including system stages) and enforce limit
+    const allTemplateStages = await db.query.PipelineStage.findMany({
+      where: (s) => and(eq(s.productionId, productionId), isNull(s.roleId)),
+      columns: { id: true, order: true, type: true },
     })
+    if (allTemplateStages.length >= MAX_PIPELINE_STAGES) {
+      throw new Error(
+        `A production can have at most ${MAX_PIPELINE_STAGES} pipeline stages.`,
+      )
+    }
 
-    const maxOrder = existing.reduce((max, s) => Math.max(max, s.order), 0)
+    const maxOrder = allTemplateStages
+      .filter((s) => s.type === "CUSTOM")
+      .reduce((max, s) => Math.max(max, s.order), 0)
 
     const id = generateId("stg")
     await db.insert(PipelineStage).values({

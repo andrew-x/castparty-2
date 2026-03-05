@@ -1,4 +1,5 @@
 import { z } from "zod/v4"
+import { MAX_PIPELINE_STAGES } from "@/lib/constants"
 import { slugSchema, slugSchemaStrict } from "./slug"
 
 export const roleItemSchema = z.object({
@@ -17,7 +18,13 @@ export const createProductionActionSchema = z.object({
   name: z.string().trim().min(1, "Production name is required.").max(100),
   description: z.string().trim().optional(),
   slug: slugSchema.optional(),
-  customStages: z.array(z.string().trim().min(1).max(100)).optional(),
+  customStages: z
+    .array(z.string().trim().min(1).max(100))
+    .max(
+      MAX_PIPELINE_STAGES - 3,
+      `You can add at most ${MAX_PIPELINE_STAGES - 3} custom stages.`,
+    )
+    .optional(),
   roles: z.array(roleItemSchema).optional(),
 })
 

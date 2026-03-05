@@ -37,6 +37,7 @@ export default async function ProductionPage({
       roles={roles.map((r) => ({
         id: r.id,
         name: r.name,
+        isOpen: r.isOpen,
         stageCounts: r.pipelineStages.map((stage) => ({
           name: stage.name,
           type: stage.type,

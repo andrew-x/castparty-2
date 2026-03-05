@@ -32,7 +32,7 @@ export default async function RoleSettingsPage({
   }
 
   return (
-    <div className="flex flex-col gap-section">
+    <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
       <section className="flex flex-col gap-group">
         <h2 className="font-serif text-heading">Role details</h2>
         <RoleSettingsForm

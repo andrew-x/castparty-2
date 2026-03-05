@@ -71,6 +71,9 @@
   --spacing-element: 0.5rem; /* 8px  — between tightly coupled elements */
   --spacing-tight: 0.25rem; /* 4px  — minimal separation (e.g. breadcrumbs to title) */
 
+  /* === Layout constraints === */
+  --spacing-page-content: 48rem; /* 768px — max content width for settings/form pages */
+
   /* === shadcn variable → Tailwind utility mappings === */
   --color-background: var(--background);
   --color-foreground: var(--foreground);

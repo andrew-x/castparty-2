@@ -4,12 +4,12 @@ import { CollisionPriority } from "@dnd-kit/abstract"
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider, useDroppable } from "@dnd-kit/react"
 import { useSortable } from "@dnd-kit/react/sortable"
+import { ExternalLinkIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Badge } from "@/components/common/badge"
-import { Button } from "@/components/common/button"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
 import type {
@@ -209,23 +209,27 @@ function KanbanCard({
   })
 
   return (
-    <Button
+    <div
       ref={ref}
-      variant="ghost"
-      onClick={() => {
-        if (!isDragSource) onSelect(submission)
-      }}
       className={cn(
-        "h-auto w-full cursor-grab flex-col items-start rounded-lg border border-border bg-card p-block text-left hover:bg-muted/50 active:cursor-grabbing",
+        "cursor-grab rounded-lg border border-border bg-card p-block hover:bg-muted/50 active:cursor-grabbing",
         isDragSource && "opacity-40",
       )}
     >
-      <p className="font-medium text-foreground text-label">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelect(submission)
+        }}
+        className="group flex items-center gap-1 font-medium text-foreground text-label hover:text-brand-text"
+      >
         {submission.firstName} {submission.lastName}
-      </p>
+        <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+      </button>
       <p className="text-caption text-muted-foreground">
         {day(submission.createdAt).format("LL")}
       </p>
-    </Button>
+    </div>
   )
 }
