@@ -2,15 +2,15 @@ export type CustomFormFieldType =
   | "TEXT"
   | "TEXTAREA"
   | "SELECT"
-  | "MULTISELECT"
-  | "CHECKBOX"
+  | "CHECKBOX_GROUP"
+  | "TOGGLE"
 export type CustomForm = {
   id: string
   type: CustomFormFieldType
   label: string
   description: string
   required: boolean
-  options: string[] // For SELECT and MULTISELECT types
+  options: string[] // For SELECT and CHECKBOX_GROUP types
 }
 
 export type CustomFormResponse = {

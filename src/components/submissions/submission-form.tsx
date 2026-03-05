@@ -6,15 +6,29 @@ import { Controller } from "react-hook-form"
 import { createSubmission } from "@/actions/submissions/create-submission"
 import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
+import { Checkbox } from "@/components/common/checkbox"
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldLegend,
+  FieldSet,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/common/select"
+import { Switch } from "@/components/common/switch"
+import { Textarea } from "@/components/common/textarea"
 import { formResolver } from "@/lib/schemas/resolve"
 import { submissionFormSchema } from "@/lib/schemas/submission"
+import type { CustomForm } from "@/lib/types"
 
 interface Props {
   orgId: string
@@ -22,6 +36,7 @@ interface Props {
   roleId: string
   orgSlug: string
   productionSlug: string
+  formFields: CustomForm[]
 }
 
 export function SubmissionForm({
@@ -30,15 +45,27 @@ export function SubmissionForm({
   roleId,
   orgSlug,
   productionSlug,
+  formFields,
 }: Props) {
   const [submitted, setSubmitted] = useState(false)
+
+  const defaultAnswers: Record<string, string> = {}
+  for (const field of formFields) {
+    defaultAnswers[field.id] = field.type === "TOGGLE" ? "false" : ""
+  }
 
   const { form, action } = useHookFormAction(
     createSubmission,
     formResolver(submissionFormSchema),
     {
       formProps: {
-        defaultValues: { firstName: "", lastName: "", email: "", phone: "" },
+        defaultValues: {
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          answers: defaultAnswers,
+        },
       },
       actionProps: {
         onSuccess() {
@@ -136,7 +163,7 @@ export function SubmissionForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Phone (optional)</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Phone</FieldLabel>
               <Input
                 {...field}
                 id={field.name}
@@ -147,6 +174,192 @@ export function SubmissionForm({
             </Field>
           )}
         />
+        {formFields.map((formField) => {
+          switch (formField.type) {
+            case "TEXT":
+              return (
+                <Controller
+                  key={formField.id}
+                  name={`answers.${formField.id}`}
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid || undefined}>
+                      <FieldLabel htmlFor={field.name}>
+                        {formField.label}
+                      </FieldLabel>
+                      {formField.description && (
+                        <FieldDescription>
+                          {formField.description}
+                        </FieldDescription>
+                      )}
+                      <Input
+                        {...field}
+                        id={field.name}
+                        type="text"
+                        aria-invalid={fieldState.invalid}
+                      />
+                      {fieldState.error && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+              )
+            case "TEXTAREA":
+              return (
+                <Controller
+                  key={formField.id}
+                  name={`answers.${formField.id}`}
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid || undefined}>
+                      <FieldLabel htmlFor={field.name}>
+                        {formField.label}
+                      </FieldLabel>
+                      {formField.description && (
+                        <FieldDescription>
+                          {formField.description}
+                        </FieldDescription>
+                      )}
+                      <Textarea
+                        {...field}
+                        id={field.name}
+                        aria-invalid={fieldState.invalid}
+                      />
+                      {fieldState.error && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+              )
+            case "SELECT":
+              return (
+                <Controller
+                  key={formField.id}
+                  name={`answers.${formField.id}`}
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid || undefined}>
+                      <FieldLabel htmlFor={field.name}>
+                        {formField.label}
+                      </FieldLabel>
+                      {formField.description && (
+                        <FieldDescription>
+                          {formField.description}
+                        </FieldDescription>
+                      )}
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          id={field.name}
+                          className="w-full"
+                          aria-invalid={fieldState.invalid}
+                        >
+                          <SelectValue placeholder="Select an option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formField.options.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fieldState.error && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+              )
+            case "CHECKBOX_GROUP":
+              return (
+                <Controller
+                  key={formField.id}
+                  name={`answers.${formField.id}`}
+                  control={form.control}
+                  render={({ field, fieldState }) => {
+                    const selected = field.value ? field.value.split(",") : []
+                    function toggle(option: string) {
+                      const next = selected.includes(option)
+                        ? selected.filter((s) => s !== option)
+                        : [...selected, option]
+                      field.onChange(next.join(","))
+                    }
+                    return (
+                      <FieldSet data-invalid={fieldState.invalid || undefined}>
+                        <FieldLegend variant="label">
+                          {formField.label}
+                        </FieldLegend>
+                        {formField.description && (
+                          <FieldDescription>
+                            {formField.description}
+                          </FieldDescription>
+                        )}
+                        <div className="flex flex-col gap-element">
+                          {formField.options.map((option) => (
+                            <FieldLabel
+                              key={option}
+                              className="flex items-center gap-2 text-label"
+                            >
+                              <Checkbox
+                                checked={selected.includes(option)}
+                                onCheckedChange={() => toggle(option)}
+                              />
+                              {option}
+                            </FieldLabel>
+                          ))}
+                        </div>
+                        {fieldState.error && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </FieldSet>
+                    )
+                  }}
+                />
+              )
+            case "TOGGLE":
+              return (
+                <Controller
+                  key={formField.id}
+                  name={`answers.${formField.id}`}
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field
+                      orientation="horizontal"
+                      data-invalid={fieldState.invalid || undefined}
+                    >
+                      <div className="flex flex-col gap-1">
+                        <FieldLabel htmlFor={field.name}>
+                          {formField.label}
+                        </FieldLabel>
+                        {formField.description && (
+                          <FieldDescription>
+                            {formField.description}
+                          </FieldDescription>
+                        )}
+                      </div>
+                      <Switch
+                        id={field.name}
+                        checked={field.value === "true"}
+                        onCheckedChange={(checked) =>
+                          field.onChange(checked ? "true" : "false")
+                        }
+                      />
+                      {fieldState.error && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+              )
+            default:
+              return null
+          }
+        })}
         {form.formState.errors.root && (
           <Alert variant="destructive">
             <AlertDescription>

@@ -101,7 +101,7 @@ function PageContent({
 }) {
   return (
     <div
-      className={cn("flex flex-1 flex-col pt-group", className)}
+      className={cn("flex flex-1 flex-col pt-group pb-section", className)}
       data-slot="page-content"
     >
       {children}

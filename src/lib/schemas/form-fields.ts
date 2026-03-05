@@ -4,8 +4,8 @@ export const customFormFieldTypeSchema = z.enum([
   "TEXT",
   "TEXTAREA",
   "SELECT",
-  "MULTISELECT",
-  "CHECKBOX",
+  "CHECKBOX_GROUP",
+  "TOGGLE",
 ])
 
 // --- Production form field actions ---

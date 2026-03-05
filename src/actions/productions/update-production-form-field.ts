@@ -30,10 +30,10 @@ export const updateProductionFormField = secureActionClient
 
       const field = production.formFields[fieldIndex]
 
-      // Validate options for select/multiselect
+      // Validate options for select/checkbox group
       if (
         updates.options !== undefined &&
-        (field.type === "SELECT" || field.type === "MULTISELECT") &&
+        (field.type === "SELECT" || field.type === "CHECKBOX_GROUP") &&
         updates.options.length === 0
       ) {
         throw new Error("Select fields must have at least one option.")
