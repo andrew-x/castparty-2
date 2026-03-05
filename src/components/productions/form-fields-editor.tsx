@@ -28,11 +28,11 @@ const FIELD_TYPE_LABELS: Record<CustomFormFieldType, string> = {
   TEXT: "Text",
   TEXTAREA: "Long text",
   SELECT: "Select",
-  MULTISELECT: "Multi-select",
-  CHECKBOX: "Checkbox",
+  CHECKBOX_GROUP: "Checkbox group",
+  TOGGLE: "Toggle",
 }
 
-// --- Options editor for SELECT/MULTISELECT ---
+// --- Options editor for SELECT/CHECKBOX_GROUP ---
 
 function OptionsEditor({
   options,
@@ -48,7 +48,6 @@ function OptionsEditor({
   }
 
   function handleRemoveOption(index: number) {
-    if (options.length <= 1) return
     onChange(options.filter((_, i) => i !== index))
   }
 
@@ -76,7 +75,7 @@ function OptionsEditor({
             size="icon"
             className="size-6"
             onClick={() => handleRemoveOption(index)}
-            disabled={options.length <= 1}
+            disabled={options.length === 0}
             tooltip="Remove option"
           >
             <XIcon className="size-3" />
@@ -188,12 +187,14 @@ function SortableField({
 
         <span className="flex-1 truncate text-foreground text-label">
           {field.label}
+          {field.required && <span className="text-destructive"> *</span>}
         </span>
 
-        {field.required && (
-          <Badge variant="outline" className="shrink-0 text-caption">
-            Required
-          </Badge>
+        {(field.type === "SELECT" || field.type === "CHECKBOX_GROUP") && (
+          <span className="shrink-0 text-caption text-muted-foreground">
+            {field.options.length}{" "}
+            {field.options.length === 1 ? "option" : "options"}
+          </span>
         )}
 
         <Button
@@ -262,7 +263,7 @@ function SortableField({
             <span className="text-caption text-muted-foreground">Required</span>
           </div>
 
-          {(field.type === "SELECT" || field.type === "MULTISELECT") && (
+          {(field.type === "SELECT" || field.type === "CHECKBOX_GROUP") && (
             <OptionsEditor
               options={draft.options}
               onChange={(options) => setDraft((d) => ({ ...d, options }))}

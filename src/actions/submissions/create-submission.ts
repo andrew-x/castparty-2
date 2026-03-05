@@ -5,6 +5,7 @@ import { publicActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Candidate, Submission } from "@/lib/db/schema"
 import { submissionActionSchema } from "@/lib/schemas/submission"
+import type { CustomFormResponse } from "@/lib/types"
 import { generateId } from "@/lib/util"
 
 export const createSubmission = publicActionClient
@@ -20,6 +21,7 @@ export const createSubmission = publicActionClient
         lastName,
         email,
         phone,
+        answers,
       },
     }) => {
       // Validate the full ownership chain: role → production → org
@@ -30,7 +32,12 @@ export const createSubmission = publicActionClient
             columns: { id: true, organizationId: true, isOpen: true },
           },
         },
-        columns: { id: true, productionId: true, isOpen: true },
+        columns: {
+          id: true,
+          productionId: true,
+          isOpen: true,
+          formFields: true,
+        },
       })
 
       if (
@@ -58,6 +65,61 @@ export const createSubmission = publicActionClient
       if (!appliedStage) {
         throw new Error("Pipeline is not configured for this role.")
       }
+
+      // Validate required custom fields
+      const formFields = role.formFields ?? []
+      for (const field of formFields) {
+        if (!field.required) continue
+        const value = answers[field.id]
+        if (!value || !value.trim()) {
+          throw new Error(`${field.label} is required.`)
+        }
+      }
+
+      // Transform flat answers to CustomFormResponse[]
+      const formResponses: CustomFormResponse[] = formFields
+        .filter((field) => field.id in answers)
+        .map((field) => {
+          const value = answers[field.id] ?? ""
+          switch (field.type) {
+            case "TEXT":
+            case "TEXTAREA":
+              return {
+                fieldId: field.id,
+                textValue: value,
+                booleanValue: null,
+                optionValues: null,
+              }
+            case "SELECT":
+              return {
+                fieldId: field.id,
+                textValue: null,
+                booleanValue: null,
+                optionValues: value ? [value] : [],
+              }
+            case "CHECKBOX_GROUP":
+              return {
+                fieldId: field.id,
+                textValue: null,
+                booleanValue: null,
+                optionValues: value ? value.split(",") : [],
+              }
+            case "TOGGLE":
+              return {
+                fieldId: field.id,
+                textValue: null,
+                booleanValue: value === "true",
+                optionValues: null,
+              }
+            default:
+              return {
+                fieldId: field.id,
+                textValue: value,
+                booleanValue: null,
+                optionValues: null,
+              }
+          }
+        })
 
       // Look up existing candidate in this org by email
       const existing = await db.query.Candidate.findFirst({
@@ -97,6 +159,7 @@ export const createSubmission = publicActionClient
         lastName,
         email,
         phone: phone ?? "",
+        answers: formResponses,
       })
 
       return { id: submissionId }

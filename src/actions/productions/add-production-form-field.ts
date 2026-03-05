@@ -28,8 +28,7 @@ export const addProductionFormField = secureActionClient
         label,
         description: "",
         required: false,
-        options:
-          type === "SELECT" || type === "MULTISELECT" ? ["Option 1"] : [],
+        options: [],
       }
 
       await db

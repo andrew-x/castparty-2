@@ -24,10 +24,12 @@ import type {
   PipelineStageData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
+import type { CustomForm } from "@/lib/types"
 
 interface Props {
   submission: SubmissionWithCandidate | null
   pipelineStages: PipelineStageData[]
+  formFields: CustomForm[]
   onClose: () => void
   onStageChange?: (submission: SubmissionWithCandidate) => void
 }
@@ -35,6 +37,7 @@ interface Props {
 export function SubmissionDetailSheet({
   submission,
   pipelineStages,
+  formFields,
   onClose,
   onStageChange,
 }: Props) {
@@ -125,6 +128,52 @@ export function SubmissionDetailSheet({
                   {day(submission.createdAt).format("LLL")}
                 </p>
               </div>
+
+              {submission.answers.length > 0 && (
+                <>
+                  <Separator />
+                  <div className="flex flex-col gap-block">
+                    <h3 className="font-medium text-foreground text-label">
+                      Form responses
+                    </h3>
+                    <div className="flex flex-col gap-element">
+                      {submission.answers.map((answer) => {
+                        const field = formFields.find(
+                          (f) => f.id === answer.fieldId,
+                        )
+                        if (!field) return null
+
+                        let displayValue: string
+                        if (
+                          field.type === "TEXT" ||
+                          field.type === "TEXTAREA"
+                        ) {
+                          displayValue = answer.textValue ?? ""
+                        } else if (field.type === "SELECT") {
+                          displayValue = answer.optionValues?.[0] ?? ""
+                        } else if (field.type === "CHECKBOX_GROUP") {
+                          displayValue = answer.optionValues?.join(", ") ?? ""
+                        } else {
+                          displayValue = answer.booleanValue ? "Yes" : "No"
+                        }
+
+                        if (!displayValue) return null
+
+                        return (
+                          <div key={answer.fieldId}>
+                            <p className="font-medium text-caption text-muted-foreground">
+                              {field.label}
+                            </p>
+                            <p className="text-foreground text-label">
+                              {displayValue}
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </>
         )}

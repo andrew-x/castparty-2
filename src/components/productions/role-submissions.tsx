@@ -16,6 +16,7 @@ import type {
   PipelineStageData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
+import type { CustomForm } from "@/lib/types"
 import { cn } from "@/lib/util"
 
 type ColumnItems = Record<string, SubmissionWithCandidate[]>
@@ -39,9 +40,14 @@ function buildColumns(
 interface Props {
   submissions: SubmissionWithCandidate[]
   pipelineStages: PipelineStageData[]
+  formFields: CustomForm[]
 }
 
-export function RoleSubmissions({ submissions, pipelineStages }: Props) {
+export function RoleSubmissions({
+  submissions,
+  pipelineStages,
+  formFields,
+}: Props) {
   const router = useRouter()
   const [columns, setColumns] = useState(() =>
     buildColumns(submissions, pipelineStages),
@@ -122,6 +128,7 @@ export function RoleSubmissions({ submissions, pipelineStages }: Props) {
       <SubmissionDetailSheet
         submission={selectedSubmission}
         pipelineStages={pipelineStages}
+        formFields={formFields}
         onClose={() => setSelectedSubmission(null)}
         onStageChange={setSelectedSubmission}
       />

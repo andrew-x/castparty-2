@@ -1,3 +1,5 @@
+import type { CustomFormResponse } from "@/lib/types"
+
 export interface PipelineStageData {
   id: string
   name: string
@@ -14,6 +16,7 @@ export interface SubmissionWithCandidate {
   createdAt: Date | string
   stageId: string
   stage: PipelineStageData | null
+  answers: CustomFormResponse[]
   candidate: {
     id: string
     firstName: string
