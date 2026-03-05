@@ -37,7 +37,7 @@ function PageHeader({
   tabs,
 }: {
   title: string
-  description?: string | null
+  description?: React.ReactNode
   actions?: React.ReactNode
   breadcrumbs?: PageBreadcrumb[]
   tabs?: React.ReactNode
@@ -79,9 +79,16 @@ function PageHeader({
             <div className="flex items-center gap-element">{actions}</div>
           )}
         </div>
-        {description && (
-          <p className="mt-2 text-body text-muted-foreground">{description}</p>
-        )}
+        {description &&
+          (typeof description === "string" ? (
+            <p className="mt-2 text-body text-muted-foreground">
+              {description}
+            </p>
+          ) : (
+            <div className="mt-2 text-body text-muted-foreground">
+              {description}
+            </div>
+          ))}
       </div>
       {tabs && (
         <div className="-mb-px border-border border-b [&>nav>div]:pb-0">

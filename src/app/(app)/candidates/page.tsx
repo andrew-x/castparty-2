@@ -15,14 +15,37 @@ export const metadata: Metadata = {
   title: "Candidates — Castparty",
 }
 
-export default async function CandidatesPage() {
-  const candidates = await getCandidates()
+const VALID_SORTS = ["name", "email"] as const
+const VALID_DIRS = ["asc", "desc"] as const
+
+export default async function CandidatesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    sort?: string
+    dir?: string
+    page?: string
+    search?: string
+  }>
+}) {
+  const params = await searchParams
+
+  const sort = VALID_SORTS.includes(params.sort as (typeof VALID_SORTS)[number])
+    ? (params.sort as (typeof VALID_SORTS)[number])
+    : "name"
+  const dir = VALID_DIRS.includes(params.dir as (typeof VALID_DIRS)[number])
+    ? (params.dir as (typeof VALID_DIRS)[number])
+    : "asc"
+  const page = Math.max(1, Number(params.page) || 1)
+  const search = params.search ?? ""
+
+  const result = await getCandidates({ sort, dir, page, search })
 
   return (
     <Page>
       <PageHeader title="Candidates" />
       <PageContent>
-        {candidates.length === 0 ? (
+        {result.totalCount === 0 && !search ? (
           <div className="flex flex-1 items-center justify-center">
             <Empty>
               <EmptyHeader>
@@ -38,7 +61,15 @@ export default async function CandidatesPage() {
             </Empty>
           </div>
         ) : (
-          <CandidatesTable candidates={candidates} />
+          <CandidatesTable
+            candidates={result.candidates}
+            sort={sort}
+            dir={dir}
+            page={result.page}
+            pageSize={result.pageSize}
+            totalCount={result.totalCount}
+            search={search}
+          />
         )}
       </PageContent>
     </Page>
