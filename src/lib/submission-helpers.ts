@@ -7,6 +7,13 @@ export interface PipelineStageData {
   type: "APPLIED" | "SELECTED" | "REJECTED" | "CUSTOM"
 }
 
+export interface HeadshotData {
+  id: string
+  url: string
+  filename: string
+  order: number
+}
+
 export interface SubmissionWithCandidate {
   id: string
   firstName: string
@@ -17,6 +24,7 @@ export interface SubmissionWithCandidate {
   stageId: string
   stage: PipelineStageData | null
   answers: CustomFormResponse[]
+  headshots: HeadshotData[]
   candidate: {
     id: string
     firstName: string

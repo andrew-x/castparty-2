@@ -4,6 +4,7 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { useState } from "react"
 import { Controller } from "react-hook-form"
 import { createSubmission } from "@/actions/submissions/create-submission"
+import { presignHeadshotUpload } from "@/actions/submissions/presign-headshot-upload"
 import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
 import { Checkbox } from "@/components/common/checkbox"
@@ -26,6 +27,10 @@ import {
 } from "@/components/common/select"
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
+import {
+  HeadshotUploader,
+  type HeadshotFile,
+} from "@/components/submissions/headshot-uploader"
 import { formResolver } from "@/lib/schemas/resolve"
 import { submissionFormSchema } from "@/lib/schemas/submission"
 import type { CustomForm } from "@/lib/types"
@@ -48,6 +53,9 @@ export function SubmissionForm({
   formFields,
 }: Props) {
   const [submitted, setSubmitted] = useState(false)
+  const [headshots, setHeadshots] = useState<HeadshotFile[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const defaultAnswers: Record<string, string> = {}
   for (const field of formFields) {
@@ -105,9 +113,73 @@ export function SubmissionForm({
 
   return (
     <form
-      onSubmit={form.handleSubmit((v) =>
-        action.execute({ ...v, orgId, productionId, roleId }),
-      )}
+      onSubmit={form.handleSubmit(async (v) => {
+        setUploadError(null)
+
+        let headshotMeta: {
+          key: string
+          filename: string
+          contentType: string
+          size: number
+        }[] = []
+
+        if (headshots.length > 0) {
+          setUploading(true)
+          try {
+            // 1. Request presigned URLs via server action
+            const presignResult = await presignHeadshotUpload({
+              files: headshots.map((h) => ({
+                filename: h.file.name,
+                contentType: h.file.type,
+                size: h.file.size,
+              })),
+            })
+
+            if (!presignResult?.data?.files) {
+              throw new Error(
+                presignResult?.serverError ?? "Failed to prepare upload.",
+              )
+            }
+
+            const presigned = presignResult.data.files
+
+            // 2. Upload all files to R2 in parallel
+            await Promise.all(
+              presigned.map(async ({ presignedUrl }, i) => {
+                const res = await fetch(presignedUrl, {
+                  method: "PUT",
+                  body: headshots[i].file,
+                  headers: { "Content-Type": headshots[i].file.type },
+                })
+                if (!res.ok) throw new Error("Upload failed.")
+              }),
+            )
+
+            // 3. Build metadata for server action
+            headshotMeta = presigned.map(({ key }, i) => ({
+              key,
+              filename: headshots[i].file.name,
+              contentType: headshots[i].file.type,
+              size: headshots[i].file.size,
+            }))
+          } catch (err) {
+            setUploading(false)
+            setUploadError(
+              err instanceof Error ? err.message : "Upload failed. Try again.",
+            )
+            return
+          }
+          setUploading(false)
+        }
+
+        action.execute({
+          ...v,
+          orgId,
+          productionId,
+          roleId,
+          headshots: headshotMeta,
+        })
+      })}
     >
       <FieldGroup>
         <Controller
@@ -360,6 +432,14 @@ export function SubmissionForm({
               return null
           }
         })}
+        <Field>
+          <FieldLabel>Headshots</FieldLabel>
+          <HeadshotUploader
+            files={headshots}
+            onChange={setHeadshots}
+            error={uploadError ?? undefined}
+          />
+        </Field>
         {form.formState.errors.root && (
           <Alert variant="destructive">
             <AlertDescription>
@@ -367,8 +447,12 @@ export function SubmissionForm({
             </AlertDescription>
           </Alert>
         )}
-        <Button type="submit" loading={action.isPending} className="w-fit">
-          Submit audition
+        <Button
+          type="submit"
+          loading={uploading || action.isPending}
+          className="w-fit"
+        >
+          {uploading ? "Uploading headshots..." : "Submit audition"}
         </Button>
       </FieldGroup>
     </form>
