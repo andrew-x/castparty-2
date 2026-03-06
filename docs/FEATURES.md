@@ -8,18 +8,23 @@
 | Auth Flow | `shipped` | `src/app/auth/page.tsx` | Email/password login and signup with layout-level route guards and a password-reset stub |
 | App Shell (Sidebar Layout) | `shipped` | `src/app/(app)/layout.tsx` | Persistent collapsible sidebar with nav and user footer; wraps all authenticated routes |
 | Onboarding | `shipped` | `src/app/onboarding/page.tsx` | Multi-step flow for new users: create an organization then optionally invite team members; shown when user has no active organization |
-| Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | Org settings (rename), members table, invite/remove/role-change; owner/admin only |
-| Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | Grid of production cards for the active org; empty state with create CTA |
-| Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | Production overview with roles list and inline role creation |
-| Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | Form to create a new production with optional roles |
+| Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | Org settings (name, slug, description, website, visibility), members table, invite/remove/role-change, ownership transfer; owner/admin only |
+| Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | Grid of production cards for the active org; each card shows submission count; empty state with create CTA |
+| Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | Production overview with roles list and submission counts per role; inline role creation |
+| Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | Multi-step form to create a new production |
+| Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | Edit production details (name, slug, description, location, open/closed), configure pipeline template stages, and manage the production-level custom application form |
+| Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/settings/page.tsx` | Edit role details (name, slug, description, open/closed), configure role-level pipeline stages, and manage the role-level custom application form |
 | Admin Panel | `shipped` | `src/app/admin/page.tsx` | Internal user management (list, create, change password, delete); bypasses org scope |
-| Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | Filterable table of all candidates (performers) in the active organization |
+| Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | Searchable, sortable, paginated table of all candidates in the active organization |
+| Candidate Detail | `shipped` | `src/app/(app)/candidates/[candidateId]/page.tsx` | Individual candidate profile showing personal details and all submissions across roles |
+| Home Dashboard | `shipped` | `src/app/(app)/home/page.tsx` | Post-login dashboard showing the user's productions with submission counts; empty state CTA when no productions exist |
 | Public Submission Flow | `shipped` | `src/app/s/[orgSlug]/page.tsx` | Public-facing casting call pages where candidates discover orgs, productions, and roles via URL slugs and submit auditions |
-| Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | Edit production details, manage roles, configure pipeline stages |
 | URL Slugs | `shipped` | `src/lib/slug.ts` | Auto-generated URL-friendly identifiers for orgs, productions, and roles; used in public submission URLs |
 | Pipeline Stages | `shipped` | `src/lib/pipeline.ts` | Configurable casting pipeline per role with system stages (Applied, Selected, Rejected) and custom user-defined stages; production-level template pipeline inherited by new roles |
+| Custom Form Fields | `shipped` | `src/lib/types.ts` | Per-production and per-role custom application form fields (5 types: TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE); configured in settings, rendered in public submission form |
 | Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop moves candidates between pipeline stages |
 | Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | Multi-org switching in sidebar footer; lets users switch between organizations they belong to |
+| R2 File Storage | `shipped` | `src/lib/r2.ts` | Cloudflare R2 utility for uploading, deleting, and moving files; uses AWS SDK S3-compatible API; not yet wired to any feature UI |
 | Landing Page | `shipped` | `src/app/page.tsx` | Single-screen hero with Castparty branding, tagline, and CTA link to /auth |
 | 404 Page | `shipped` | `src/app/not-found.tsx` | Theatrical "didn't make the callback list" copy with decorative 404 display |
 | Route Error Page | `shipped` | `src/app/error.tsx` | "Something went wrong backstage" — try again + back to home; client component |
@@ -398,3 +403,58 @@ RolePage (server)
 **Integration points:** Depends on Pipeline Stages for column structure — stages come from `getRoleWithSubmissions` alongside the submissions. `SubmissionDetailSheet` (existing component, unchanged) is reused for the card detail view. The `updateSubmissionStatus` action writes to the same `PipelineUpdate` table used by all other stage transitions. See the Pipeline Stages section above for stage type definitions and audit trail details.
 
 *Updated: 2026-03-04 — Documented Kanban board replacing tabbed submission list; terminal stage unlock; optimistic drag-and-drop with @dnd-kit/react v0.3*
+
+---
+
+## Custom Form Fields
+
+**Overview:** Productions and roles can each define a custom application form that candidates fill out when submitting an audition. This supplements the standard submission fields (name, email) with production-specific questions — e.g., "What experience do you have with Shakespeare?" or "Can you attend a Saturday rehearsal?" Configured in production or role settings; rendered dynamically in the public submission form.
+
+**How it works:** Form fields are stored as JSONB in the `Production.formFields` and `Role.formFields` columns. The `CustomForm` type in `src/lib/types.ts` defines the field shape: `id`, `type`, `label`, `description`, `required`, and `options` (for SELECT/CHECKBOX_GROUP). Responses are stored as JSONB in `Submission.answers` using the `CustomFormResponse` type: `{ fieldId, textValue, booleanValue, optionValues }`.
+
+**Supported field types** (`CustomFormFieldType` in `src/lib/types.ts`):
+
+| Type | Use |
+|------|-----|
+| `TEXT` | Short single-line answer |
+| `TEXTAREA` | Long multi-line answer |
+| `SELECT` | Pick one from a list |
+| `CHECKBOX_GROUP` | Pick multiple from a list |
+| `TOGGLE` | Boolean yes/no |
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/lib/types.ts` | `CustomForm`, `CustomFormFieldType`, `CustomFormResponse` types |
+| `src/lib/schemas/form-fields.ts` | Zod schemas for form field CRUD actions |
+| `src/components/productions/production-form-fields-editor.tsx` | Editor UI for production-level form fields (in production settings) |
+| `src/components/productions/role-form-fields-editor.tsx` | Editor UI for role-level form fields (in role settings) |
+| `src/actions/productions/` | Actions for add/remove/reorder form fields on productions and roles |
+
+**Architecture decisions:** JSONB is used for form field storage rather than a normalized `form_fields` table because the field shape is schema-on-read (typed via `CustomForm`), the data is always fetched with its parent production/role, and the flexibility to add new field types without migrations outweighs the join overhead.
+
+**Integration points:** The `SubmissionForm` in `src/components/submissions/submission-form.tsx` reads `formFields` from the role (falling back to the production-level fields) and renders the appropriate input for each field type. Responses are submitted alongside standard fields via the `create-submission` action.
+
+*Updated: 2026-03-06 — Initial custom form fields documentation*
+
+---
+
+## R2 File Storage
+
+**Overview:** A utility layer for storing binary files (headshots, résumés, etc.) in Cloudflare R2 via the S3-compatible API. The utility exists because R2 offers egress-free reads (unlike S3), which matters for a product where candidates upload media that gets viewed repeatedly by the production team.
+
+**How it works:** `src/lib/r2.ts` wraps the AWS SDK `S3Client` pointed at Cloudflare's endpoint. Files are keyed as `{dev|prod}/{folder}/{id}.{ext}` — the `dev`/`prod` prefix keeps development uploads isolated from production data in the same bucket. `uploadFile` takes a `File` and a folder name; `deleteFile` and `moveFile` operate on public URLs using `getKeyFromUrl` to extract the storage key.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/lib/r2.ts` | `uploadFile`, `deleteFile`, `moveFile`, `getKeyFromUrl` |
+| `src/lib/util.ts` | `generateId` (used to generate unique file keys) and `IS_DEV` (determines bucket prefix) |
+
+**Environment variables required:** `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL`.
+
+**Status:** Utility is implemented; no feature UI currently uploads files through it. The next consumer will be candidate headshot or résumé upload.
+
+*Updated: 2026-03-06 — Initial R2 file storage documentation*

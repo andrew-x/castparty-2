@@ -60,7 +60,7 @@ Use `unknown` when the type is genuinely unknown, then narrow with guards.
 
 ## Voice & Tone
 
-All UI copy follows the voice and tone rules in `.claude/rules/voice-and-tone.md`. Key points: plain rehearsal-room language, no jargon, no exclamation marks, no emoji, no em dashes. "Production team" for organizer-side users, "performer" for talent-side users -- no synonyms.
+All UI copy follows the voice and tone rules in `.claude/rules/voice-and-tone.md`. Key points: plain rehearsal-room language, no jargon, no exclamation marks, no emoji, no em dashes. "Production team" for organizer-side users, "candidate" for talent-side users — no synonyms.
 
 ## Code Quality (Biome Config)
 
@@ -286,6 +286,8 @@ All Zod schemas live in `src/lib/schemas/[feature].ts`, not inline in form or ac
 | `src/lib/schemas/production.ts` | Production create/update schemas |
 | `src/lib/schemas/role.ts` | Role update schemas |
 | `src/lib/schemas/submission.ts` | Submission form/action schemas |
+| `src/lib/schemas/candidate.ts` | Candidate update schemas |
+| `src/lib/schemas/form-fields.ts` | Custom form field add/remove/reorder schemas |
 
 **Form schema vs action schema split.** Every feature defines two schemas:
 
@@ -343,6 +345,7 @@ Forms that call the Better Auth client SDK directly (`authClient.signIn.email`, 
 
 *Updated: 2026-03-04 — Added Form Patterns section (useHookFormAction, centralized schemas, schema split)*
 *Updated: 2026-03-04 — Replaced zodResolver-as-any pattern with formResolver from @/lib/schemas/resolve; removed as-any-cast subsection; corrected backend directory example to reflect actual actions/ directories*
+*Updated: 2026-03-06 — Added candidate.ts and form-fields.ts to schemas table; fixed voice & tone terminology (performer → candidate)*
 
 ## Backend Patterns
 

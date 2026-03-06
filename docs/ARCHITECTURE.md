@@ -28,9 +28,13 @@ src/
 │   │           │   ├── page.tsx   # Production detail
 │   │           │   └── settings/  # Production settings
 │   │           └── roles/
-│   │               └── [roleId]/  # Role Kanban board
+│   │               └── [roleId]/
+│   │                   ├── page.tsx   # Role Kanban board
+│   │                   └── settings/  # Role settings
 │   ├── api/             # API route handlers
 │   ├── auth/            # Login / signup / forgot-password pages
+│   ├── onboarding/      # First-time setup (create org or accept invite)
+│   ├── admin/           # Internal user management
 │   ├── s/               # Public submission flow (unauthenticated)
 │   ├── layout.tsx       # Root layout — fonts, <html>/<body> wrapper
 │   └── page.tsx         # Landing page (/)
@@ -93,9 +97,12 @@ Browser
 **Form / action schema split:** Every feature in `src/lib/schemas/` exports two Zod schemas — a form schema (user-input fields only, used by `zodResolver`) and an action schema (extends with IDs and server refinements, used by `next-safe-action`). The adapter hook `useHookFormAction` bridges the two without manual wiring. See `docs/CONVENTIONS.md#form-patterns` for the full pattern.
 
 - `src/actions/` — Backend business logic organized by feature area; the boundary between UI and data
-- `src/lib/schemas/` — Centralized Zod schemas: `slug.ts`, `organization.ts`, `production.ts`, `role.ts`, `submission.ts`; barrel at `index.ts`
+- `src/lib/schemas/` — Centralized Zod schemas: `slug.ts`, `organization.ts`, `production.ts`, `role.ts`, `submission.ts`, `candidate.ts`, `form-fields.ts`; barrel at `index.ts`
 - `src/lib/action.ts` — next-safe-action client setup (`publicActionClient`, `secureActionClient`)
 - `src/lib/auth.ts` — Better Auth server instance; `getCurrentUser()` reads the session from request headers
+- `src/lib/types.ts` — Shared domain types: `CustomForm`, `CustomFormFieldType` (TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE), `CustomFormResponse`
+- `src/lib/constants.ts` — `DEFAULT_PIPELINE_STAGES`, `MAX_PIPELINE_STAGES`
+- `src/lib/r2.ts` — Cloudflare R2 file storage: `uploadFile`, `deleteFile`, `moveFile`, `getKeyFromUrl`; uses AWS SDK S3-compatible API
 - `src/lib/auth/auth-client.ts` — Better Auth browser client; used in form components
 - `src/lib/db/db.ts` — Drizzle ORM instance; Neon serverless HTTP driver; `snake_case` column casing
 - `src/lib/db/schema.ts` — Drizzle schema (source of truth for DB shape)
@@ -107,6 +114,7 @@ Browser
 |---------|---------|--------|
 | Neon (PostgreSQL) | Primary database | `DATABASE_URL` env var |
 | Better Auth | Authentication (sessions, orgs) | Configured in `src/lib/auth.ts` |
+| Cloudflare R2 | File storage (headshots, résumés, etc.) | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` env vars; utility in `src/lib/r2.ts` |
 
 **Better Auth plugins** (configured in `src/lib/auth.ts`):
 
@@ -156,3 +164,4 @@ Candidate records are deduplicated by `(organizationId, email)` — the same per
 *Updated: 2026-03-01 — Added Better Auth plugins, expanded directory layout, fixed component directories, added Data Model section*
 *Updated: 2026-03-04 — Added useHookFormAction adapter layer to data flow; added src/lib/schemas/ to directory layout and key files*
 *Updated: 2026-03-04 — Fixed submit/ → s/ route, added (production) route group, corrected PipelineStage columns (order/type enum, no slug/isSystem/isTerminal), StatusChange → PipelineUpdate with correct column names, added UserProfile and OrganizationProfile tables, noted production-template stages (roleId = null)*
+*Updated: 2026-03-06 — Added Cloudflare R2 to External Services; added src/lib/types.ts, src/lib/constants.ts, src/lib/r2.ts to key files; added candidate.ts and form-fields.ts to schemas list; added role settings route and admin/onboarding to directory layout*
