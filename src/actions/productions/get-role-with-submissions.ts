@@ -22,6 +22,9 @@ export async function getRoleWithSubmissions(roleId: string) {
         with: {
           candidate: true,
           stage: true,
+          headshots: {
+            orderBy: (f, { asc }) => [asc(f.order)],
+          },
         },
       },
     },

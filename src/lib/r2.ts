@@ -4,12 +4,13 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3"
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { generateId, IS_DEV } from "@/lib/util"
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID ?? ""
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID ?? ""
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY ?? ""
-const R2_BUCKET = process.env.R2_BUCKET ?? ""
+const R2_BUCKET = process.env.R2_BUCKET_NAME ?? ""
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL ?? ""
 
 const root = IS_DEV ? "dev" : "prod"
@@ -21,7 +22,13 @@ const s3 = new S3Client({
     accessKeyId: R2_ACCESS_KEY_ID,
     secretAccessKey: R2_SECRET_ACCESS_KEY,
   },
+  // R2 doesn't support the SDK's default CRC32 checksums, which also
+  // break CORS preflight for browser-based presigned uploads.
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
 })
+
+export { root as r2Root }
 
 function getExtension(filename: string): string {
   const dot = filename.lastIndexOf(".")
@@ -89,4 +96,45 @@ export async function moveFile(
   )
 
   return `${R2_PUBLIC_URL}/${destKey}`
+}
+
+export async function createPresignedUploadUrl(
+  key: string,
+  contentType: string,
+): Promise<string> {
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+    ContentType: contentType,
+  })
+  return getSignedUrl(s3, command, { expiresIn: 600 })
+}
+
+export async function moveFileByKey(
+  sourceKey: string,
+  destFolder: string,
+): Promise<{ url: string; key: string; path: string }> {
+  const ext = getExtension(sourceKey)
+  const destKey = `${root}/${destFolder}/${generateId("file")}${ext ? `.${ext}` : ""}`
+
+  await s3.send(
+    new CopyObjectCommand({
+      Bucket: R2_BUCKET,
+      CopySource: `${R2_BUCKET}/${sourceKey}`,
+      Key: destKey,
+    }),
+  )
+
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: sourceKey,
+    }),
+  )
+
+  return {
+    url: `${R2_PUBLIC_URL}/${destKey}`,
+    key: destKey,
+    path: destKey,
+  }
 }

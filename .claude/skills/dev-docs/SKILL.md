@@ -81,6 +81,7 @@ When a `<library>-llms.txt` file exists:
 - `references/drizzle-llms.txt` — Drizzle ORM docs index (schema, queries, migrations, drivers)
 - `references/dndkit-llms.txt` — @dnd-kit drag-and-drop toolkit docs index (React hooks, sortable, sensors, plugins)
 - `references/zod-llms.txt` — Zod v4 schema validation library docs index (schemas, types, error handling, transforms)
+- `references/r2-llms.txt` — Cloudflare R2 object storage docs (buckets, objects, Workers API, S3 compatibility, lifecycle, encryption)
 
 ### Curated doc-site indexes
 

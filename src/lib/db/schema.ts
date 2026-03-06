@@ -394,6 +394,36 @@ export const Submission = pgTable("submission", {
   updatedAt: timestamp().defaultNow().notNull(),
 })
 
+export const fileTypeEnum = pgEnum("file_type", ["HEADSHOT", "RESUME", "VIDEO"])
+
+export const File = pgTable(
+  "file",
+  {
+    id: text().primaryKey(),
+    submissionId: text().references(() => Submission.id, {
+      onDelete: "cascade",
+    }),
+    candidateId: text().references(() => Candidate.id, {
+      onDelete: "cascade",
+    }),
+
+    type: fileTypeEnum().notNull(),
+    url: text().notNull(),
+    key: text().notNull(),
+    path: text().notNull(),
+    filename: text().notNull(),
+    contentType: text().notNull(),
+    size: integer().notNull(),
+    order: integer().notNull().default(0),
+
+    createdAt: timestamp().defaultNow().notNull(),
+  },
+  (table) => [
+    index("file_submissionId_idx").on(table.submissionId),
+    index("file_candidateId_idx").on(table.candidateId),
+  ],
+)
+
 // --- DATA RELATIONS ---
 export const userProfileRelations = relations(UserProfile, ({ one }) => ({
   user: one(User, {
@@ -439,6 +469,7 @@ export const candidateRelations = relations(Candidate, ({ one, many }) => ({
     references: [Organization.id],
   }),
   submissions: many(Submission),
+  headshots: many(File),
 }))
 
 export const submissionRelations = relations(Submission, ({ one, many }) => ({
@@ -459,6 +490,18 @@ export const submissionRelations = relations(Submission, ({ one, many }) => ({
     references: [PipelineStage.id],
   }),
   pipelineUpdates: many(PipelineUpdate),
+  headshots: many(File),
+}))
+
+export const fileRelations = relations(File, ({ one }) => ({
+  submission: one(Submission, {
+    fields: [File.submissionId],
+    references: [Submission.id],
+  }),
+  candidate: one(Candidate, {
+    fields: [File.candidateId],
+    references: [Candidate.id],
+  }),
 }))
 
 export const pipelineStageRelations = relations(

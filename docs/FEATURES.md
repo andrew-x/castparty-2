@@ -453,7 +453,7 @@ RolePage (server)
 | `src/lib/r2.ts` | `uploadFile`, `deleteFile`, `moveFile`, `getKeyFromUrl` |
 | `src/lib/util.ts` | `generateId` (used to generate unique file keys) and `IS_DEV` (determines bucket prefix) |
 
-**Environment variables required:** `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL`.
+**Environment variables required:** `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`.
 
 **Status:** Utility is implemented; no feature UI currently uploads files through it. The next consumer will be candidate headshot or résumé upload.
 

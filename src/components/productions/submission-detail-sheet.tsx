@@ -118,6 +118,35 @@ export function SubmissionDetailSheet({
                 </div>
               </div>
 
+              {submission.headshots.length > 0 && (
+                <>
+                  <Separator />
+                  <div className="flex flex-col gap-block">
+                    <h3 className="font-medium text-foreground text-label">
+                      Headshots
+                    </h3>
+                    <div className="grid grid-cols-3 gap-element">
+                      {submission.headshots.map((headshot) => (
+                        <a
+                          key={headshot.id}
+                          href={headshot.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="aspect-square overflow-hidden rounded-lg border border-border"
+                        >
+                          {/* biome-ignore lint/performance/noImgElement: external R2 URLs */}
+                          <img
+                            src={headshot.url}
+                            alt={headshot.filename}
+                            className="size-full object-cover"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
               <Separator />
 
               <div className="flex flex-col gap-block">

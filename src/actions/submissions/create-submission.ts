@@ -3,7 +3,8 @@
 import { and, eq } from "drizzle-orm"
 import { publicActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { Candidate, Submission } from "@/lib/db/schema"
+import { Candidate, File, Submission } from "@/lib/db/schema"
+import { moveFileByKey, r2Root } from "@/lib/r2"
 import { submissionActionSchema } from "@/lib/schemas/submission"
 import type { CustomFormResponse } from "@/lib/types"
 import { generateId } from "@/lib/util"
@@ -22,6 +23,7 @@ export const createSubmission = publicActionClient
         email,
         phone,
         answers,
+        headshots,
       },
     }) => {
       // Validate the full ownership chain: role → production → org
@@ -161,6 +163,36 @@ export const createSubmission = publicActionClient
         phone: phone ?? "",
         answers: formResponses,
       })
+
+      // Move headshots from temp/ to permanent prefix and create File records
+      if (headshots.length > 0) {
+        const tempPrefix = `${r2Root}/temp/headshots/`
+        for (const headshot of headshots) {
+          if (!headshot.key.startsWith(tempPrefix)) {
+            throw new Error("Invalid file key.")
+          }
+        }
+
+        const fileRecords = await Promise.all(
+          headshots.map(async (headshot, index) => {
+            const moved = await moveFileByKey(headshot.key, "headshots")
+            return {
+              id: generateId("file"),
+              submissionId,
+              type: "HEADSHOT" as const,
+              url: moved.url,
+              key: moved.key,
+              path: moved.path,
+              filename: headshot.filename,
+              contentType: headshot.contentType,
+              size: headshot.size,
+              order: index,
+            }
+          }),
+        )
+
+        await db.insert(File).values(fileRecords)
+      }
 
       return { id: submissionId }
     },

@@ -114,7 +114,7 @@ Browser
 |---------|---------|--------|
 | Neon (PostgreSQL) | Primary database | `DATABASE_URL` env var |
 | Better Auth | Authentication (sessions, orgs) | Configured in `src/lib/auth.ts` |
-| Cloudflare R2 | File storage (headshots, résumés, etc.) | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` env vars; utility in `src/lib/r2.ts` |
+| Cloudflare R2 | File storage (headshots, résumés, etc.) | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` env vars; utility in `src/lib/r2.ts` |
 
 **Better Auth plugins** (configured in `src/lib/auth.ts`):
 
