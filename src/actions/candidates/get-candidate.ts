@@ -24,7 +24,7 @@ export async function getCandidate(candidateId: string) {
           },
           production: true,
           stage: true,
-          headshots: {
+          files: {
             orderBy: (f, { asc }) => [asc(f.order)],
           },
         },
@@ -71,12 +71,19 @@ export async function getCandidate(candidateId: string) {
             }
           : null,
         answers: submission.answers ?? [],
-        headshots: (submission.headshots ?? []).map((f) => ({
-          id: f.id,
-          url: f.url,
-          filename: f.filename,
-          order: f.order,
-        })),
+        headshots: (submission.files ?? [])
+          .filter((f) => f.type === "HEADSHOT")
+          .map((f) => ({
+            id: f.id,
+            url: f.url,
+            filename: f.filename,
+            order: f.order,
+          })),
+        resume: (() => {
+          const r = (submission.files ?? []).find((f) => f.type === "RESUME")
+          return r ? { id: r.id, url: r.url, filename: r.filename } : null
+        })(),
+        resumeText: submission.resumeText ?? null,
         candidate: {
           id: candidate.id,
           firstName: candidate.firstName,

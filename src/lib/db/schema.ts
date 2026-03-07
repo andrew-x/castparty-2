@@ -389,6 +389,7 @@ export const Submission = pgTable("submission", {
   location: text().notNull().default(""),
 
   answers: jsonb().$type<CustomFormResponse[]>().notNull().default([]),
+  resumeText: text(),
 
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
@@ -469,7 +470,7 @@ export const candidateRelations = relations(Candidate, ({ one, many }) => ({
     references: [Organization.id],
   }),
   submissions: many(Submission),
-  headshots: many(File),
+  files: many(File),
 }))
 
 export const submissionRelations = relations(Submission, ({ one, many }) => ({
@@ -490,7 +491,7 @@ export const submissionRelations = relations(Submission, ({ one, many }) => ({
     references: [PipelineStage.id],
   }),
   pipelineUpdates: many(PipelineUpdate),
-  headshots: many(File),
+  files: many(File),
 }))
 
 export const fileRelations = relations(File, ({ one }) => ({

@@ -24,7 +24,8 @@
 | Custom Form Fields | `shipped` | `src/lib/types.ts` | Per-production and per-role custom application form fields (5 types: TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE); configured in settings, rendered in public submission form |
 | Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop moves candidates between pipeline stages |
 | Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | Multi-org switching in sidebar footer; lets users switch between organizations they belong to |
-| R2 File Storage | `shipped` | `src/lib/r2.ts` | Cloudflare R2 utility for uploading, deleting, and moving files; uses AWS SDK S3-compatible API; not yet wired to any feature UI |
+| R2 File Storage | `shipped` | `src/lib/r2.ts` | Cloudflare R2 utility for uploading, deleting, and moving files; uses AWS SDK S3-compatible API; used by headshot and resume upload |
+| Resume Upload | `shipped` | `src/components/submissions/resume-uploader.tsx` | Candidates upload a PDF resume when submitting for a role; text is extracted server-side and stored for future search/AI use |
 | AutocompleteInput | `shipped` | `src/components/common/autocomplete-input.tsx` | Free-form combobox input with keyboard navigation and a filtered dropdown; not constrained to options — users can type any value |
 | useCityOptions | `shipped` | `src/hooks/use-city-options.ts` | Hook that lazy-loads and caches US + Canadian city names for use with AutocompleteInput |
 | Location Fields | `shipped` | `src/lib/schemas/production.ts`, `src/lib/schemas/submission.ts` | Free-text location on productions (create + settings) and submissions (form + detail view); city autocomplete via useCityOptions |
@@ -304,7 +305,7 @@ Three-tier URL structure:
 /s/[orgSlug]/[productionSlug]/[roleSlug]    → role page (submission form)
 ```
 
-Each page is a server component that calls its corresponding public server function (no auth required). The final page renders the `SubmissionForm` client component. On submit, `SubmissionForm` uses `useHookFormAction(createSubmission, zodResolver(submissionFormSchema))`. The form schema (`submissionFormSchema` in `src/lib/schemas/submission.ts`) captures user-entered fields only; server IDs (`orgId`, `productionId`, `roleId`) are injected in the submit handler via `action.execute({ ...v, orgId, productionId, roleId })`. The `create-submission` action runs via `publicActionClient` — it looks up the role's Applied pipeline stage, upserts a Candidate record keyed by `(organizationId, email)`, then inserts a Submission linked to that stage.
+Each page is a server component that calls its corresponding public server function (no auth required). The final page renders the `SubmissionForm` client component. On submit, `SubmissionForm` uses `useHookFormAction(createSubmission, zodResolver(submissionFormSchema))`. The form schema (`submissionFormSchema` in `src/lib/schemas/submission.ts`) captures user-entered fields only; server IDs (`orgId`, `productionId`, `roleId`) are injected in the submit handler via `action.execute({ ...v, orgId, productionId, roleId })`. The `create-submission` action runs via `publicActionClient` — it looks up the role's Applied pipeline stage, upserts a Candidate record keyed by `(organizationId, email)`, then inserts a Submission linked to that stage. If a resume was uploaded, the action moves the file from `temp/resumes/` to permanent storage, creates a `File` record with `type="RESUME"`, and extracts the PDF text into `Submission.resumeText` using `unpdf` (see the Resume Upload section).
 
 **Architecture decisions:** Uses `publicActionClient` (no auth required — these routes are intentionally open). Candidate deduplication by email means the same person submitting to multiple roles in the same org is treated as one candidate in the database.
 
@@ -540,6 +541,65 @@ A module-level `cachedPromise` variable holds the in-flight or resolved `Promise
 
 **Environment variables required:** `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`.
 
-**Status:** Utility is implemented; no feature UI currently uploads files through it. The next consumer will be candidate headshot or résumé upload.
+**Current consumers:** Headshot upload (via `src/actions/submissions/presign-headshot-upload.ts`) and resume upload (via `src/actions/submissions/presign-resume-upload.ts`). Both follow the same two-phase pattern: presign to `temp/`, upload from the client, then move to the permanent prefix inside `create-submission`.
 
 *Updated: 2026-03-06 — Initial R2 file storage documentation*
+*Updated: 2026-03-07 — Removed "not wired" note; headshot and resume upload now consume this utility*
+
+---
+
+## Resume Upload
+
+**Overview:** Candidates can attach a PDF resume when submitting for a role. The file is stored in R2, and its text content is extracted server-side and stored in the `Submission` record. Storing the text alongside the binary makes it available for future search or AI-based screening without re-fetching and re-parsing the PDF on demand.
+
+**How it works:**
+
+```
+SubmissionForm (client)
+  └── ResumeUploader  ← controlled by resumeFile state
+        ↓ on form submit
+  presignResumeUpload action  ← publicActionClient, validates PDF + 10MB limit
+        ↓ returns { key, presignedUrl }
+  PUT presignedUrl  ← client uploads directly to R2 temp/resumes/
+        ↓
+  createSubmission action  ← receives { resume: { key, filename, … } }
+        ├── validates key starts with temp/resumes/
+        ├── moveFileByKey(key, "resumes")  ← moves to permanent resumes/ prefix
+        ├── db.insert(File) with type="RESUME"
+        └── fetch(moved.url) → getDocumentProxy → extractText (unpdf)
+              └── db.update(Submission).set({ resumeText })  ← best-effort, never blocks submit
+```
+
+The PDF parsing step is wrapped in try/catch and does not fail the submission if extraction fails. `resumeText` stays `null` for unreadable PDFs.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/components/submissions/resume-uploader.tsx` | Controlled PDF file picker; shows filename + remove button when a file is selected; accepts PDF only, max 10 MB |
+| `src/actions/submissions/presign-resume-upload.ts` | `publicActionClient` action; validates `contentType === "application/pdf"` and `size <= 10MB`; returns a presigned PUT URL and the temp R2 key |
+| `src/actions/submissions/create-submission.ts` | Moves file from `temp/resumes/` to `resumes/`, inserts a `File` row with `type="RESUME"`, parses text with `unpdf`, stores result in `Submission.resumeText` |
+| `src/lib/schemas/submission.ts` | `resumeFileSchema` (key, filename, contentType, size); `submissionActionSchema` includes `resume: resumeFileSchema.optional()` |
+| `src/lib/submission-helpers.ts` | `ResumeData` interface (`{ id, url, filename }`); `resume: ResumeData | null` field on `SubmissionWithCandidate` |
+| `src/lib/db/schema.ts` | `Submission.resumeText: text()` (nullable); `File` relation renamed from `headshots` to `files` on both `Submission` and `Candidate` |
+| `src/components/productions/submission-detail-sheet.tsx` | Renders a download link for `submission.resume` in the detail panel |
+| `src/actions/productions/get-role-with-submissions.ts` | Separates `files` by `type` — headshots filtered to `HEADSHOT`, resume selected as the first `RESUME` file |
+| `src/actions/candidates/get-candidate.ts` | Same `type` filtering as above |
+
+**Schema changes (migration `0004_jittery_korg.sql`):**
+- Added `resumeText text` column to `Submission` table (nullable)
+- `File.fileTypeEnum` already included `"RESUME"` — no enum change needed
+
+**Architecture decisions:**
+
+- **`unpdf` over `pdf-parse`** — `pdf-parse` requires a bundler workaround for its worker file (`pdf-parse/build/pdf.worker.entry.js`) that conflicts with the Next.js bundler. `unpdf` is zero-dependency and resolves cleanly in a serverless/edge-compatible environment. See ADR-008 in `docs/DECISIONS.md`.
+
+- **Two-phase upload (presign then move)** — the client never sends the file through the Next.js server, so there is no 4 MB request body limit and no serverless cold-start cost from large binary uploads. The `temp/` prefix acts as a staging area; files that never reach `create-submission` are effectively orphaned (future cleanup job candidate).
+
+- **`files` relation instead of `headshots`** — renaming the Drizzle relation from `headshots` to `files` on `Submission` and `Candidate` keeps the model extensible: new file types (audio clips, video reels) slot in without another relation rename. Consumers filter by `type` to separate headshots from resumes.
+
+- **`resumeText` stored on `Submission`, not `File`** — a submission has at most one resume, and the text is a property of the application (what they submitted) rather than the file asset itself. Storing it on `Submission` avoids an extra join for any future screening query.
+
+**Integration points:** Depends on R2 File Storage (`src/lib/r2.ts`) for presign and move operations. The `File` table (defined in `src/lib/db/schema.ts`) stores the permanent record. The `SubmissionDetailSheet` in `src/components/productions/submission-detail-sheet.tsx` is the display surface for the download link. `SubmissionWithCandidate` in `src/lib/submission-helpers.ts` is the shared data contract between the server actions and the Kanban/detail sheet layer — see the Role Submissions Kanban section.
+
+*Added: 2026-03-07 — Initial resume upload documentation*

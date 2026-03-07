@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Controller } from "react-hook-form"
 import { createSubmission } from "@/actions/submissions/create-submission"
 import { presignHeadshotUpload } from "@/actions/submissions/presign-headshot-upload"
+import { presignResumeUpload } from "@/actions/submissions/presign-resume-upload"
 import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
 import { AutocompleteInput } from "@/components/common/autocomplete-input"
 import { Button } from "@/components/common/button"
@@ -32,6 +33,7 @@ import {
   type HeadshotFile,
   HeadshotUploader,
 } from "@/components/submissions/headshot-uploader"
+import { ResumeUploader } from "@/components/submissions/resume-uploader"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { formResolver } from "@/lib/schemas/resolve"
 import { submissionFormSchema } from "@/lib/schemas/submission"
@@ -57,6 +59,7 @@ export function SubmissionForm({
   const cityOptions = useCityOptions()
   const [submitted, setSubmitted] = useState(false)
   const [headshots, setHeadshots] = useState<HeadshotFile[]>([])
+  const [resume, setResume] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
@@ -176,12 +179,57 @@ export function SubmissionForm({
           setUploading(false)
         }
 
+        let resumeMeta:
+          | { key: string; filename: string; contentType: string; size: number }
+          | undefined
+
+        if (resume) {
+          setUploading(true)
+          try {
+            const presignResult = await presignResumeUpload({
+              filename: resume.name,
+              contentType: resume.type,
+              size: resume.size,
+            })
+
+            if (!presignResult?.data) {
+              throw new Error(
+                presignResult?.serverError ?? "Failed to prepare upload.",
+              )
+            }
+
+            const { key, presignedUrl } = presignResult.data
+
+            const res = await fetch(presignedUrl, {
+              method: "PUT",
+              body: resume,
+              headers: { "Content-Type": resume.type },
+            })
+            if (!res.ok) throw new Error("Upload failed.")
+
+            resumeMeta = {
+              key,
+              filename: resume.name,
+              contentType: resume.type,
+              size: resume.size,
+            }
+          } catch (err) {
+            setUploading(false)
+            setUploadError(
+              err instanceof Error ? err.message : "Upload failed. Try again.",
+            )
+            return
+          }
+          setUploading(false)
+        }
+
         action.execute({
           ...v,
           orgId,
           productionId,
           roleId,
           headshots: headshotMeta,
+          resume: resumeMeta,
         })
       })}
     >
@@ -462,6 +510,10 @@ export function SubmissionForm({
             error={uploadError ?? undefined}
           />
         </Field>
+        <Field>
+          <FieldLabel>Resume (optional)</FieldLabel>
+          <ResumeUploader file={resume} onChange={setResume} />
+        </Field>
         {form.formState.errors.root && (
           <Alert variant="destructive">
             <AlertDescription>
@@ -474,7 +526,7 @@ export function SubmissionForm({
           loading={uploading || action.isPending}
           className="w-fit"
         >
-          {uploading ? "Uploading headshots..." : "Submit audition"}
+          {uploading ? "Uploading files..." : "Submit audition"}
         </Button>
       </FieldGroup>
     </form>

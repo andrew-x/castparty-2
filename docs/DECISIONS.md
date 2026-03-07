@@ -104,3 +104,17 @@ Productions also carry a template pipeline (`PipelineStage` rows with `roleId = 
 - Order gap (1–999 for custom stages) avoids renumbering when inserting stages
 - Previously, terminal stages blocked status reversals; this guard was removed — casting directors can now correct mistakes freely. The full `PipelineUpdate` audit trail provides accountability without blocking corrections.
 - Trade-off: more complex data model than a simple status enum; UI must handle variable stage counts per role
+
+---
+
+## ADR-008: `unpdf` over `pdf-parse` for server-side PDF text extraction
+
+**Context:** Resume upload requires extracting the text content of a PDF file server-side so it can be stored in `Submission.resumeText` for future search or AI screening. `pdf-parse` is the most common Node.js PDF extraction library, but it references `pdf-parse/build/pdf.worker.entry.js` at module load time — a path that the Next.js bundler cannot resolve in a serverless/edge context, causing a build error.
+
+**Decision:** Use `unpdf` (v0.x) instead. `unpdf` wraps `pdfjs-dist` with a zero-dependency, serverless-compatible API (`getDocumentProxy` + `extractText`). It has no worker file resolution requirement and no bundler workarounds needed.
+
+**Consequences:**
+- PDF text extraction works without any Next.js bundler config exceptions
+- `unpdf` API is minimal: `getDocumentProxy(Uint8Array)` → `extractText(pdf, { mergePages: true })` → `{ text: string }` — straightforward to use
+- Text extraction is best-effort (wrapped in try/catch in `create-submission`): if `unpdf` fails on a malformed PDF, `Submission.resumeText` stays `null` and the submission succeeds
+- Trade-off: `unpdf` is a smaller, less battle-tested library than `pdf-parse`; extraction quality on complex PDFs may differ

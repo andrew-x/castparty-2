@@ -1,6 +1,7 @@
 "use server"
 
 import { and, eq } from "drizzle-orm"
+import { extractText, getDocumentProxy } from "unpdf"
 import { publicActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Candidate, File, Submission } from "@/lib/db/schema"
@@ -25,6 +26,7 @@ export const createSubmission = publicActionClient
         location,
         answers,
         headshots,
+        resume,
       },
     }) => {
       // Validate the full ownership chain: role → production → org
@@ -200,6 +202,45 @@ export const createSubmission = publicActionClient
         )
 
         await db.insert(File).values(fileRecords)
+      }
+
+      if (resume) {
+        const tempPrefix = `${r2Root}/temp/resumes/`
+        if (!resume.key.startsWith(tempPrefix)) {
+          throw new Error("Invalid file key.")
+        }
+
+        const moved = await moveFileByKey(resume.key, "resumes")
+
+        await db.insert(File).values({
+          id: generateId("file"),
+          submissionId,
+          type: "RESUME",
+          url: moved.url,
+          key: moved.key,
+          path: moved.path,
+          filename: resume.filename,
+          contentType: resume.contentType,
+          size: resume.size,
+          order: 0,
+        })
+
+        // Parse PDF text from the uploaded file
+        try {
+          const response = await fetch(moved.url)
+          const buffer = await response.arrayBuffer()
+          const pdf = await getDocumentProxy(new Uint8Array(buffer))
+          const { text } = await extractText(pdf, { mergePages: true })
+          if (text.trim()) {
+            await db
+              .update(Submission)
+              .set({ resumeText: text.trim() })
+              .where(eq(Submission.id, submissionId))
+          }
+        } catch (err) {
+          console.error("PDF parsing failed:", err)
+          // PDF parsing is best-effort — don't fail the submission
+        }
       }
 
       return { id: submissionId }
