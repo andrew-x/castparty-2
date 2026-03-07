@@ -22,6 +22,7 @@ export const createSubmission = publicActionClient
         lastName,
         email,
         phone,
+        location,
         answers,
         headshots,
       },
@@ -135,7 +136,12 @@ export const createSubmission = publicActionClient
         candidateId = existing.id
         await db
           .update(Candidate)
-          .set({ firstName, lastName, phone: phone ?? "" })
+          .set({
+            firstName,
+            lastName,
+            phone: phone ?? "",
+            location: location || "",
+          })
           .where(eq(Candidate.id, existing.id))
       } else {
         candidateId = generateId("cand")
@@ -146,6 +152,7 @@ export const createSubmission = publicActionClient
           lastName,
           email,
           phone: phone ?? "",
+          location: location || "",
         })
       }
 
@@ -161,6 +168,7 @@ export const createSubmission = publicActionClient
         lastName,
         email,
         phone: phone ?? "",
+        location: location || "",
         answers: formResponses,
       })
 

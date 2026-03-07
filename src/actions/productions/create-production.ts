@@ -18,7 +18,7 @@ export const createProduction = secureActionClient
   .inputSchema(createProductionActionSchema)
   .action(
     async ({
-      parsedInput: { name, description, roles, slug, customStages },
+      parsedInput: { name, description, location, roles, slug, customStages },
       ctx: { user },
     }) => {
       const orgId = user.activeOrganizationId
@@ -70,6 +70,7 @@ export const createProduction = secureActionClient
         name,
         slug: productionSlug,
         description: description || "",
+        location: location || "",
       })
 
       // Build production-level template stages

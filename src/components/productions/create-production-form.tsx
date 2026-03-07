@@ -8,6 +8,7 @@ import { Controller, useFieldArray } from "react-hook-form"
 import type { z } from "zod/v4"
 import { createProduction } from "@/actions/productions/create-production"
 import { Alert, AlertDescription } from "@/components/common/alert"
+import { AutocompleteInput } from "@/components/common/autocomplete-input"
 import { Button } from "@/components/common/button"
 import {
   Field,
@@ -21,6 +22,7 @@ import {
   type StageData,
   StagesEditor,
 } from "@/components/productions/default-stages-editor"
+import { useCityOptions } from "@/hooks/use-city-options"
 import { createProductionFormSchema } from "@/lib/schemas/production"
 import { formResolver } from "@/lib/schemas/resolve"
 import { slugify } from "@/lib/slugify"
@@ -51,6 +53,7 @@ function nextTempId() {
 
 export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
   const router = useRouter()
+  const cityOptions = useCityOptions()
   const [step, setStep] = useState<Step>("details")
   const [customStages, setCustomStages] = useState<StageData[]>(
     DEFAULT_CUSTOM_STAGES,
@@ -62,7 +65,13 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
     formResolver(createProductionFormSchema),
     {
       formProps: {
-        defaultValues: { name: "", description: "", slug: "", roles: [] },
+        defaultValues: {
+          name: "",
+          description: "",
+          location: "",
+          slug: "",
+          roles: [],
+        },
       },
       actionProps: {
         onSuccess({ data }) {
@@ -149,6 +158,7 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
     action.execute({
       name: values.name,
       description: values.description || undefined,
+      location: values.location || undefined,
       slug,
       customStages: stageNames,
       roles: roles.length > 0 ? roles : undefined,
@@ -205,6 +215,26 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
                   id={field.name}
                   placeholder="A brief description of the production"
                   rows={3}
+                  aria-invalid={fieldState.invalid}
+                />
+                {fieldState.error && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+          <Controller
+            name="location"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid || undefined}>
+                <FieldLabel htmlFor={field.name}>
+                  Location (optional)
+                </FieldLabel>
+                <AutocompleteInput
+                  id={field.name}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  options={cityOptions}
+                  placeholder="e.g. Toronto, ON"
                   aria-invalid={fieldState.invalid}
                 />
                 {fieldState.error && <FieldError errors={[fieldState.error]} />}

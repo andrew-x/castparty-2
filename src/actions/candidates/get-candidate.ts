@@ -59,6 +59,7 @@ export async function getCandidate(candidateId: string) {
         lastName: submission.lastName,
         email: submission.email,
         phone: submission.phone,
+        location: submission.location,
         createdAt: submission.createdAt,
         stageId: submission.stageId,
         stage: submission.stage

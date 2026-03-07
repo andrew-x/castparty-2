@@ -6,6 +6,7 @@ import { Controller } from "react-hook-form"
 import { createSubmission } from "@/actions/submissions/create-submission"
 import { presignHeadshotUpload } from "@/actions/submissions/presign-headshot-upload"
 import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
+import { AutocompleteInput } from "@/components/common/autocomplete-input"
 import { Button } from "@/components/common/button"
 import { Checkbox } from "@/components/common/checkbox"
 import {
@@ -28,9 +29,10 @@ import {
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
 import {
-  HeadshotUploader,
   type HeadshotFile,
+  HeadshotUploader,
 } from "@/components/submissions/headshot-uploader"
+import { useCityOptions } from "@/hooks/use-city-options"
 import { formResolver } from "@/lib/schemas/resolve"
 import { submissionFormSchema } from "@/lib/schemas/submission"
 import type { CustomForm } from "@/lib/types"
@@ -52,6 +54,7 @@ export function SubmissionForm({
   productionSlug,
   formFields,
 }: Props) {
+  const cityOptions = useCityOptions()
   const [submitted, setSubmitted] = useState(false)
   const [headshots, setHeadshots] = useState<HeadshotFile[]>([])
   const [uploading, setUploading] = useState(false)
@@ -72,6 +75,7 @@ export function SubmissionForm({
           lastName: "",
           email: "",
           phone: "",
+          location: "",
           answers: defaultAnswers,
         },
       },
@@ -240,6 +244,24 @@ export function SubmissionForm({
                 {...field}
                 id={field.name}
                 type="tel"
+                aria-invalid={fieldState.invalid}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+        <Controller
+          name="location"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor={field.name}>Location (optional)</FieldLabel>
+              <AutocompleteInput
+                id={field.name}
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                options={cityOptions}
+                placeholder="e.g. Toronto, ON"
                 aria-invalid={fieldState.invalid}
               />
               {fieldState.error && <FieldError errors={[fieldState.error]} />}

@@ -1,6 +1,6 @@
 "use client"
 
-import { MailIcon, PhoneIcon } from "lucide-react"
+import { MailIcon, MapPinIcon, PhoneIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
@@ -112,6 +112,14 @@ export function SubmissionDetailSheet({
                       <PhoneIcon className="size-4 text-muted-foreground" />
                       <span className="text-muted-foreground">
                         {submission.phone}
+                      </span>
+                    </div>
+                  )}
+                  {submission.location && (
+                    <div className="flex items-center gap-element text-label">
+                      <MapPinIcon className="size-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        {submission.location}
                       </span>
                     </div>
                   )}
