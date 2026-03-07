@@ -1,11 +1,13 @@
 "use client"
 
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
+import { useAction } from "next-safe-action/hooks"
 import { PlusIcon, TrashIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { Controller, useFieldArray } from "react-hook-form"
 import type { z } from "zod/v4"
+import { checkSlugAvailability } from "@/actions/productions/check-slug"
 import { createProduction } from "@/actions/productions/create-production"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { AutocompleteInput } from "@/components/common/autocomplete-input"
@@ -90,6 +92,10 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
     },
   )
 
+  const { execute: executeSlugCheck, isPending: isCheckingSlug } = useAction(
+    checkSlugAvailability,
+  )
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "roles",
@@ -104,10 +110,24 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
   }, [nameValue, form])
 
   async function handleNextToStages() {
-    const valid = await form.trigger(["name", "description", "slug"])
-    if (valid) {
-      setStep("stages")
+    const valid = await form.trigger([
+      "name",
+      "description",
+      "location",
+      "slug",
+    ])
+    if (!valid) return
+
+    const slugValue = form.getValues("slug")
+    if (slugValue) {
+      const result = await executeSlugCheck({ slug: slugValue })
+      if (result?.data && !result.data.available) {
+        form.setError("slug", { message: "This URL ID is already taken." })
+        return
+      }
     }
+
+    setStep("stages")
   }
 
   async function handleNextToRoles() {
@@ -276,7 +296,11 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
             <Button type="button" variant="outline" href="/productions">
               Cancel
             </Button>
-            <Button type="button" onClick={handleNextToStages}>
+            <Button
+              type="button"
+              onClick={handleNextToStages}
+              loading={isCheckingSlug}
+            >
               Continue
             </Button>
           </div>

@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { IS_DEV } from "@/lib/util"
 
@@ -16,6 +17,20 @@ export default function AdminLayout({
             Dev only
           </p>
           <h1 className="font-serif text-foreground text-title">Admin</h1>
+          <nav className="flex gap-group text-label">
+            <Link
+              href="/admin"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Users
+            </Link>
+            <Link
+              href="/admin/organizations"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Organizations
+            </Link>
+          </nav>
         </div>
         {children}
       </div>
