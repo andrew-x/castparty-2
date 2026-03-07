@@ -16,6 +16,7 @@ export const submissionFormSchema = z.object({
   lastName: z.string().trim().min(1, "Last name is required.").max(100),
   email: z.string().trim().email("Enter a valid email."),
   phone: z.string().trim().optional(),
+  location: z.string().trim().max(200).optional(),
   answers: z.record(z.string(), z.string()).default({}),
 })
 

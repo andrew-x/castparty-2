@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Controller } from "react-hook-form"
 import { updateProduction } from "@/actions/productions/update-production"
 import { Alert, AlertDescription } from "@/components/common/alert"
+import { AutocompleteInput } from "@/components/common/autocomplete-input"
 import { Button } from "@/components/common/button"
 import {
   Field,
@@ -17,6 +18,7 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { Switch } from "@/components/common/switch"
+import { useCityOptions } from "@/hooks/use-city-options"
 import { updateProductionFormSchema } from "@/lib/schemas/production"
 import { formResolver } from "@/lib/schemas/resolve"
 import { getAppUrl } from "@/lib/url"
@@ -25,6 +27,7 @@ interface Props {
   productionId: string
   orgSlug: string
   currentName: string
+  currentLocation: string
   currentSlug: string
   isOpen: boolean
 }
@@ -33,16 +36,23 @@ export function ProductionSettingsForm({
   productionId,
   orgSlug,
   currentName,
+  currentLocation,
   currentSlug,
   isOpen,
 }: Props) {
   const router = useRouter()
+  const cityOptions = useCityOptions()
   const { form, action } = useHookFormAction(
     updateProduction,
     formResolver(updateProductionFormSchema),
     {
       formProps: {
-        defaultValues: { name: currentName, slug: currentSlug, isOpen },
+        defaultValues: {
+          name: currentName,
+          location: currentLocation,
+          slug: currentSlug,
+          isOpen,
+        },
       },
       actionProps: {
         onSuccess() {
@@ -62,6 +72,7 @@ export function ProductionSettingsForm({
   const watched = form.watch()
   const hasChanges =
     watched.name !== currentName ||
+    watched.location !== currentLocation ||
     watched.slug !== currentSlug ||
     watched.isOpen !== isOpen
 
@@ -73,6 +84,7 @@ export function ProductionSettingsForm({
         action.execute({
           productionId,
           name: v.name,
+          location: v.location,
           slug: v.slug,
           isOpen: v.isOpen,
         }),
@@ -89,6 +101,25 @@ export function ProductionSettingsForm({
                 {...field}
                 id={field.name}
                 type="text"
+                aria-invalid={fieldState.invalid}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="location"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor={field.name}>Location</FieldLabel>
+              <AutocompleteInput
+                id={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                options={cityOptions}
+                placeholder="e.g. Toronto, ON"
                 aria-invalid={fieldState.invalid}
               />
               {fieldState.error && <FieldError errors={[fieldState.error]} />}

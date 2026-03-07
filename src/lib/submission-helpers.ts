@@ -20,6 +20,7 @@ export interface SubmissionWithCandidate {
   lastName: string
   email: string
   phone: string
+  location: string
   createdAt: Date | string
   stageId: string
   stage: PipelineStageData | null

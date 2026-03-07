@@ -25,6 +25,9 @@
 | Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop moves candidates between pipeline stages |
 | Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | Multi-org switching in sidebar footer; lets users switch between organizations they belong to |
 | R2 File Storage | `shipped` | `src/lib/r2.ts` | Cloudflare R2 utility for uploading, deleting, and moving files; uses AWS SDK S3-compatible API; not yet wired to any feature UI |
+| AutocompleteInput | `shipped` | `src/components/common/autocomplete-input.tsx` | Free-form combobox input with keyboard navigation and a filtered dropdown; not constrained to options — users can type any value |
+| useCityOptions | `shipped` | `src/hooks/use-city-options.ts` | Hook that lazy-loads and caches US + Canadian city names for use with AutocompleteInput |
+| Location Fields | `shipped` | `src/lib/schemas/production.ts`, `src/lib/schemas/submission.ts` | Free-text location on productions (create + settings) and submissions (form + detail view); city autocomplete via useCityOptions |
 | Landing Page | `shipped` | `src/app/page.tsx` | Single-screen hero with Castparty branding, tagline, and CTA link to /auth |
 | 404 Page | `shipped` | `src/app/not-found.tsx` | Theatrical "didn't make the callback list" copy with decorative 404 display |
 | Route Error Page | `shipped` | `src/app/error.tsx` | "Something went wrong backstage" — try again + back to home; client component |
@@ -437,6 +440,88 @@ RolePage (server)
 **Integration points:** The `SubmissionForm` in `src/components/submissions/submission-form.tsx` reads `formFields` from the role (falling back to the production-level fields) and renders the appropriate input for each field type. Responses are submitted alongside standard fields via the `create-submission` action.
 
 *Updated: 2026-03-06 — Initial custom form fields documentation*
+
+---
+
+## AutocompleteInput
+
+**Overview:** A generic free-form combobox primitive. It combines the standard `Input` with a filtered dropdown list but does not constrain the user to the suggested options — any typed value is valid. Built as a reusable common component so any feature that needs typeahead (currently location fields) can use it without re-implementing keyboard handling.
+
+**How it works:** The component is fully controlled: the parent owns `value` and supplies an `onChange` callback. It accepts a flat `options: string[]` array and filters client-side by prefix match (`startsWith`). Dropdown visibility and keyboard navigation (`ArrowUp`/`ArrowDown`/`Enter`/`Escape`) are managed in local state. A module-level `mousedown` listener closes the dropdown on outside click. The dropdown renders as a `role="listbox"` element with `role="option"` items and `aria-selected` tracking, wired to the input via `aria-controls` and `aria-expanded`.
+
+**Key props:**
+
+| Prop | Default | Description |
+|------|---------|-------------|
+| `value` / `onChange` | — | Controlled value |
+| `options` | — | Full list to filter from |
+| `minChars` | `2` | Minimum characters before dropdown opens |
+| `maxResults` | `20` | Cap on visible options |
+| `emptyMessage` | `"No results"` | Shown when filter produces nothing |
+
+**Architecture decisions:** Free-form rather than constrained so that users can enter a city not in the dataset (e.g. international locations, custom venues). The dropdown does not appear until `minChars` characters are typed — keeps the initial experience clean when the option list is large (30,000+ entries). `onMouseDown` + `e.preventDefault()` on each option prevents the input's `onBlur` from firing before the selection registers (a standard combobox gotcha).
+
+**Integration points:** Currently used exclusively through the `useCityOptions` hook for location fields. Import from `@/components/common/autocomplete-input`.
+
+*Updated: 2026-03-06 — Initial documentation*
+
+---
+
+## useCityOptions
+
+**Overview:** A hook that provides a combined US + Canadian city name list for use with `AutocompleteInput`. Lazy-loads on first use and caches the result for the lifetime of the page so that multiple location fields on the same page share one fetch.
+
+**How it works:** Two static JSON files in `public/` are fetched in parallel on first call:
+
+| File | Entries |
+|------|---------|
+| `public/us-cities.json` | 30,988 US cities |
+| `public/can-cities.json` | 1,736 Canadian cities |
+
+A module-level `cachedPromise` variable holds the in-flight or resolved `Promise<string[]>`. Every hook instance shares this reference, so subsequent `useCityOptions()` calls never trigger a second fetch — they just attach to the same promise. The resolved array is `[...us, ...can]` (US first). While loading, the hook returns `[]`, so `AutocompleteInput` shows no suggestions until the data arrives.
+
+**Architecture decisions:** Module-level cache rather than React context because there is no state to share — only a fetched array. Context would require a provider in the tree; a module-level variable is simpler and achieves the same deduplication. Data lives in `public/` rather than a database or API because city names are static, large-ish (~1 MB combined), and benefit from CDN caching. The constraint to US + Canadian cities is intentional for the current target audience (community theatre, North American focus).
+
+**Integration points:** Used in `src/components/productions/create-production-form.tsx`, `src/components/productions/production-settings-form.tsx`, and `src/components/submissions/submission-form.tsx`. See AutocompleteInput section above.
+
+*Updated: 2026-03-06 — Initial documentation*
+
+---
+
+## Location Fields
+
+**Overview:** Productions and submissions both carry a free-text `location` field. On productions, location describes where the production is based or will be performed. On submissions, location is the candidate's city, letting the production team filter candidates by geography. Both fields use city autocomplete but accept any value, so entries like "Toronto, ON" from the suggestion list and "London, UK" typed manually are equally valid.
+
+**How it works:**
+
+| Surface | Field status | UI entry point | Display point |
+|---------|-------------|----------------|---------------|
+| Production (create) | Optional | Step 1 of `CreateProductionForm`, after description | Not currently displayed on production cards |
+| Production (settings) | Optional | `ProductionSettingsForm`, after name | Not currently displayed |
+| Submission (submit form) | Optional | `SubmissionForm`, after phone | `SubmissionDetailSheet`, Contact section with `MapPinIcon` |
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/lib/schemas/production.ts` | `location: z.string().trim().max(200).optional()` in create schemas; required (no `.optional()`) in update schemas |
+| `src/lib/schemas/submission.ts` | `location: z.string().trim().max(200).optional()` in form schema |
+| `src/actions/productions/create-production.ts` | Passes `location` to DB insert |
+| `src/actions/productions/update-production.ts` | Passes `location` to DB update |
+| `src/actions/submissions/create-submission.ts` | Passes `location` to Submission insert, Candidate insert, and Candidate update |
+| `src/actions/candidates/get-candidate.ts` | Includes `location` in the shaped submission object |
+| `src/lib/submission-helpers.ts` | `location: string` field on `SubmissionWithCandidate` interface |
+| `src/components/productions/create-production-form.tsx` | Location field with city autocomplete |
+| `src/components/productions/production-settings-form.tsx` | Location field with city autocomplete; accepts `currentLocation` prop |
+| `src/components/submissions/submission-form.tsx` | Location field with city autocomplete |
+| `src/components/productions/submission-detail-sheet.tsx` | Renders location with `MapPinIcon` in Contact section |
+| `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | Passes `currentLocation={production.location}` to settings form |
+
+**Architecture decisions:** Location is optional on create (teams may not know the venue yet) but the update schema accepts it without `.optional()` — an empty string is valid, meaning the field can be cleared. Submission location is optional throughout because not all candidates will supply it. The field is free-text (max 200 chars) rather than a foreign key to a cities table so that non-standard values (neighborhoods, venues, international cities) don't require schema changes.
+
+**Integration points:** Depends on AutocompleteInput and useCityOptions for the city suggestion UI. The `SubmissionWithCandidate` type in `src/lib/submission-helpers.ts` is the shared contract between server actions and the Kanban / detail sheet display layer.
+
+*Updated: 2026-03-06 — Initial documentation*
 
 ---
 

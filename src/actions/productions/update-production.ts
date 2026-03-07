@@ -11,7 +11,7 @@ export const updateProduction = secureActionClient
   .inputSchema(updateProductionActionSchema)
   .action(
     async ({
-      parsedInput: { productionId, name, slug, isOpen },
+      parsedInput: { productionId, name, slug, location, isOpen },
       ctx: { user },
     }) => {
       const orgId = user.activeOrganizationId
@@ -36,7 +36,7 @@ export const updateProduction = secureActionClient
 
       await db
         .update(Production)
-        .set({ name, slug, ...(isOpen !== undefined && { isOpen }) })
+        .set({ name, slug, location, ...(isOpen !== undefined && { isOpen }) })
         .where(eq(Production.id, productionId))
 
       return { success: true }

@@ -1,6 +1,6 @@
 # Documentation Index
 
-> **Status:** Active development — auth, organizations, productions, candidates, public submission flow, configurable pipeline stages, custom form fields, role Kanban board, candidate detail, and admin are shipped. R2 file storage utility is implemented but not yet wired to any feature UI.
+> **Status:** Active development — auth, organizations, productions, candidates, public submission flow, configurable pipeline stages, custom form fields, role Kanban board, candidate detail, admin, and location fields on productions and submissions are shipped. R2 file storage utility is implemented but not yet wired to any feature UI.
 > **Maintained by:** Librarian agent (`.claude/agents/librarian.md`)
 
 | Document | Read when you need to... |
