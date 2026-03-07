@@ -82,6 +82,7 @@ When a `<library>-llms.txt` file exists:
 - `references/dndkit-llms.txt` — @dnd-kit drag-and-drop toolkit docs index (React hooks, sortable, sensors, plugins)
 - `references/zod-llms.txt` — Zod v4 schema validation library docs index (schemas, types, error handling, transforms)
 - `references/r2-llms.txt` — Cloudflare R2 object storage docs (buckets, objects, Workers API, S3 compatibility, lifecycle, encryption)
+- `references/resend-llms.txt` — Resend email API docs (send/receive emails, domains, contacts, broadcasts, webhooks, templates, SDKs)
 
 ### Curated doc-site indexes
 

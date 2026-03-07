@@ -6,6 +6,7 @@ import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
+import { authClient } from "@/lib/auth/auth-client"
 import {
   Field,
   FieldError,
@@ -25,9 +26,11 @@ export function ForgotPasswordForm() {
     defaultValues: { email: "" },
   })
 
-  async function onSubmit(_values: z.infer<typeof forgotPasswordSchema>) {
-    // TODO: replace with authClient.forgetPassword.email() when email is configured
-    await new Promise((resolve) => setTimeout(resolve, 500))
+  async function onSubmit(values: z.infer<typeof forgotPasswordSchema>) {
+    await authClient.requestPasswordReset({
+      email: values.email,
+      redirectTo: "/auth/reset-password",
+    })
     setSubmitted(true)
   }
 

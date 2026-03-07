@@ -1,0 +1,166 @@
+# Resend
+
+## Docs
+
+- [AI Onboarding](https://resend.com/docs/ai-onboarding.md): Everything you need to onboard your AI agent to Resend.
+- [Create API key](https://resend.com/docs/api-reference/api-keys/create-api-key.md): Add a new API key to authenticate communications with Resend.
+- [Delete API key](https://resend.com/docs/api-reference/api-keys/delete-api-key.md): Remove an existing API key.
+- [List API keys](https://resend.com/docs/api-reference/api-keys/list-api-keys.md): Retrieve a list of API keys for the authenticated user.
+- [Create Broadcast](https://resend.com/docs/api-reference/broadcasts/create-broadcast.md): Create a new broadcast to send to your contacts.
+- [Delete Broadcast](https://resend.com/docs/api-reference/broadcasts/delete-broadcast.md): Remove an existing broadcast.
+- [Retrieve Broadcast](https://resend.com/docs/api-reference/broadcasts/get-broadcast.md): Retrieve a single broadcast.
+- [List Broadcasts](https://resend.com/docs/api-reference/broadcasts/list-broadcasts.md): Retrieve a list of broadcast.
+- [Send Broadcast](https://resend.com/docs/api-reference/broadcasts/send-broadcast.md): Start sending broadcasts to your audience through the Resend API.
+- [Update Broadcast](https://resend.com/docs/api-reference/broadcasts/update-broadcast.md): Update a broadcast to send to your contacts.
+- [Create Contact Property](https://resend.com/docs/api-reference/contact-properties/create-contact-property.md): Create a custom property for your contacts.
+- [Delete Contact Property](https://resend.com/docs/api-reference/contact-properties/delete-contact-property.md): Remove an existing contact property.
+- [Retrieve Contact Property](https://resend.com/docs/api-reference/contact-properties/get-contact-property.md): Retrieve a contact property by its ID.
+- [List Contact Properties](https://resend.com/docs/api-reference/contact-properties/list-contact-properties.md): Retrieve a list of contact properties.
+- [Update Contact Property](https://resend.com/docs/api-reference/contact-properties/update-contact-property.md): Update an existing contact property.
+- [Add Contact to Segment](https://resend.com/docs/api-reference/contacts/add-contact-to-segment.md): Add an existing contact to a segment.
+- [Create Contact](https://resend.com/docs/api-reference/contacts/create-contact.md): Create a contact.
+- [Delete Contact](https://resend.com/docs/api-reference/contacts/delete-contact.md): Remove an existing contact.
+- [Delete Contact Segment](https://resend.com/docs/api-reference/contacts/delete-contact-segment.md): Remove an existing contact from a segment.
+- [Retrieve Contact](https://resend.com/docs/api-reference/contacts/get-contact.md): Retrieve a single contact.
+- [Retrieve Contact Topics](https://resend.com/docs/api-reference/contacts/get-contact-topics.md): Retrieve a list of topics subscriptions for a contact.
+- [List Contact Segments](https://resend.com/docs/api-reference/contacts/list-contact-segments.md): Retrieve a list of segments that a contact is part of.
+- [List Contacts](https://resend.com/docs/api-reference/contacts/list-contacts.md): Show all contacts.
+- [Update Contact](https://resend.com/docs/api-reference/contacts/update-contact.md): Update an existing contact.
+- [Update Contact Topics](https://resend.com/docs/api-reference/contacts/update-contact-topics.md): Update topic subscriptions for a contact.
+- [Create Domain](https://resend.com/docs/api-reference/domains/create-domain.md): Create a domain through the Resend Email API.
+- [Delete Domain](https://resend.com/docs/api-reference/domains/delete-domain.md): Remove an existing domain.
+- [Retrieve Domain](https://resend.com/docs/api-reference/domains/get-domain.md): Retrieve a single domain for the authenticated user.
+- [List Domains](https://resend.com/docs/api-reference/domains/list-domains.md): Retrieve a list of domains for the authenticated user.
+- [Update Domain](https://resend.com/docs/api-reference/domains/update-domain.md): Update an existing domain.
+- [Verify Domain](https://resend.com/docs/api-reference/domains/verify-domain.md): Verify an existing domain.
+- [Cancel Email](https://resend.com/docs/api-reference/emails/cancel-email.md): Cancel a scheduled email.
+- [List Attachments](https://resend.com/docs/api-reference/emails/list-email-attachments.md): Retrieve a list of attachments from a sent email.
+- [List Sent Emails](https://resend.com/docs/api-reference/emails/list-emails.md): Retrieve a list of emails sent by your team.
+- [List Attachments](https://resend.com/docs/api-reference/emails/list-received-email-attachments.md): Retrieve a list of attachments from a received email.
+- [List Received Emails](https://resend.com/docs/api-reference/emails/list-received-emails.md): Retrieve a list of received emails for the authenticated user.
+- [Retrieve Email](https://resend.com/docs/api-reference/emails/retrieve-email.md): Retrieve a single email.
+- [Retrieve Attachment](https://resend.com/docs/api-reference/emails/retrieve-email-attachment.md): Retrieve a single attachment from a sent email.
+- [Retrieve Received Email](https://resend.com/docs/api-reference/emails/retrieve-received-email.md): Retrieve a single received email.
+- [Retrieve Attachment](https://resend.com/docs/api-reference/emails/retrieve-received-email-attachment.md): Retrieve a single attachment from a received email.
+- [Send Batch Emails](https://resend.com/docs/api-reference/emails/send-batch-emails.md): Trigger up to 100 batch emails at once.
+- [Send Email](https://resend.com/docs/api-reference/emails/send-email.md): Start sending emails through the Resend Email API.
+- [Update Email](https://resend.com/docs/api-reference/emails/update-email.md): Update a scheduled email.
+- [Errors](https://resend.com/docs/api-reference/errors.md): Troubleshoot problems with this comprehensive breakdown of all error codes.
+- [Introduction](https://resend.com/docs/api-reference/introduction.md): Understand general concepts, response codes, and authentication strategies.
+- [Pagination](https://resend.com/docs/api-reference/pagination.md): Learn how pagination works in the Resend API.
+- [Usage Limits](https://resend.com/docs/api-reference/rate-limit.md): Learn about API rate limits, email sending quotas, and contact quotas.
+- [Create Segment](https://resend.com/docs/api-reference/segments/create-segment.md): Create a new segment for contacts to be added to.
+- [Delete Segment](https://resend.com/docs/api-reference/segments/delete-segment.md): Remove an existing segment.
+- [Retrieve Segment](https://resend.com/docs/api-reference/segments/get-segment.md): Retrieve a single segment.
+- [List Segments](https://resend.com/docs/api-reference/segments/list-segments.md): Retrieve a list of segments.
+- [Create Template](https://resend.com/docs/api-reference/templates/create-template.md): Create a new template with optional variables.
+- [Delete Template](https://resend.com/docs/api-reference/templates/delete-template.md): Delete a template.
+- [Duplicate Template](https://resend.com/docs/api-reference/templates/duplicate-template.md): Duplicate a template.
+- [Get Template](https://resend.com/docs/api-reference/templates/get-template.md): Get a template by ID.
+- [List Templates](https://resend.com/docs/api-reference/templates/list-templates.md): List all templates.
+- [Publish Template](https://resend.com/docs/api-reference/templates/publish-template.md): Publish a template.
+- [Update Template](https://resend.com/docs/api-reference/templates/update-template.md): Update a template.
+- [Create Topic](https://resend.com/docs/api-reference/topics/create-topic.md): Create and email topics to segment your audience.
+- [Delete Topic](https://resend.com/docs/api-reference/topics/delete-topic.md): Remove an existing topic.
+- [Retrieve Topic](https://resend.com/docs/api-reference/topics/get-topic.md): Retrieve a topic by its ID.
+- [List Topics](https://resend.com/docs/api-reference/topics/list-topics.md): Retrieve a list of topics for the authenticated user.
+- [Update Topic](https://resend.com/docs/api-reference/topics/update-topic.md): Update an existing topic.
+- [Create Webhook](https://resend.com/docs/api-reference/webhooks/create-webhook.md): Create a webhook to receive real-time notifications about email events.
+- [Delete Webhook](https://resend.com/docs/api-reference/webhooks/delete-webhook.md): Remove an existing webhook.
+- [Retrieve Webhook](https://resend.com/docs/api-reference/webhooks/get-webhook.md): Retrieve a single webhook for the authenticated user.
+- [List Webhooks](https://resend.com/docs/api-reference/webhooks/list-webhooks.md): Retrieve a list of webhooks for the authenticated user.
+- [Update Webhook](https://resend.com/docs/api-reference/webhooks/update-webhook.md): Update an existing webhook configuration.
+- [Introduction](https://resend.com/docs/dashboard/api-keys/introduction.md): Visualize all the API Keys on the Resend Dashboard.
+- [Managing Contacts](https://resend.com/docs/dashboard/audiences/contacts.md): Learn how to work with Contacts with Resend.
+- [Your Resend Audience](https://resend.com/docs/dashboard/audiences/introduction.md): Learn how to manage your Contacts and send personalized Broadcasts to them.
+- [Managing Unsubscribed Contacts](https://resend.com/docs/dashboard/audiences/managing-unsubscribe-list.md): Learn how to check and remove recipients who have unsubscribed to your marketing emails.
+- [Contact Properties](https://resend.com/docs/dashboard/audiences/properties.md): Learn how to work with Contact Properties with Resend.
+- [Managing Broadcasts](https://resend.com/docs/dashboard/broadcasts/introduction.md): Send marketing emails efficiently without code.
+- [Performance Tracking](https://resend.com/docs/dashboard/broadcasts/performance-tracking.md): Track your Broadcasts email performance in real-time
+- [Implementing BIMI](https://resend.com/docs/dashboard/domains/bimi.md): Set up BIMI to gain brand recognition by displaying your logo in the inbox.
+- [Implementing DMARC](https://resend.com/docs/dashboard/domains/dmarc.md): Implement DMARC to build trust in your domain and protect against email spoofing.
+- [Managing Domains](https://resend.com/docs/dashboard/domains/introduction.md): Visualize all the domains on the Resend Dashboard.
+- [Choosing a Region](https://resend.com/docs/dashboard/domains/regions.md): Resend offers sending from multiple regions
+- [Add an unsubscribe link to transactional emails](https://resend.com/docs/dashboard/emails/add-unsubscribe-to-transactional-emails.md): Learn how to give email recipients the ability to unsubscribe.
+- [Attachments](https://resend.com/docs/dashboard/emails/attachments.md): Send emails with attachments.
+- [Batch Sending](https://resend.com/docs/dashboard/emails/batch-sending.md): Send up to 100 emails in a single API call.
+- [Custom Headers](https://resend.com/docs/dashboard/emails/custom-headers.md): Customize how emails are sent with your own headers.
+- [Deliverability Insights](https://resend.com/docs/dashboard/emails/deliverability-insights.md): Improve your deliverability with tailored insights based on your sending.
+- [Email Bounces](https://resend.com/docs/dashboard/emails/email-bounces.md): Understanding and resolving delivery issues.
+- [Email Suppressions](https://resend.com/docs/dashboard/emails/email-suppressions.md): Understanding and resolving delivery issues.
+- [Embed Inline Images](https://resend.com/docs/dashboard/emails/embed-inline-images.md): Send emails with inline images.
+- [Idempotency Keys](https://resend.com/docs/dashboard/emails/idempotency-keys.md): Use idempotency keys to ensure that emails are sent only once.
+- [Managing Emails](https://resend.com/docs/dashboard/emails/introduction.md): Learn how to view and manage all sent emails on the Resend Dashboard.
+- [Schedule Email](https://resend.com/docs/dashboard/emails/schedule-email.md): Send emails at a specific time without additional complexity.
+- [Send Test Emails](https://resend.com/docs/dashboard/emails/send-test-emails.md): Simulate different events by sending test emails.
+- [Managing Tags](https://resend.com/docs/dashboard/emails/tags.md): Add unique identifiers to emails sent.
+- [Introduction](https://resend.com/docs/dashboard/logs/introduction.md): Learn how to view and troubleshoot API logs in the Resend Dashboard.
+- [Process Receiving Attachments](https://resend.com/docs/dashboard/receiving/attachments.md): Process attachments from receiving emails.
+- [Custom Receiving Domains](https://resend.com/docs/dashboard/receiving/custom-domains.md): Receive emails using your own domain.
+- [Forward Received Emails](https://resend.com/docs/dashboard/receiving/forward-emails.md): Forward Received emails to another email address.
+- [Get Email Content](https://resend.com/docs/dashboard/receiving/get-email-content.md): Get the body and headers of a received email.
+- [Receiving Emails](https://resend.com/docs/dashboard/receiving/introduction.md): Learn how to receive emails via webhooks.
+- [Reply to Receiving Emails](https://resend.com/docs/dashboard/receiving/reply-to-emails.md): Reply to Receiving emails in the same thread.
+- [Managing Segments](https://resend.com/docs/dashboard/segments/introduction.md): Learn how to create, retrieve, and delete segments.
+- [Managing Billing](https://resend.com/docs/dashboard/settings/billing.md): Manage your account subscription and billing information
+- [Managing Teams](https://resend.com/docs/dashboard/settings/team.md): Manage your account across multiple teams
+- [Custom Unsubscribe Page](https://resend.com/docs/dashboard/settings/unsubscribe-page.md): Customize your unsubscribe page
+- [Using Templates](https://resend.com/docs/dashboard/templates/introduction.md): Learn how to use templates to send emails.
+- [Working with Variables](https://resend.com/docs/dashboard/templates/template-variables.md): How to work with custom variables in Templates.
+- [Version History](https://resend.com/docs/dashboard/templates/version-history.md): Best practices for using templates in production environments.
+- [Topics](https://resend.com/docs/dashboard/topics/introduction.md): Give your users more control over their subscription preferences.
+- [How to Store Webhooks Data](https://resend.com/docs/dashboard/webhooks/how-to-store-webhooks-data.md): Storing your email event data matters.
+- [Using Workflows](https://resend.com/docs/dashboard/workflows/introduction.md): Automate email workflows with custom events.
+- [Email Best Practices Skill](https://resend.com/docs/email-best-practices-skill.md): Comprehensive guide for building production-ready email systems with AI agents.
+- [Examples](https://resend.com/docs/examples.md): Explore sample apps for different use cases.
+- [Introduction](https://resend.com/docs/introduction.md): Resend is the email API for developers.
+- [What are Resend account quotas and limits?](https://resend.com/docs/knowledge-base/account-quotas-and-limits.md): Learn what quotas and limits apply to accounts.
+- [Audience Hygiene](https://resend.com/docs/knowledge-base/audience-hygiene.md): Learn strategies for maintaining good audience hygiene and maximizing email deliverability.
+- [Does Resend require production approval?](https://resend.com/docs/knowledge-base/does-resend-require-production-approval.md): Learn about production access and account limitations on Resend.
+- [How do I avoid Gmail's spam folder?](https://resend.com/docs/knowledge-base/how-do-i-avoid-gmails-spam-folder.md): Learn how to improve inbox placement in Gmail.
+- [How do I avoid Outlook's spam folder?](https://resend.com/docs/knowledge-base/how-do-i-avoid-outlooks-spam-folder.md): Learn how to improve inbox placement in Outlook.
+- [How do I fix CORS issues?](https://resend.com/docs/knowledge-base/how-do-i-fix-cors-issues.md): Information on recommended options to avoid CORS errors when sending emails.
+- [How do I send with an avatar?](https://resend.com/docs/knowledge-base/how-do-i-send-with-an-avatar.md): Learn how to show your avatar in the inbox of your recipients.
+- [How to Handle API Keys](https://resend.com/docs/knowledge-base/how-to-handle-api-keys.md): Learn our suggested practices for handling API keys.
+- [Is it better to send emails from a subdomain or the root domain?](https://resend.com/docs/knowledge-base/is-it-better-to-send-emails-from-a-subdomain-or-the-root-domain.md): Discover why sending emails from a subdomain can be better.
+- [Should I add an unsubscribe link to all of my emails?](https://resend.com/docs/knowledge-base/should-i-add-an-unsubscribe-link.md): Learn best practices about using unsubscribe links.
+- [Domain and/or IP Warm-up Guide](https://resend.com/docs/knowledge-base/warming-up.md): Learn how to warm up a domain or IP to avoid deliverability issues.
+- [What attachment types are not supported?](https://resend.com/docs/knowledge-base/what-attachment-types-are-not-supported.md): Learn which file attachment extensions you can't send.
+- [What counts as email consent?](https://resend.com/docs/knowledge-base/what-counts-as-email-consent.md): Learn what valid email permission looks like and why it matters.
+- [What email addresses to use for testing?](https://resend.com/docs/knowledge-base/what-email-addresses-to-use-for-testing.md): Learn what email addresses are safe to use for testing with Resend.
+- [What if an email says delivered but the recipient has not received it?](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it.md): Learn steps when an email is delivered but not received.
+- [What if my domain is not verifying?](https://resend.com/docs/knowledge-base/what-if-my-domain-is-not-verifying.md): Learn what steps to take when your domain doesn't verify.
+- [What is Resend Pricing](https://resend.com/docs/knowledge-base/what-is-resend-pricing.md): Learn more about Resend's pricing plans.
+- [What sending feature should I be using?](https://resend.com/docs/knowledge-base/what-sending-feature-to-use.md): How to pick between different sending features.
+- [Why are my emails landing on the Suppression List?](https://resend.com/docs/knowledge-base/why-are-my-emails-landing-on-the-suppression-list.md): Learn why emails land on the Suppression List.
+- [Why and when to use Topics?](https://resend.com/docs/knowledge-base/why-use-topics.md): Learn when to use Topics to improve deliverability.
+- [React Email Skill](https://resend.com/docs/react-email-skill.md): Build HTML emails using React components with AI agents.
+- [Resend Skill](https://resend.com/docs/resend-skill.md): Send emails through the Resend API with AI agents.
+- [Official SDKs](https://resend.com/docs/sdks.md): Open source client libraries for your favorite platforms.
+- [Security](https://resend.com/docs/security.md): An overview of Resend security features and practices.
+- [Send emails with Bun](https://resend.com/docs/send-with-bun.md): Learn how to send your first email using Bun and the Resend Node.js SDK.
+- [Send emails with Next.js](https://resend.com/docs/send-with-nextjs.md): Learn how to send your first email using Next.js and the Resend Node.js SDK.
+- [Send emails with Node.js](https://resend.com/docs/send-with-nodejs.md): Learn how to send your first email using the Resend Node.js SDK.
+- [Send emails with Vercel Functions](https://resend.com/docs/send-with-vercel-functions.md): Learn how to send your first email using Vercel Functions.
+- [contact.created](https://resend.com/docs/webhooks/contacts/created.md): Received when a contact is created.
+- [contact.deleted](https://resend.com/docs/webhooks/contacts/deleted.md): Received when a contact is deleted.
+- [contact.updated](https://resend.com/docs/webhooks/contacts/updated.md): Received when a contact is updated.
+- [domain.created](https://resend.com/docs/webhooks/domains/created.md): Received when a domain is created.
+- [domain.deleted](https://resend.com/docs/webhooks/domains/deleted.md): Received when a domain is deleted.
+- [domain.updated](https://resend.com/docs/webhooks/domains/updated.md): Received when a domain is updated.
+- [email.bounced](https://resend.com/docs/webhooks/emails/bounced.md): Received when an email bounces.
+- [email.clicked](https://resend.com/docs/webhooks/emails/clicked.md): Received when an email link is clicked.
+- [email.complained](https://resend.com/docs/webhooks/emails/complained.md): Received when an email is marked as spam.
+- [email.delivered](https://resend.com/docs/webhooks/emails/delivered.md): Received when an email is delivered.
+- [email.delivery_delayed](https://resend.com/docs/webhooks/emails/delivery-delayed.md): Received when an email delivery is delayed.
+- [email.failed](https://resend.com/docs/webhooks/emails/failed.md): Received when an email fails to send.
+- [email.opened](https://resend.com/docs/webhooks/emails/opened.md): Received when an email is opened.
+- [email.received](https://resend.com/docs/webhooks/emails/received.md): Received when an inbound email is received.
+- [email.scheduled](https://resend.com/docs/webhooks/emails/scheduled.md): Received when an email is scheduled to be sent.
+- [email.sent](https://resend.com/docs/webhooks/emails/sent.md): Received when an email is sent.
+- [email.suppressed](https://resend.com/docs/webhooks/emails/suppressed.md): Received when an email is suppressed.
+- [Event Types](https://resend.com/docs/webhooks/event-types.md): List of supported event types and their payload.
+- [Webhook Ingester](https://resend.com/docs/webhooks/ingester.md): A self-hosted solution to store all your Resend webhook events in your own database.
+- [Managing Webhooks](https://resend.com/docs/webhooks/introduction.md): Use webhooks to notify your application about events from Resend.
+- [Retries and Replays](https://resend.com/docs/webhooks/retries-and-replays.md): Learn how to use the retries and replays to handle webhook failures.
+- [Verify Webhooks Requests](https://resend.com/docs/webhooks/verify-webhooks-requests.md): Learn how to use the signing secret to verify your webhooks.

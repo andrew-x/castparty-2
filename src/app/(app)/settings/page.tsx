@@ -4,6 +4,8 @@ import { getMemberRole } from "@/actions/organizations/get-member-role"
 import { getOrgInvitations } from "@/actions/organizations/get-org-invitations"
 import { getOrganization } from "@/actions/organizations/get-organization"
 import { getOrganizationProfile } from "@/actions/organizations/get-organization-profile"
+import { AccountSettings } from "@/components/auth/account-settings"
+import { EmailVerificationBanner } from "@/components/auth/email-verification-banner"
 import { Page, PageContent, PageHeader } from "@/components/common/page"
 import { Separator } from "@/components/common/separator"
 import { MembersTable } from "@/components/organizations/members-table"
@@ -40,6 +42,9 @@ export default async function SettingsPage() {
       <PageHeader title="Settings" />
       <PageContent>
         <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
+          {!user.emailVerified && (
+            <EmailVerificationBanner email={user.email} />
+          )}
           <section className="flex flex-col gap-group">
             <h2 className="font-serif text-heading">Organization Profile</h2>
             <OrgSettingsForm
@@ -66,6 +71,12 @@ export default async function SettingsPage() {
               currentUserId={user.id}
               pendingInvitations={pendingInvitations}
             />
+          </section>
+          <Separator />
+
+          <section className="flex flex-col gap-group">
+            <h2 className="font-serif text-heading">Account</h2>
+            <AccountSettings email={user.email} />
           </section>
         </div>
       </PageContent>

@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
 import { Alert, AlertDescription } from "@/components/common/alert"
@@ -30,6 +30,8 @@ const errorMessages: Record<string, string> = {
 
 export function SignUpForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("redirect") ?? "/home"
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { name: "", email: "", password: "" },
@@ -40,6 +42,7 @@ export function SignUpForm() {
       name: values.name,
       email: values.email,
       password: values.password,
+      callbackURL: "/auth/verify-email",
     })
 
     if (authError) {
@@ -52,7 +55,7 @@ export function SignUpForm() {
       return
     }
 
-    router.push("/home")
+    router.push(redirectTo)
   }
 
   return (
