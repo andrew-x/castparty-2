@@ -71,6 +71,7 @@ export const createProduction = secureActionClient
         slug: productionSlug,
         description: description || "",
         location: location || "",
+        isOpen: true,
       })
 
       // Build production-level template stages
@@ -100,6 +101,7 @@ export const createProduction = secureActionClient
             name: role.name,
             slug: roleSlug,
             description: role.description || "",
+            isOpen: true,
           }
         })
 

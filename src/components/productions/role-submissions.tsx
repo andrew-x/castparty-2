@@ -4,12 +4,19 @@ import { CollisionPriority } from "@dnd-kit/abstract"
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider, useDroppable } from "@dnd-kit/react"
 import { useSortable } from "@dnd-kit/react/sortable"
-import { ExternalLinkIcon } from "lucide-react"
+import { ExternalLinkIcon, UsersIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Badge } from "@/components/common/badge"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/common/empty"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
 import type {
@@ -74,7 +81,18 @@ export function RoleSubmissions({
 
   if (submissions.length === 0) {
     return (
-      <p className="text-caption text-muted-foreground">No candidates yet.</p>
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <UsersIcon />
+          </EmptyMedia>
+          <EmptyTitle>No candidates yet</EmptyTitle>
+          <EmptyDescription>
+            Candidates will appear here once they submit an audition for this
+            role.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     )
   }
 
