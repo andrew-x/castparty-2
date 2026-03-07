@@ -11,6 +11,17 @@ export const headShotFileSchema = z.object({
     .max(20 * 1024 * 1024),
 })
 
+export const resumeFileSchema = z.object({
+  key: z.string().min(1),
+  filename: z.string().min(1),
+  contentType: z.string().min(1),
+  size: z
+    .number()
+    .int()
+    .positive()
+    .max(10 * 1024 * 1024),
+})
+
 export const submissionFormSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required.").max(100),
   lastName: z.string().trim().min(1, "Last name is required.").max(100),
@@ -25,4 +36,5 @@ export const submissionActionSchema = submissionFormSchema.extend({
   productionId: z.string().min(1),
   roleId: z.string().min(1),
   headshots: z.array(headShotFileSchema).max(10).default([]),
+  resume: resumeFileSchema.optional(),
 })

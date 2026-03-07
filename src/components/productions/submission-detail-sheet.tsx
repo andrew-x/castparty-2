@@ -1,6 +1,6 @@
 "use client"
 
-import { MailIcon, MapPinIcon, PhoneIcon } from "lucide-react"
+import { FileTextIcon, MailIcon, MapPinIcon, PhoneIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
@@ -151,6 +151,28 @@ export function SubmissionDetailSheet({
                         </a>
                       ))}
                     </div>
+                  </div>
+                </>
+              )}
+
+              {submission.resume && (
+                <>
+                  <Separator />
+                  <div className="flex flex-col gap-block">
+                    <h3 className="font-medium text-foreground text-label">
+                      Resume
+                    </h3>
+                    <a
+                      href={submission.resume.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-element rounded-lg border border-border px-3 py-2 text-foreground text-label transition-colors hover:bg-muted/50"
+                    >
+                      <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate">
+                        {submission.resume.filename}
+                      </span>
+                    </a>
                   </div>
                 </>
               )}

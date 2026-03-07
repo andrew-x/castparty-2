@@ -14,6 +14,12 @@ export interface HeadshotData {
   order: number
 }
 
+export interface ResumeData {
+  id: string
+  url: string
+  filename: string
+}
+
 export interface SubmissionWithCandidate {
   id: string
   firstName: string
@@ -26,6 +32,8 @@ export interface SubmissionWithCandidate {
   stage: PipelineStageData | null
   answers: CustomFormResponse[]
   headshots: HeadshotData[]
+  resume: ResumeData | null
+  resumeText: string | null
   candidate: {
     id: string
     firstName: string
