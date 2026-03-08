@@ -10,7 +10,6 @@ import { useState } from "react"
 import { addProductionStage } from "@/actions/productions/add-production-stage"
 import { removeProductionStage } from "@/actions/productions/remove-production-stage"
 import { reorderProductionStages } from "@/actions/productions/reorder-production-stages"
-import { MAX_PIPELINE_STAGES } from "@/lib/constants"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
 import {
@@ -18,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/common/tooltip"
+import { MAX_PIPELINE_STAGES } from "@/lib/constants"
 
 export interface StageData {
   id: string

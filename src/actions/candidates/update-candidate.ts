@@ -1,6 +1,7 @@
 "use server"
 
 import { and, eq, not } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Candidate } from "@/lib/db/schema"
@@ -47,6 +48,7 @@ export const updateCandidate = secureActionClient
         })
         .where(eq(Candidate.id, candidateId))
 
+      revalidatePath("/", "layout")
       return { success: true }
     },
   )

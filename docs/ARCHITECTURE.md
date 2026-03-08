@@ -103,6 +103,7 @@ Browser
 - `src/lib/types.ts` — Shared domain types: `CustomForm`, `CustomFormFieldType` (TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE), `CustomFormResponse`
 - `src/lib/constants.ts` — `DEFAULT_PIPELINE_STAGES`, `MAX_PIPELINE_STAGES`
 - `src/lib/r2.ts` — Cloudflare R2 file storage: `uploadFile`, `deleteFile`, `moveFile`, `getKeyFromUrl`; uses AWS SDK S3-compatible API
+- `src/lib/auth/auth-util.ts` — Auth utility: `checkAuth()` reads the session and throws if unauthenticated; used by all server-side read functions
 - `src/lib/auth/auth-client.ts` — Better Auth browser client; used in form components
 - `src/lib/db/db.ts` — Drizzle ORM instance; Neon serverless HTTP driver; `snake_case` column casing
 - `src/lib/db/schema.ts` — Drizzle schema (source of truth for DB shape)

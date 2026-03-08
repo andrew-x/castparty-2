@@ -1,6 +1,7 @@
 "use server"
 
 import { eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Role } from "@/lib/db/schema"
@@ -40,5 +41,6 @@ export const addRoleFormField = secureActionClient
       .set({ formFields: [...role.formFields, newField] })
       .where(eq(Role.id, roleId))
 
+    revalidatePath("/", "layout")
     return { id: newField.id }
   })

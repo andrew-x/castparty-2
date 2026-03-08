@@ -1,6 +1,7 @@
 "use server"
 
 import { and, desc, eq, gte } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 import { secureActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
@@ -76,6 +77,7 @@ export const inviteMember = secureActionClient
         headers: await headers(),
       })
 
+      revalidatePath("/", "layout")
       return { success: true }
     },
   )

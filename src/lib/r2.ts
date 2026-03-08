@@ -1,6 +1,7 @@
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3"
@@ -37,6 +38,15 @@ function getExtension(filename: string): string {
 
 export function getKeyFromUrl(fileUrl: string): string {
   return fileUrl.replace(`${R2_PUBLIC_URL}/`, "")
+}
+
+export async function checkFileExists(key: string): Promise<boolean> {
+  try {
+    await s3.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+    return true
+  } catch {
+    return false
+  }
 }
 
 export async function uploadFile(file: File, folder: string): Promise<string> {

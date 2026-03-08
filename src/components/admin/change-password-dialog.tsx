@@ -1,9 +1,8 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useAction } from "next-safe-action/hooks"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useEffect } from "react"
-import { Controller, useForm } from "react-hook-form"
+import { Controller } from "react-hook-form"
 import { z } from "zod/v4"
 import { changePasswordAction } from "@/actions/admin/change-password"
 import { Alert, AlertDescription } from "@/components/common/alert"
@@ -23,6 +22,7 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { formResolver } from "@/lib/schemas/resolve"
 
 const schema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters."),
@@ -41,26 +41,28 @@ export function ChangePasswordDialog({
   onOpenChange,
   onSuccess,
 }: Props) {
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { password: "" },
-  })
+  const { form, action } = useHookFormAction(
+    changePasswordAction,
+    formResolver(schema),
+    {
+      formProps: { defaultValues: { password: "" } },
+      actionProps: {
+        onSuccess() {
+          onOpenChange(false)
+          onSuccess()
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message: error.serverError ?? "Something went wrong.",
+          })
+        },
+      },
+    },
+  )
 
   useEffect(() => {
     if (!open) form.reset()
   }, [open, form])
-
-  const { execute, isPending } = useAction(changePasswordAction, {
-    onSuccess() {
-      onOpenChange(false)
-      onSuccess()
-    },
-    onError({ error }) {
-      form.setError("root", {
-        message: error.serverError ?? "Something went wrong.",
-      })
-    },
-  })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,7 +78,7 @@ export function ChangePasswordDialog({
         <form
           onSubmit={form.handleSubmit((v) => {
             if (!user) return
-            execute({ userId: user.id, password: v.password })
+            action.execute({ userId: user.id, password: v.password })
           })}
         >
           <FieldGroup>
@@ -108,7 +110,7 @@ export function ChangePasswordDialog({
             )}
           </FieldGroup>
           <DialogFooter className="mt-6">
-            <Button type="submit" loading={isPending}>
+            <Button type="submit" loading={action.isPending}>
               Change password
             </Button>
           </DialogFooter>

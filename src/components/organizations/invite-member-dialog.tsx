@@ -1,9 +1,8 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
-import { useAction } from "next-safe-action/hooks"
-import { Controller, useForm } from "react-hook-form"
+import { Controller } from "react-hook-form"
 import { z } from "zod/v4"
 import { inviteMember } from "@/actions/organizations/invite-member"
 import { Alert, AlertDescription } from "@/components/common/alert"
@@ -29,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/common/select"
+import { formResolver } from "@/lib/schemas/resolve"
 
 const schema = z.object({
   email: z.string().trim().email("Enter a valid email."),
@@ -47,23 +47,26 @@ export function InviteMemberDialog({
   onOpenChange,
 }: Props) {
   const router = useRouter()
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { email: "", role: "member" },
-  })
-
-  const { execute, isPending } = useAction(inviteMember, {
-    onSuccess() {
-      form.reset()
-      onOpenChange(false)
-      router.refresh()
+  const { form, action } = useHookFormAction(
+    inviteMember,
+    formResolver(schema),
+    {
+      formProps: { defaultValues: { email: "", role: "member" } },
+      actionProps: {
+        onSuccess() {
+          form.reset()
+          onOpenChange(false)
+          router.refresh()
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ?? "We couldn't send the invite. Try again.",
+          })
+        },
+      },
     },
-    onError({ error }) {
-      form.setError("root", {
-        message: error.serverError ?? "We couldn't send the invite. Try again.",
-      })
-    },
-  })
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,7 +75,9 @@ export function InviteMemberDialog({
           <DialogTitle>Invite member</DialogTitle>
         </DialogHeader>
         <form
-          onSubmit={form.handleSubmit((v) => execute({ ...v, organizationId }))}
+          onSubmit={form.handleSubmit((v) =>
+            action.execute({ ...v, organizationId }),
+          )}
         >
           <FieldGroup>
             <Controller
@@ -122,7 +127,7 @@ export function InviteMemberDialog({
             )}
           </FieldGroup>
           <DialogFooter className="mt-6">
-            <Button type="submit" loading={isPending}>
+            <Button type="submit" loading={action.isPending}>
               Invite
             </Button>
           </DialogFooter>

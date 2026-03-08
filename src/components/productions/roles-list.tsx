@@ -10,11 +10,6 @@ import { Controller, useForm } from "react-hook-form"
 import { z } from "zod/v4"
 import { createRole } from "@/actions/productions/create-role"
 import { Alert, AlertDescription } from "@/components/common/alert"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/common/tooltip"
 import { Button } from "@/components/common/button"
 import {
   Empty,
@@ -32,6 +27,11 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { Textarea } from "@/components/common/textarea"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/common/tooltip"
 
 const addRoleSchema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100),
@@ -240,7 +240,7 @@ export function RolesList({ productionId, roles }: Props) {
                       </div>
                     )}
                   </div>
-                  <span className="shrink-0 tabular-nums text-caption text-muted-foreground">
+                  <span className="shrink-0 text-caption text-muted-foreground tabular-nums">
                     {total === 1
                       ? "1 candidate"
                       : total > 0

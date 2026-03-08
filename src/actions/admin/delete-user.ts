@@ -1,6 +1,7 @@
 "use server"
 
 import { eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { adminActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
@@ -11,5 +12,6 @@ export const deleteUserAction = adminActionClient
   .inputSchema(z.object({ userId: z.string() }))
   .action(async ({ parsedInput: { userId } }) => {
     await db.delete(user).where(eq(user.id, userId))
+    revalidatePath("/", "layout")
     return { success: true }
   })

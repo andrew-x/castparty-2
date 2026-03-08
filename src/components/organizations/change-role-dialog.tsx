@@ -1,10 +1,10 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useEffect } from "react"
-import { Controller, useForm } from "react-hook-form"
+import { Controller } from "react-hook-form"
 import { z } from "zod/v4"
 import { transferOwnership } from "@/actions/organizations/transfer-ownership"
 import { updateMemberRole } from "@/actions/organizations/update-member-role"
@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/common/select"
+import { formResolver } from "@/lib/schemas/resolve"
 
 const schema = z.object({
   role: z.enum(["admin", "member", "owner"]),
@@ -46,12 +47,41 @@ export function ChangeRoleDialog({
   canTransferOwnership,
 }: Props) {
   const router = useRouter()
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { role: "member" },
+
+  function handleSuccess() {
+    onOpenChange(false)
+    router.refresh()
+  }
+
+  const { form, action: updateRole } = useHookFormAction(
+    updateMemberRole,
+    formResolver(schema),
+    {
+      formProps: { defaultValues: { role: "member" } },
+      actionProps: {
+        onSuccess: handleSuccess,
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ?? "We couldn't update the role. Try again.",
+          })
+        },
+      },
+    },
+  )
+
+  const transfer = useAction(transferOwnership, {
+    onSuccess: handleSuccess,
+    onError({ error }) {
+      form.setError("root", {
+        message:
+          error.serverError ?? "We couldn't transfer ownership. Try again.",
+      })
+    },
   })
 
   const selectedRole = form.watch("role")
+  const isPending = updateRole.isPending || transfer.isPending
 
   // Reset form when a different member is selected
   useEffect(() => {
@@ -60,35 +90,6 @@ export function ChangeRoleDialog({
       form.clearErrors("root")
     }
   }, [targetMember, form])
-
-  function handleSuccess() {
-    onOpenChange(false)
-    router.refresh()
-  }
-
-  function handleError(message: string) {
-    form.setError("root", { message })
-  }
-
-  const updateRole = useAction(updateMemberRole, {
-    onSuccess: handleSuccess,
-    onError({ error }) {
-      handleError(
-        error.serverError ?? "We couldn't update the role. Try again.",
-      )
-    },
-  })
-
-  const transfer = useAction(transferOwnership, {
-    onSuccess: handleSuccess,
-    onError({ error }) {
-      handleError(
-        error.serverError ?? "We couldn't transfer ownership. Try again.",
-      )
-    },
-  })
-
-  const isPending = updateRole.isPending || transfer.isPending
 
   function onSubmit(v: z.infer<typeof schema>) {
     if (!targetMember) return

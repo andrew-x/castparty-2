@@ -104,6 +104,7 @@ function SidebarProvider({
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
+    // biome-ignore lint/correctness/useExhaustiveDependencies: React Compiler handles memoization of toggleSidebar
   }, [toggleSidebar])
 
   // We add a state so that we can do data-state="expanded" or "collapsed".

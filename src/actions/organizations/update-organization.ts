@@ -1,6 +1,7 @@
 "use server"
 
 import { and, eq, not } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { member, OrganizationProfile, organization } from "@/lib/db/schema"
@@ -72,6 +73,7 @@ export const updateOrganization = secureActionClient
           }),
       ])
 
+      revalidatePath("/", "layout")
       return { success: true }
     },
   )

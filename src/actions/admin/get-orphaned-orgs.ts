@@ -2,7 +2,7 @@
 
 import { count, eq } from "drizzle-orm"
 import db from "@/lib/db/db"
-import { Organization, Production, member } from "@/lib/db/schema"
+import { member, Organization, Production } from "@/lib/db/schema"
 
 export async function getOrganizations() {
   const memberCountSq = db

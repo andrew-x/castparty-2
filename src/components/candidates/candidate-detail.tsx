@@ -2,6 +2,7 @@
 
 import { MailIcon, MapPinIcon, PencilIcon, PhoneIcon } from "lucide-react"
 import { useState } from "react"
+import { EditCandidateDialog } from "@/components/candidates/edit-candidate-dialog"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
 import { Page, PageContent, PageHeader } from "@/components/common/page"
@@ -13,7 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/common/table"
-import { EditCandidateDialog } from "@/components/candidates/edit-candidate-dialog"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
 import type {

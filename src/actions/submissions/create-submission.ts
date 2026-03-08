@@ -1,11 +1,13 @@
 "use server"
 
 import { and, eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { extractText, getDocumentProxy } from "unpdf"
 import { publicActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Candidate, File, Submission } from "@/lib/db/schema"
-import { moveFileByKey, r2Root } from "@/lib/r2"
+import logger from "@/lib/logger"
+import { checkFileExists, moveFileByKey, r2Root } from "@/lib/r2"
 import { submissionActionSchema } from "@/lib/schemas/submission"
 import type { CustomFormResponse } from "@/lib/types"
 import { generateId } from "@/lib/util"
@@ -126,37 +128,30 @@ export const createSubmission = publicActionClient
           }
         })
 
-      // Look up existing candidate in this org by email
-      const existing = await db.query.Candidate.findFirst({
-        where: (c) => and(eq(c.organizationId, orgId), eq(c.email, email)),
-        columns: { id: true },
-      })
-
-      let candidateId: string
-
-      if (existing) {
-        candidateId = existing.id
-        await db
-          .update(Candidate)
-          .set({
-            firstName,
-            lastName,
-            phone: phone ?? "",
-            location: location || "",
-          })
-          .where(eq(Candidate.id, existing.id))
-      } else {
-        candidateId = generateId("cand")
-        await db.insert(Candidate).values({
-          id: candidateId,
+      // Upsert candidate — atomic insert-or-update by org + email
+      const [candidate] = await db
+        .insert(Candidate)
+        .values({
+          id: generateId("cand"),
           organizationId: orgId,
           firstName,
           lastName,
           email,
           phone: phone ?? "",
-          location: location || "",
+          location: location ?? "",
         })
-      }
+        .onConflictDoUpdate({
+          target: [Candidate.organizationId, Candidate.email],
+          set: {
+            firstName,
+            lastName,
+            phone: phone ?? "",
+            location: location ?? "",
+          },
+        })
+        .returning({ id: Candidate.id })
+
+      const candidateId = candidate.id
 
       const submissionId = generateId("sub")
 
@@ -181,6 +176,13 @@ export const createSubmission = publicActionClient
           if (!headshot.key.startsWith(tempPrefix)) {
             throw new Error("Invalid file key.")
           }
+        }
+
+        // Verify all temp files exist before moving
+        for (const headshot of headshots) {
+          const exists = await checkFileExists(headshot.key)
+          if (!exists)
+            throw new Error("Headshot upload not found. Try uploading again.")
         }
 
         const fileRecords = await Promise.all(
@@ -210,6 +212,10 @@ export const createSubmission = publicActionClient
           throw new Error("Invalid file key.")
         }
 
+        const resumeExists = await checkFileExists(resume.key)
+        if (!resumeExists)
+          throw new Error("Resume upload not found. Try uploading again.")
+
         const moved = await moveFileByKey(resume.key, "resumes")
 
         await db.insert(File).values({
@@ -238,11 +244,12 @@ export const createSubmission = publicActionClient
               .where(eq(Submission.id, submissionId))
           }
         } catch (err) {
-          console.error("PDF parsing failed:", err)
+          logger.error("PDF parsing failed", err)
           // PDF parsing is best-effort — don't fail the submission
         }
       }
 
+      revalidatePath("/", "layout")
       return { id: submissionId }
     },
   )

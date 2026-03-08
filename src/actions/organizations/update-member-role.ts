@@ -1,6 +1,7 @@
 "use server"
 
 import { and, eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
@@ -72,6 +73,7 @@ export const updateMemberRole = secureActionClient
 
       await db.update(member).set({ role }).where(eq(member.id, memberId))
 
+      revalidatePath("/", "layout")
       return { success: true }
     },
   )

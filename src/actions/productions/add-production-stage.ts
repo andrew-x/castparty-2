@@ -1,11 +1,12 @@
 "use server"
 
 import { and, eq, isNull } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import { MAX_PIPELINE_STAGES } from "@/lib/constants"
 import db from "@/lib/db/db"
-import { PipelineStage, Production } from "@/lib/db/schema"
+import { PipelineStage } from "@/lib/db/schema"
 import { generateId } from "@/lib/util"
 
 export const addProductionStage = secureActionClient
@@ -53,5 +54,6 @@ export const addProductionStage = secureActionClient
       type: "CUSTOM",
     })
 
+    revalidatePath("/", "layout")
     return { id }
   })

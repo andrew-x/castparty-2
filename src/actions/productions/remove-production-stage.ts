@@ -1,10 +1,11 @@
 "use server"
 
 import { and, eq, isNull } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { PipelineStage, Production } from "@/lib/db/schema"
+import { PipelineStage } from "@/lib/db/schema"
 
 export const removeProductionStage = secureActionClient
   .metadata({ action: "remove-production-stage" })
@@ -41,5 +42,6 @@ export const removeProductionStage = secureActionClient
 
     await db.delete(PipelineStage).where(eq(PipelineStage.id, stageId))
 
+    revalidatePath("/", "layout")
     return { success: true }
   })

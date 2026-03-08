@@ -10,7 +10,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
-import type { CustomForm, CustomFormResponse } from "../types"
+import type { CustomForm, CustomFormResponse } from "@/lib/types"
 
 // --- BETTER AUTH ---
 export const user = pgTable("user", {

@@ -2,6 +2,7 @@
 
 import { hashPassword } from "better-auth/crypto"
 import { and, eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { adminActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
@@ -23,5 +24,6 @@ export const changePasswordAction = adminActionClient
       .where(
         and(eq(account.userId, userId), eq(account.providerId, "credential")),
       )
+    revalidatePath("/", "layout")
     return { success: true }
   })

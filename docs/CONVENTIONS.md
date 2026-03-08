@@ -27,7 +27,7 @@ Don't comment what the code clearly does. Comment *why* it does it.
 | Route directories | lowercase | `src/app/dashboard/` |
 | Style files | kebab-case or `globals.scss` | `globals.scss` |
 
-No barrel files (`index.ts` re-exports). Import from the actual file.
+No barrel files (`index.ts` re-exports). Import from the actual file. (`src/lib/schemas/index.ts` exists but is not used for imports — always import from the specific schema file.)
 
 ## TypeScript
 
@@ -288,6 +288,8 @@ All Zod schemas live in `src/lib/schemas/[feature].ts`, not inline in form or ac
 | `src/lib/schemas/submission.ts` | Submission form/action schemas |
 | `src/lib/schemas/candidate.ts` | Candidate update schemas |
 | `src/lib/schemas/form-fields.ts` | Custom form field add/remove/reorder schemas |
+| `src/lib/schemas/auth.ts` | Auth-related schemas (admin password change, user creation) |
+| `src/lib/schemas/resolve.ts` | `formResolver` wrapper — centralizes the type cast for form vs action schema mismatch |
 
 **Form schema vs action schema split.** Every feature defines two schemas:
 

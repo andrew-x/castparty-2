@@ -1,9 +1,8 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
-import { useAction } from "next-safe-action/hooks"
-import { Controller, useForm } from "react-hook-form"
+import { Controller } from "react-hook-form"
 import { z } from "zod/v4"
 import { createOrganization } from "@/actions/organizations/create-organization"
 import { Alert, AlertDescription } from "@/components/common/alert"
@@ -22,6 +21,7 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { formResolver } from "@/lib/schemas/resolve"
 
 const schema = z.object({
   name: z.string().trim().min(1, "Organization name is required."),
@@ -34,25 +34,27 @@ interface Props {
 
 export function CreateOrgDialog({ open, onOpenChange }: Props) {
   const router = useRouter()
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: "" },
-  })
-
-  const { execute, isPending } = useAction(createOrganization, {
-    onSuccess() {
-      form.reset()
-      onOpenChange(false)
-      router.refresh()
+  const { form, action } = useHookFormAction(
+    createOrganization,
+    formResolver(schema),
+    {
+      formProps: { defaultValues: { name: "" } },
+      actionProps: {
+        onSuccess() {
+          form.reset()
+          onOpenChange(false)
+          router.refresh()
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ??
+              "We couldn't create the organization. Try again.",
+          })
+        },
+      },
     },
-    onError({ error }) {
-      form.setError("root", {
-        message:
-          error.serverError ??
-          "We couldn't create the organization. Try again.",
-      })
-    },
-  })
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -60,7 +62,7 @@ export function CreateOrgDialog({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Create organization</DialogTitle>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit((v) => execute(v))}>
+        <form onSubmit={form.handleSubmit((v) => action.execute(v))}>
           <FieldGroup>
             <Controller
               name="name"
@@ -90,7 +92,7 @@ export function CreateOrgDialog({ open, onOpenChange }: Props) {
             )}
           </FieldGroup>
           <DialogFooter className="mt-6">
-            <Button type="submit" loading={isPending}>
+            <Button type="submit" loading={action.isPending}>
               Create organization
             </Button>
           </DialogFooter>

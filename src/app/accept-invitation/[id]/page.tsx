@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { getSession } from "@/lib/auth"
 import { AcceptInvitationCard } from "@/components/organizations/accept-invitation-card"
+import { getSession } from "@/lib/auth"
 
 export const metadata: Metadata = {
   title: "Accept invitation — Castparty",

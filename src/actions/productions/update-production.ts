@@ -1,6 +1,7 @@
 "use server"
 
 import { and, eq, not } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Production } from "@/lib/db/schema"
@@ -39,6 +40,7 @@ export const updateProduction = secureActionClient
         .set({ name, slug, location, ...(isOpen !== undefined && { isOpen }) })
         .where(eq(Production.id, productionId))
 
+      revalidatePath("/", "layout")
       return { success: true }
     },
   )

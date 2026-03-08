@@ -1,10 +1,11 @@
 "use server"
 
 import { and, eq, inArray, isNull } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { PipelineStage, Production } from "@/lib/db/schema"
+import { PipelineStage } from "@/lib/db/schema"
 
 export const reorderProductionStages = secureActionClient
   .metadata({ action: "reorder-production-stages" })
@@ -52,6 +53,7 @@ export const reorderProductionStages = secureActionClient
         ),
       )
 
+      revalidatePath("/", "layout")
       return { success: true }
     },
   )

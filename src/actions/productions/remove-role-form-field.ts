@@ -1,6 +1,7 @@
 "use server"
 
 import { eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Role } from "@/lib/db/schema"
@@ -32,5 +33,6 @@ export const removeRoleFormField = secureActionClient
       .set({ formFields: role.formFields.filter((f) => f.id !== fieldId) })
       .where(eq(Role.id, roleId))
 
+    revalidatePath("/", "layout")
     return { success: true }
   })

@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 import { secureActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
@@ -36,5 +37,6 @@ export const createOrganization = secureActionClient
       headers: await headers(),
     })
 
+    revalidatePath("/", "layout")
     return { organizationId: org.id }
   })

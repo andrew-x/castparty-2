@@ -1,6 +1,7 @@
 "use server"
 
 import { and, eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { PipelineStage, Production, Role } from "@/lib/db/schema"
@@ -114,6 +115,7 @@ export const createProduction = secureActionClient
         await db.insert(PipelineStage).values(allStages)
       }
 
+      revalidatePath("/", "layout")
       return { id: productionId }
     },
   )

@@ -6,7 +6,6 @@ import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
-import { authClient } from "@/lib/auth/auth-client"
 import {
   Field,
   FieldError,
@@ -14,6 +13,7 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { authClient } from "@/lib/auth/auth-client"
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),

@@ -5,7 +5,7 @@
 | Feature | Status | Entry Point | Description |
 |---------|--------|-------------|-------------|
 | Design System | `shipped` | `src/styles/globals.scss` | Violet+Stone semantic token system powering all UI color, surface, and status styling |
-| Auth Flow | `shipped` | `src/app/auth/page.tsx` | Email/password login and signup with layout-level route guards and a password-reset stub |
+| Auth Flow | `shipped` | `src/app/auth/(guest)/page.tsx` | Email/password login, signup, email verification, and password reset with layout-level route guards |
 | App Shell (Sidebar Layout) | `shipped` | `src/app/(app)/layout.tsx` | Persistent collapsible sidebar with nav and user footer; wraps all authenticated routes |
 | Onboarding | `shipped` | `src/app/onboarding/page.tsx` | Multi-step flow for new users: create an organization then optionally invite team members; shown when user has no active organization |
 | Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | Org settings (name, slug, description, website, visibility), members table, invite/remove/role-change, ownership transfer; owner/admin only |
@@ -30,6 +30,10 @@
 | useCityOptions | `shipped` | `src/hooks/use-city-options.ts` | Hook that lazy-loads and caches US + Canadian city names for use with AutocompleteInput |
 | Location Fields | `shipped` | `src/lib/schemas/production.ts`, `src/lib/schemas/submission.ts` | Free-text location on productions (create + settings) and submissions (form + detail view); city autocomplete via useCityOptions |
 | Landing Page | `shipped` | `src/app/page.tsx` | Single-screen hero with Castparty branding, tagline, and CTA link to /auth |
+| Email Verification | `shipped` | `src/app/auth/verify-email/page.tsx` | Post-signup email verification flow |
+| Password Reset | `shipped` | `src/app/auth/reset-password/page.tsx` | Token-based password reset via email link |
+| Accept Invitation | `shipped` | `src/app/accept-invitation/[id]/page.tsx` | Token-based invitation acceptance that adds users to an organization |
+| Admin Organizations | `shipped` | `src/app/admin/organizations/page.tsx` | Admin-level organization management (list, delete) |
 | 404 Page | `shipped` | `src/app/not-found.tsx` | Theatrical "didn't make the callback list" copy with decorative 404 display |
 | Route Error Page | `shipped` | `src/app/error.tsx` | "Something went wrong backstage" — try again + back to home; client component |
 | Global Error Page | `shipped` | `src/app/global-error.tsx` | Same content as error page; includes own `<html>/<body>` for root layout failures |
@@ -87,15 +91,15 @@ Each group follows a consistent suffix pattern:
 
 ## Auth Flow
 
-**Overview:** Email/password authentication for production team members. Covers sign-in, account creation, and a password-reset stub. Built on Better Auth's `signIn.email` and `signUp.email` methods. Exists because every other feature in the app is behind an auth gate — this is the mandatory entry point before any production data is accessible.
+**Overview:** Email/password authentication for production team members. Covers sign-in, account creation, email verification, and password reset. Built on Better Auth's `signIn.email` and `signUp.email` methods. Exists because every other feature in the app is behind an auth gate — this is the mandatory entry point before any production data is accessible.
 
 **Key files:**
 
 | File | Role |
 |------|------|
 | `src/app/auth/layout.tsx` | Reverse guard: calls `getCurrentUser()`; redirects signed-in users to `/home` before rendering the form shell |
-| `src/app/auth/page.tsx` | Server component; reads `?tab=signup` search param and passes `defaultTab` to `AuthTabs` |
-| `src/app/auth/forgot-password/page.tsx` | Password-reset page (server component); renders heading, `ForgotPasswordForm`, and back link |
+| `src/app/auth/(guest)/page.tsx` | Server component; reads `?tab=signup` search param and passes `defaultTab` to `AuthTabs` |
+| `src/app/auth/(guest)/forgot-password/page.tsx` | Password-reset request page (server component); renders heading, `ForgotPasswordForm`, and back link |
 | `src/app/(app)/layout.tsx` | Auth guard for all protected routes: calls `getCurrentUser()`; redirects unauthenticated users to `/auth` |
 | `src/app/(app)/home/page.tsx` | Post-login landing; fetches the current user server-side and renders "Welcome, {name}." |
 | `src/components/auth/auth-tabs.tsx` | Client component; wraps `LoginForm` and `SignUpForm` in shadcn `Tabs` |

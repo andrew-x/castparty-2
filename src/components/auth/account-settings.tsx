@@ -20,7 +20,7 @@ export function AccountSettings({ email }: { email: string }) {
     <div className="flex flex-col gap-group">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-element">
-          <p className="text-label font-medium">Email</p>
+          <p className="font-medium text-label">Email</p>
           <p className="text-caption text-muted-foreground">{email}</p>
         </div>
         <p className="text-caption text-muted-foreground">
@@ -29,7 +29,7 @@ export function AccountSettings({ email }: { email: string }) {
       </div>
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-element">
-          <p className="text-label font-medium">Password</p>
+          <p className="font-medium text-label">Password</p>
           <p className="text-caption text-muted-foreground">
             {status === "sent"
               ? "Check your inbox for a reset link."

@@ -148,15 +148,19 @@ export function CandidatesTable({
   return (
     <div className="flex flex-col gap-group">
       <CandidateSearch defaultValue={search} />
-      {candidates.length === 0 && search ? (
+      {candidates.length === 0 ? (
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <SearchIcon />
             </EmptyMedia>
-            <EmptyTitle>No candidates found</EmptyTitle>
+            <EmptyTitle>
+              {search ? "No candidates found" : "No candidates yet"}
+            </EmptyTitle>
             <EmptyDescription>
-              No candidates match your search. Try a different name or email.
+              {search
+                ? "No candidates match your search. Try a different name or email."
+                : "Candidates will appear here once they submit an audition."}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -251,9 +255,10 @@ export function CandidatesTable({
                     />
                   </PaginationItem>
                 )}
-                {getPageNumbers(page, totalPages).map((p, i) =>
+                {getPageNumbers(page, totalPages).map((p, idx) =>
                   p === "ellipsis" ? (
-                    <PaginationItem key={`ellipsis-${i}`}>
+                    // biome-ignore lint/suspicious/noArrayIndexKey: ellipsis items are static separators that don't reorder
+                    <PaginationItem key={`ellipsis-${idx}`}>
                       <PaginationEllipsis />
                     </PaginationItem>
                   ) : (
