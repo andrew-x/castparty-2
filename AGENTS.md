@@ -70,28 +70,6 @@ Institutional knowledge lives in `docs/`. Read these docs for context before mak
 
 After completing a feature or significant change, update the relevant docs (especially `docs/FEATURES.md` and `docs/CONVENTIONS.md`).
 
-## Issue Tracking (Beads)
-
-This project uses **bd** (beads) for persistent issue tracking across sessions.
-
-```bash
-bd ready                              # Issues ready to work (no blockers)
-bd list --status=open                 # All open issues
-bd show <id>                          # Full issue details with dependencies
-bd update <id> --status=in_progress   # Claim work before starting
-bd create --title="Summary" --description="Why this exists" --type=task --priority=2
-bd close <id>                         # Mark complete
-```
-
-**Rules:**
-- Create a beads issue BEFORE writing code
-- Mark `in_progress` when starting; `bd close <id>` when done
-- Use `bd dep add <child> <parent>` for dependencies
-- Never use `bd edit` (opens interactive editor -- use `--flags` instead)
-- Issue descriptions must include the user problem being solved, not just the technical task
-
----
-
 ## Coding Standards
 
 ### Developer Ergonomics First

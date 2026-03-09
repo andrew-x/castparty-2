@@ -24,7 +24,3 @@ If a requested feature seems misaligned with the target persona, overly complex 
 community theatre scale, or technically heavy relative to its value, say so before
 building. Offer a simpler alternative if one exists.
 
-## Document the "Why" in Issue Descriptions
-
-When creating beads issues, always include the user problem being solved, not just the
-technical task. This keeps the backlog readable as product context, not just a task list.

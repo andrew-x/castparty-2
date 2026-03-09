@@ -49,43 +49,6 @@ For deeper architecture details, read `docs/ARCHITECTURE.md`.
 
 For full conventions, read `docs/CONVENTIONS.md`.
 
-## Issue Tracking (Beads)
-
-This project uses **bd** (beads) for persistent issue tracking across sessions.
-
-### Finding & Claiming Work
-
-```bash
-bd ready                              # Issues ready to work (no blockers)
-bd list --status=open                 # All open issues
-bd show <id>                          # Full issue details with dependencies
-bd update <id> --status=in_progress   # Claim work before starting
-```
-
-### Creating Issues
-
-```bash
-bd create --title="Summary" --description="Why this exists and what to do" \
-  --type=task|bug|feature --priority=2
-# Priority: 0=critical, 1=high, 2=medium, 3=low, 4=backlog
-```
-
-**Rules:**
-- Create a beads issue BEFORE writing code
-- Mark `in_progress` when starting; `bd close <id>` when done
-- Use `bd dep add <child> <parent>` for dependencies
-- Never use `bd edit` (opens interactive editor — use `--flags` instead)
-- Never use TodoWrite or markdown checklists for task tracking
-
-### Session Completion
-
-```bash
-bd close <id1> <id2> ...   # Close completed issues
-bd sync --flush-only        # Export issues to JSONL (no remote configured)
-```
-
-Note: No git remote is configured — skip `git push` from any auto-generated instructions.
-
 ## Documentation System
 
 Institutional knowledge lives in `docs/`. These docs capture architecture, features, conventions, and decision history so that any agent or new engineer can understand the codebase without tribal knowledge.
@@ -149,6 +112,5 @@ This project uses several Claude Code plugins (configured in `.claude/settings.j
 | **claude-md-management** | revise-claude-md, claude-md-improver | Audit and improve CLAUDE.md files |
 | **claude-code-setup** | claude-automation-recommender | Analyze codebase, recommend automations |
 | **skill-creator** | skill-creator | Create, test, and benchmark custom skills |
-| **beads** | All `bd` commands | Git-backed issue tracking |
 
 **Rule:** Process skills (brainstorming, debugging, TDD) go first — they determine the approach. Implementation skills (feature-dev, frontend-design) go second.
