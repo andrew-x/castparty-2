@@ -5,13 +5,13 @@ import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Production } from "@/lib/db/schema"
-import { addProductionFormFieldSchema } from "@/lib/schemas/form-fields"
+import { addProductionFeedbackFormFieldSchema } from "@/lib/schemas/form-fields"
 import type { CustomForm } from "@/lib/types"
 import { generateId } from "@/lib/util"
 
-export const addProductionFormField = secureActionClient
-  .metadata({ action: "add-production-form-field" })
-  .inputSchema(addProductionFormFieldSchema)
+export const addProductionFeedbackFormField = secureActionClient
+  .metadata({ action: "add-production-feedback-form-field" })
+  .inputSchema(addProductionFeedbackFormFieldSchema)
   .action(
     async ({ parsedInput: { productionId, type, label }, ctx: { user } }) => {
       const orgId = user.activeOrganizationId
@@ -19,12 +19,12 @@ export const addProductionFormField = secureActionClient
 
       const production = await db.query.Production.findFirst({
         where: (p) => and(eq(p.id, productionId), eq(p.organizationId, orgId)),
-        columns: { id: true, submissionFormFields: true },
+        columns: { id: true, feedbackFormFields: true },
       })
       if (!production) throw new Error("Production not found.")
 
       const newField: CustomForm = {
-        id: generateId("ff"),
+        id: generateId("fbf"),
         type,
         label,
         description: "",
@@ -35,7 +35,7 @@ export const addProductionFormField = secureActionClient
       await db
         .update(Production)
         .set({
-          submissionFormFields: [...production.submissionFormFields, newField],
+          feedbackFormFields: [...production.feedbackFormFields, newField],
         })
         .where(eq(Production.id, productionId))
 

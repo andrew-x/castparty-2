@@ -64,7 +64,7 @@ export default async function SubmitRolePage({
         roleId={role.id}
         orgSlug={orgSlug}
         productionSlug={productionSlug}
-        formFields={role.formFields}
+        submissionFormFields={role.submissionFormFields}
       />
     </div>
   )

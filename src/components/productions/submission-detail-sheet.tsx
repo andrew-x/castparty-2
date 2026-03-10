@@ -29,7 +29,7 @@ import type { CustomForm } from "@/lib/types"
 interface Props {
   submission: SubmissionWithCandidate | null
   pipelineStages: PipelineStageData[]
-  formFields: CustomForm[]
+  submissionFormFields: CustomForm[]
   onClose: () => void
   onStageChange?: (submission: SubmissionWithCandidate) => void
 }
@@ -37,7 +37,7 @@ interface Props {
 export function SubmissionDetailSheet({
   submission,
   pipelineStages,
-  formFields,
+  submissionFormFields,
   onClose,
   onStageChange,
 }: Props) {
@@ -197,7 +197,7 @@ export function SubmissionDetailSheet({
                     </h3>
                     <div className="flex flex-col gap-element">
                       {submission.answers.map((answer) => {
-                        const field = formFields.find(
+                        const field = submissionFormFields.find(
                           (f) => f.id === answer.fieldId,
                         )
                         if (!field) return null

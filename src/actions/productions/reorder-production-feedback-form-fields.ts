@@ -5,11 +5,11 @@ import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Production } from "@/lib/db/schema"
-import { reorderProductionFormFieldsSchema } from "@/lib/schemas/form-fields"
+import { reorderProductionFeedbackFormFieldsSchema } from "@/lib/schemas/form-fields"
 
-export const reorderProductionFormFields = secureActionClient
-  .metadata({ action: "reorder-production-form-fields" })
-  .inputSchema(reorderProductionFormFieldsSchema)
+export const reorderProductionFeedbackFormFields = secureActionClient
+  .metadata({ action: "reorder-production-feedback-form-fields" })
+  .inputSchema(reorderProductionFeedbackFormFieldsSchema)
   .action(
     async ({ parsedInput: { productionId, fieldIds }, ctx: { user } }) => {
       const orgId = user.activeOrganizationId
@@ -17,20 +17,20 @@ export const reorderProductionFormFields = secureActionClient
 
       const production = await db.query.Production.findFirst({
         where: (p) => and(eq(p.id, productionId), eq(p.organizationId, orgId)),
-        columns: { id: true, submissionFormFields: true },
+        columns: { id: true, feedbackFormFields: true },
       })
       if (!production) throw new Error("Production not found.")
 
       const uniqueIds = new Set(fieldIds)
       if (
         uniqueIds.size !== fieldIds.length ||
-        uniqueIds.size !== production.submissionFormFields.length
+        uniqueIds.size !== production.feedbackFormFields.length
       ) {
         throw new Error("Field IDs must match existing fields exactly.")
       }
 
       const fieldMap = new Map(
-        production.submissionFormFields.map((f) => [f.id, f]),
+        production.feedbackFormFields.map((f) => [f.id, f]),
       )
       const reordered = fieldIds.map((id) => {
         const field = fieldMap.get(id)
@@ -40,7 +40,7 @@ export const reorderProductionFormFields = secureActionClient
 
       await db
         .update(Production)
-        .set({ submissionFormFields: reordered })
+        .set({ feedbackFormFields: reordered })
         .where(eq(Production.id, productionId))
 
       revalidatePath("/", "layout")

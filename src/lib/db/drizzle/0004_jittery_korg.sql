@@ -1,1 +1,0 @@
-ALTER TABLE "submission" ADD COLUMN "resume_text" text;

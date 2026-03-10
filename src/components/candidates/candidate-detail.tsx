@@ -26,7 +26,7 @@ import type { CustomForm } from "@/lib/types"
 interface SubmissionRow {
   submission: SubmissionWithCandidate
   pipelineStages: PipelineStageData[]
-  formFields: CustomForm[]
+  submissionFormFields: CustomForm[]
   roleName: string
   productionName: string
 }
@@ -154,7 +154,7 @@ export function CandidateDetail({ candidate, submissions }: Props) {
         <SubmissionDetailSheet
           submission={selected?.submission ?? null}
           pipelineStages={selected?.pipelineStages ?? []}
-          formFields={selected?.formFields ?? []}
+          submissionFormFields={selected?.submissionFormFields ?? []}
           onClose={() => setSelectedIndex(null)}
           onStageChange={handleStageChange}
         />

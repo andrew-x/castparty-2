@@ -47,13 +47,13 @@ function buildColumns(
 interface Props {
   submissions: SubmissionWithCandidate[]
   pipelineStages: PipelineStageData[]
-  formFields: CustomForm[]
+  submissionFormFields: CustomForm[]
 }
 
 export function RoleSubmissions({
   submissions,
   pipelineStages,
-  formFields,
+  submissionFormFields,
 }: Props) {
   const router = useRouter()
   const [columns, setColumns] = useState(() =>
@@ -146,7 +146,7 @@ export function RoleSubmissions({
       <SubmissionDetailSheet
         submission={selectedSubmission}
         pipelineStages={pipelineStages}
-        formFields={formFields}
+        submissionFormFields={submissionFormFields}
         onClose={() => setSelectedSubmission(null)}
         onStageChange={setSelectedSubmission}
       />

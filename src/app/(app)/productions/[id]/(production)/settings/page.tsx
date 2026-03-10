@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
 import { getProductionStages } from "@/actions/productions/get-production-stages"
 import { Separator } from "@/components/common/separator"
+import { DefaultFeedbackFormFieldsEditor } from "@/components/productions/default-feedback-form-fields-editor"
 import { DefaultStagesEditor } from "@/components/productions/default-stages-editor"
 import { DefaultFormFieldsEditor } from "@/components/productions/form-fields-editor"
 import { ProductionSettingsForm } from "@/components/productions/production-settings-form"
@@ -58,10 +59,20 @@ export default async function ProductionSettingsPage({
       <Separator />
 
       <section className="flex flex-col gap-group">
-        <h2 className="font-serif text-heading">Application form</h2>
+        <h2 className="font-serif text-heading">Submission form</h2>
         <DefaultFormFieldsEditor
           productionId={production.id}
-          fields={production.formFields}
+          fields={production.submissionFormFields}
+        />
+      </section>
+
+      <Separator />
+
+      <section className="flex flex-col gap-group">
+        <h2 className="font-serif text-heading">Feedback form</h2>
+        <DefaultFeedbackFormFieldsEditor
+          productionId={production.id}
+          fields={production.feedbackFormFields}
         />
       </section>
     </div>

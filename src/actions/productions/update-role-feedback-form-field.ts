@@ -5,11 +5,11 @@ import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Role } from "@/lib/db/schema"
-import { updateRoleFormFieldSchema } from "@/lib/schemas/form-fields"
+import { updateRoleFeedbackFormFieldSchema } from "@/lib/schemas/form-fields"
 
-export const updateRoleFormField = secureActionClient
-  .metadata({ action: "update-role-form-field" })
-  .inputSchema(updateRoleFormFieldSchema)
+export const updateRoleFeedbackFormField = secureActionClient
+  .metadata({ action: "update-role-feedback-form-field" })
+  .inputSchema(updateRoleFeedbackFormFieldSchema)
   .action(
     async ({ parsedInput: { roleId, fieldId, ...updates }, ctx: { user } }) => {
       const orgId = user.activeOrganizationId
@@ -17,7 +17,7 @@ export const updateRoleFormField = secureActionClient
 
       const role = await db.query.Role.findFirst({
         where: (r) => eq(r.id, roleId),
-        columns: { id: true, submissionFormFields: true },
+        columns: { id: true, feedbackFormFields: true },
         with: {
           production: { columns: { organizationId: true } },
         },
@@ -26,12 +26,12 @@ export const updateRoleFormField = secureActionClient
         throw new Error("Role not found.")
       }
 
-      const fieldIndex = role.submissionFormFields.findIndex(
+      const fieldIndex = role.feedbackFormFields.findIndex(
         (f) => f.id === fieldId,
       )
       if (fieldIndex === -1) throw new Error("Field not found.")
 
-      const field = role.submissionFormFields[fieldIndex]
+      const field = role.feedbackFormFields[fieldIndex]
 
       if (
         updates.options !== undefined &&
@@ -41,12 +41,12 @@ export const updateRoleFormField = secureActionClient
         throw new Error("Select fields must have at least one option.")
       }
 
-      const updated = [...role.submissionFormFields]
+      const updated = [...role.feedbackFormFields]
       updated[fieldIndex] = { ...field, ...updates }
 
       await db
         .update(Role)
-        .set({ submissionFormFields: updated })
+        .set({ feedbackFormFields: updated })
         .where(eq(Role.id, roleId))
 
       revalidatePath("/", "layout")

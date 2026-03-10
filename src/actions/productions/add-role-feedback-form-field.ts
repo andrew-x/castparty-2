@@ -5,20 +5,20 @@ import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Role } from "@/lib/db/schema"
-import { addRoleFormFieldSchema } from "@/lib/schemas/form-fields"
+import { addRoleFeedbackFormFieldSchema } from "@/lib/schemas/form-fields"
 import type { CustomForm } from "@/lib/types"
 import { generateId } from "@/lib/util"
 
-export const addRoleFormField = secureActionClient
-  .metadata({ action: "add-role-form-field" })
-  .inputSchema(addRoleFormFieldSchema)
+export const addRoleFeedbackFormField = secureActionClient
+  .metadata({ action: "add-role-feedback-form-field" })
+  .inputSchema(addRoleFeedbackFormFieldSchema)
   .action(async ({ parsedInput: { roleId, type, label }, ctx: { user } }) => {
     const orgId = user.activeOrganizationId
     if (!orgId) throw new Error("No active organization.")
 
     const role = await db.query.Role.findFirst({
       where: (r) => eq(r.id, roleId),
-      columns: { id: true, submissionFormFields: true },
+      columns: { id: true, feedbackFormFields: true },
       with: {
         production: { columns: { organizationId: true } },
       },
@@ -28,7 +28,7 @@ export const addRoleFormField = secureActionClient
     }
 
     const newField: CustomForm = {
-      id: generateId("ff"),
+      id: generateId("fbf"),
       type,
       label,
       description: "",
@@ -38,7 +38,7 @@ export const addRoleFormField = secureActionClient
 
     await db
       .update(Role)
-      .set({ submissionFormFields: [...role.submissionFormFields, newField] })
+      .set({ feedbackFormFields: [...role.feedbackFormFields, newField] })
       .where(eq(Role.id, roleId))
 
     revalidatePath("/", "layout")

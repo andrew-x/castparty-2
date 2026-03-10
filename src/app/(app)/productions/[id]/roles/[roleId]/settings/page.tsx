@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { getRole } from "@/actions/productions/get-role"
 import { Separator } from "@/components/common/separator"
+import { RoleFeedbackFormFieldsEditor } from "@/components/productions/role-feedback-form-fields-editor"
 import { RoleFormFieldsEditor } from "@/components/productions/role-form-fields-editor"
 import { RoleSettingsForm } from "@/components/productions/role-settings-form"
 import { RoleStagesEditor } from "@/components/productions/role-stages-editor"
@@ -56,8 +57,21 @@ export default async function RoleSettingsPage({
       <Separator />
 
       <section className="flex flex-col gap-group">
-        <h2 className="font-serif text-heading">Application form</h2>
-        <RoleFormFieldsEditor roleId={role.id} fields={role.formFields} />
+        <h2 className="font-serif text-heading">Submission form</h2>
+        <RoleFormFieldsEditor
+          roleId={role.id}
+          fields={role.submissionFormFields}
+        />
+      </section>
+
+      <Separator />
+
+      <section className="flex flex-col gap-group">
+        <h2 className="font-serif text-heading">Feedback form</h2>
+        <RoleFeedbackFormFieldsEditor
+          roleId={role.id}
+          fields={role.feedbackFormFields}
+        />
       </section>
     </div>
   )
