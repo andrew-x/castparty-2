@@ -67,6 +67,7 @@ export async function getRoleWithSubmissions(roleId: string) {
       stageId: sub.stageId,
       stage: sub.stage,
       answers: sub.answers,
+      links: sub.links,
       headshots,
       resume,
       resumeText: sub.resumeText,

@@ -19,7 +19,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/common/sheet"
+import { SocialIcon } from "@/components/common/social-icons"
 import day from "@/lib/dayjs"
+import { prettifyUrl } from "@/lib/social-links"
 import type {
   PipelineStageData,
   SubmissionWithCandidate,
@@ -173,6 +175,33 @@ export function SubmissionDetailSheet({
                         {submission.resume.filename}
                       </span>
                     </a>
+                  </div>
+                </>
+              )}
+
+              {submission.links.length > 0 && (
+                <>
+                  <Separator />
+                  <div className="flex flex-col gap-block">
+                    <h3 className="font-medium text-foreground text-label">
+                      Links
+                    </h3>
+                    <div className="flex flex-col gap-element">
+                      {submission.links.map((link) => (
+                        <a
+                          key={link}
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-element text-label text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          <SocialIcon url={link} className="size-4 shrink-0" />
+                          <span className="min-w-0 truncate">
+                            {prettifyUrl(link)}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}
