@@ -27,6 +27,7 @@ export const createSubmission = publicActionClient
         phone,
         location,
         answers,
+        links,
         headshots,
         resume,
       },
@@ -167,6 +168,7 @@ export const createSubmission = publicActionClient
         phone: phone ?? "",
         location: location || "",
         answers: formResponses,
+        links,
       })
 
       // Move headshots from temp/ to permanent prefix and create File records

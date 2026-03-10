@@ -1,0 +1,1 @@
+ALTER TABLE "submission" ADD COLUMN "links" text[] DEFAULT '{}' NOT NULL;

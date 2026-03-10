@@ -110,6 +110,7 @@ export async function getCandidate(candidateId: string) {
           const r = (submission.files ?? []).find((f) => f.type === "RESUME")
           return r ? { id: r.id, url: r.url, filename: r.filename } : null
         })(),
+        links: submission.links,
         resumeText: submission.resumeText ?? null,
         feedback,
         candidate: {
