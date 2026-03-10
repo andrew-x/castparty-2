@@ -1,4 +1,13 @@
+import type { Feedback } from "@/lib/db/schema"
 import type { CustomFormResponse } from "@/lib/types"
+
+export type FeedbackData = Pick<
+  typeof Feedback.$inferSelect,
+  "id" | "rating" | "notes" | "formFields" | "answers" | "createdAt"
+> & {
+  submittedBy: { id: string; name: string; image: string | null }
+  stage: { id: string; name: string }
+}
 
 export interface PipelineStageData {
   id: string
@@ -35,6 +44,7 @@ export interface SubmissionWithCandidate {
   headshots: HeadshotData[]
   resume: ResumeData | null
   resumeText: string | null
+  feedback: FeedbackData[]
   candidate: {
     id: string
     firstName: string
