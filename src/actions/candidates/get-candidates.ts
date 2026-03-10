@@ -1,35 +1,28 @@
 "use server"
 
-import { and, asc, count, desc, eq, ilike, or } from "drizzle-orm"
+import { and, asc, count, eq, ilike, inArray, or } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
-import { Candidate } from "@/lib/db/schema"
+import { Candidate, Submission } from "@/lib/db/schema"
 
 interface GetCandidatesParams {
-  sort?: "name" | "email"
-  dir?: "asc" | "desc"
   page?: number
   pageSize?: number
   search?: string
+  productionIds?: string[]
+  roleIds?: string[]
 }
 
 export async function getCandidates({
-  sort = "name",
-  dir = "asc",
   page = 1,
-  pageSize = 25,
+  pageSize = 24,
   search,
+  productionIds,
+  roleIds,
 }: GetCandidatesParams = {}) {
   const user = await checkAuth()
   const orgId = user.activeOrganizationId
   if (!orgId) return { candidates: [], totalCount: 0, page, pageSize }
-
-  const dirFn = dir === "desc" ? desc : asc
-
-  const orderBy =
-    sort === "email"
-      ? [dirFn(Candidate.email)]
-      : [dirFn(Candidate.lastName), dirFn(Candidate.firstName)]
 
   const offset = (page - 1) * pageSize
 
@@ -46,22 +39,50 @@ export async function getCandidates({
     if (searchFilter) whereConditions.push(searchFilter)
   }
 
+  const hasProductionFilter = productionIds && productionIds.length > 0
+  const hasRoleFilter = roleIds && roleIds.length > 0
+
+  if (hasProductionFilter || hasRoleFilter) {
+    const submissionConditions = []
+    if (hasProductionFilter) {
+      submissionConditions.push(inArray(Submission.productionId, productionIds))
+    }
+    if (hasRoleFilter) {
+      submissionConditions.push(inArray(Submission.roleId, roleIds))
+    }
+
+    whereConditions.push(
+      inArray(
+        Candidate.id,
+        db
+          .selectDistinct({ id: Submission.candidateId })
+          .from(Submission)
+          .where(or(...submissionConditions)),
+      ),
+    )
+  }
+
   const whereClause = and(...whereConditions)
 
   const [countResult, candidates] = await Promise.all([
     db.select({ count: count() }).from(Candidate).where(whereClause),
     db.query.Candidate.findMany({
       where: whereClause,
-      orderBy,
+      orderBy: [asc(Candidate.lastName), asc(Candidate.firstName)],
       limit: pageSize,
       offset,
       with: {
         submissions: {
+          orderBy: (s, { desc: d }) => [d(s.createdAt)],
           with: {
             role: { columns: { id: true, name: true } },
             production: { columns: { id: true, name: true } },
             stage: {
               columns: { id: true, name: true, type: true, order: true },
+            },
+            files: {
+              columns: { url: true, type: true, order: true },
+              orderBy: (f, { asc: a }) => [a(f.order)],
             },
           },
         },
@@ -70,7 +91,17 @@ export async function getCandidates({
   ])
 
   return {
-    candidates,
+    candidates: candidates.map((c) => {
+      const headshotUrl =
+        c.submissions.flatMap((s) => s.files).find((f) => f.type === "HEADSHOT")
+          ?.url ?? null
+
+      return {
+        ...c,
+        headshotUrl,
+        submissions: c.submissions.map(({ files, ...sub }) => sub),
+      }
+    }),
     totalCount: countResult[0]?.count ?? 0,
     page,
     pageSize,

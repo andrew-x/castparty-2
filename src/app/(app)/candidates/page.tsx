@@ -1,7 +1,8 @@
 import { UsersIcon } from "lucide-react"
 import type { Metadata } from "next"
+import { getCandidateFilterOptions } from "@/actions/candidates/get-candidate-filter-options"
 import { getCandidates } from "@/actions/candidates/get-candidates"
-import { CandidatesTable } from "@/components/candidates/candidates-table"
+import { CandidatesGrid } from "@/components/candidates/candidates-grid"
 import {
   Empty,
   EmptyDescription,
@@ -15,37 +16,43 @@ export const metadata: Metadata = {
   title: "Candidates — Castparty",
 }
 
-const VALID_SORTS = ["name", "email"] as const
-const VALID_DIRS = ["asc", "desc"] as const
-
 export default async function CandidatesPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    sort?: string
-    dir?: string
     page?: string
     search?: string
+    productions?: string
+    roles?: string
   }>
 }) {
   const params = await searchParams
 
-  const sort = VALID_SORTS.includes(params.sort as (typeof VALID_SORTS)[number])
-    ? (params.sort as (typeof VALID_SORTS)[number])
-    : "name"
-  const dir = VALID_DIRS.includes(params.dir as (typeof VALID_DIRS)[number])
-    ? (params.dir as (typeof VALID_DIRS)[number])
-    : "asc"
   const page = Math.max(1, Number(params.page) || 1)
   const search = params.search ?? ""
+  const selectedProductions =
+    params.productions?.split(",").filter(Boolean) ?? []
+  const selectedRoles = params.roles?.split(",").filter(Boolean) ?? []
 
-  const result = await getCandidates({ sort, dir, page, search })
+  const [result, filterOptions] = await Promise.all([
+    getCandidates({
+      page,
+      search,
+      productionIds:
+        selectedProductions.length > 0 ? selectedProductions : undefined,
+      roleIds: selectedRoles.length > 0 ? selectedRoles : undefined,
+    }),
+    getCandidateFilterOptions(),
+  ])
+
+  const hasFilters =
+    !!search || selectedProductions.length > 0 || selectedRoles.length > 0
 
   return (
     <Page>
       <PageHeader title="Candidates" />
       <PageContent>
-        {result.totalCount === 0 && !search ? (
+        {result.totalCount === 0 && !hasFilters ? (
           <div className="flex flex-1 items-center justify-center">
             <Empty>
               <EmptyHeader>
@@ -61,14 +68,15 @@ export default async function CandidatesPage({
             </Empty>
           </div>
         ) : (
-          <CandidatesTable
+          <CandidatesGrid
             candidates={result.candidates}
-            sort={sort}
-            dir={dir}
             page={result.page}
             pageSize={result.pageSize}
             totalCount={result.totalCount}
             search={search}
+            productions={filterOptions}
+            selectedProductions={selectedProductions}
+            selectedRoles={selectedRoles}
           />
         )}
       </PageContent>
