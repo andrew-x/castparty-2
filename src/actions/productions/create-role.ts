@@ -52,6 +52,7 @@ export const createRole = secureActionClient
         name,
         slug,
         description: description || "",
+        isOpen: true,
         submissionFormFields: production.submissionFormFields.map((f) => ({
           ...f,
           id: generateId("ff"),

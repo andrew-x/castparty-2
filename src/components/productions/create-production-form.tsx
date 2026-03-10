@@ -24,17 +24,26 @@ import {
   type StageData,
   StagesEditor,
 } from "@/components/productions/default-stages-editor"
+import { FormFieldsEditor } from "@/components/productions/form-fields-editor"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { createProductionFormSchema } from "@/lib/schemas/production"
 import { formResolver } from "@/lib/schemas/resolve"
 import { slugify } from "@/lib/slugify"
+import type { CustomForm, CustomFormFieldType } from "@/lib/types"
 import { getAppUrl } from "@/lib/url"
+import { generateId } from "@/lib/util"
 
 type FormValues = z.infer<typeof createProductionFormSchema>
 
-type Step = "details" | "stages" | "roles"
+type Step = "details" | "stages" | "submissionForm" | "feedbackForm" | "roles"
 
-const STEPS = ["details", "stages", "roles"] as const
+const STEPS = [
+  "details",
+  "stages",
+  "submissionForm",
+  "feedbackForm",
+  "roles",
+] as const
 
 const DEFAULT_CUSTOM_STAGES: StageData[] = [
   { id: "tmp-screening", name: "Screening", order: 1, type: "CUSTOM" },
@@ -60,6 +69,10 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
   const [customStages, setCustomStages] = useState<StageData[]>(
     DEFAULT_CUSTOM_STAGES,
   )
+  const [submissionFormFields, setSubmissionFormFields] = useState<
+    CustomForm[]
+  >([])
+  const [feedbackFormFields, setFeedbackFormFields] = useState<CustomForm[]>([])
   const slugTouchedRef = useRef(false)
 
   const { form, action } = useHookFormAction(
@@ -130,7 +143,15 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
     setStep("stages")
   }
 
-  async function handleNextToRoles() {
+  function handleNextToSubmissionForm() {
+    setStep("submissionForm")
+  }
+
+  function handleNextToFeedbackForm() {
+    setStep("feedbackForm")
+  }
+
+  function handleNextToRoles() {
     setStep("roles")
   }
 
@@ -140,6 +161,14 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
 
   function handleBackToStages() {
     setStep("stages")
+  }
+
+  function handleBackToSubmissionForm() {
+    setStep("submissionForm")
+  }
+
+  function handleBackToFeedbackForm() {
+    setStep("feedbackForm")
   }
 
   function handleSlugChange(value: string) {
@@ -170,6 +199,70 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
     setCustomStages(reordered.filter((s) => s.type === "CUSTOM"))
   }
 
+  // --- Submission form field callbacks ---
+  function handleAddSubmissionField(type: CustomFormFieldType, label: string) {
+    setSubmissionFormFields((prev) => [
+      ...prev,
+      {
+        id: generateId("ff"),
+        type,
+        label,
+        description: "",
+        required: false,
+        options: [],
+      },
+    ])
+  }
+
+  function handleSaveSubmissionField(
+    fieldId: string,
+    updates: Partial<CustomForm>,
+  ) {
+    setSubmissionFormFields((prev) =>
+      prev.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)),
+    )
+  }
+
+  function handleRemoveSubmissionField(fieldId: string) {
+    setSubmissionFormFields((prev) => prev.filter((f) => f.id !== fieldId))
+  }
+
+  function handleReorderSubmissionFields(reordered: CustomForm[]) {
+    setSubmissionFormFields(reordered)
+  }
+
+  // --- Feedback form field callbacks ---
+  function handleAddFeedbackField(type: CustomFormFieldType, label: string) {
+    setFeedbackFormFields((prev) => [
+      ...prev,
+      {
+        id: generateId("fbf"),
+        type,
+        label,
+        description: "",
+        required: false,
+        options: [],
+      },
+    ])
+  }
+
+  function handleSaveFeedbackField(
+    fieldId: string,
+    updates: Partial<CustomForm>,
+  ) {
+    setFeedbackFormFields((prev) =>
+      prev.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)),
+    )
+  }
+
+  function handleRemoveFeedbackField(fieldId: string) {
+    setFeedbackFormFields((prev) => prev.filter((f) => f.id !== fieldId))
+  }
+
+  function handleReorderFeedbackFields(reordered: CustomForm[]) {
+    setFeedbackFormFields(reordered)
+  }
+
   function handleSubmit(values: FormValues) {
     const roles = values.roles.filter((r) => r.name.trim().length > 0)
     const slug = values.slug?.trim() || undefined
@@ -182,6 +275,10 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
       slug,
       customStages: stageNames,
       roles: roles.length > 0 ? roles : undefined,
+      submissionFormFields:
+        submissionFormFields.length > 0 ? submissionFormFields : undefined,
+      feedbackFormFields:
+        feedbackFormFields.length > 0 ? feedbackFormFields : undefined,
     })
   }
 
@@ -335,6 +432,76 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
             >
               Back
             </Button>
+            <Button type="button" onClick={handleNextToSubmissionForm}>
+              Continue
+            </Button>
+          </div>
+        </FieldGroup>
+      )}
+
+      {step === "submissionForm" && (
+        <FieldGroup>
+          <div className="flex flex-col gap-block">
+            <div>
+              <h2 className="font-medium text-heading">Submission form</h2>
+              <p className="text-caption text-muted-foreground">
+                Add custom fields to the form candidates fill out when
+                submitting for a role. These will be the defaults for all roles.
+              </p>
+            </div>
+
+            <FormFieldsEditor
+              fields={submissionFormFields}
+              onAdd={handleAddSubmissionField}
+              onSave={handleSaveSubmissionField}
+              onRemove={handleRemoveSubmissionField}
+              onReorder={handleReorderSubmissionFields}
+            />
+          </div>
+
+          <div className="flex justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBackToStages}
+            >
+              Back
+            </Button>
+            <Button type="button" onClick={handleNextToFeedbackForm}>
+              Continue
+            </Button>
+          </div>
+        </FieldGroup>
+      )}
+
+      {step === "feedbackForm" && (
+        <FieldGroup>
+          <div className="flex flex-col gap-block">
+            <div>
+              <h2 className="font-medium text-heading">Feedback form</h2>
+              <p className="text-caption text-muted-foreground">
+                Add custom fields for the production team to fill out when
+                reviewing candidates. These will be the defaults for all roles.
+              </p>
+            </div>
+
+            <FormFieldsEditor
+              fields={feedbackFormFields}
+              onAdd={handleAddFeedbackField}
+              onSave={handleSaveFeedbackField}
+              onRemove={handleRemoveFeedbackField}
+              onReorder={handleReorderFeedbackFields}
+            />
+          </div>
+
+          <div className="flex justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBackToSubmissionForm}
+            >
+              Back
+            </Button>
             <Button type="button" onClick={handleNextToRoles}>
               Continue
             </Button>
@@ -447,7 +614,7 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
             <Button
               type="button"
               variant="outline"
-              onClick={handleBackToStages}
+              onClick={handleBackToFeedbackForm}
             >
               Back
             </Button>

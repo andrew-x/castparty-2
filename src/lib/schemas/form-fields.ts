@@ -8,6 +8,15 @@ export const customFormFieldTypeSchema = z.enum([
   "TOGGLE",
 ])
 
+export const customFormItemSchema = z.object({
+  id: z.string().min(1),
+  type: customFormFieldTypeSchema,
+  label: z.string().trim().min(1).max(200),
+  description: z.string().max(500),
+  required: z.boolean(),
+  options: z.array(z.string().max(200)),
+})
+
 // --- Production form field actions ---
 
 export const addProductionFormFieldSchema = z.object({
