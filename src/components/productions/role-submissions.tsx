@@ -138,7 +138,7 @@ export function RoleSubmissions({
           }
         }}
       >
-        <div className="flex flex-1 min-h-0 gap-block overflow-x-auto pb-2">
+        <div className="flex min-h-0 flex-1 gap-block overflow-x-auto pb-2">
           {pipelineStages.map((stage) => (
             <KanbanColumn
               key={stage.id}
@@ -195,7 +195,7 @@ function KanbanColumn({
         </span>
         <Badge variant="secondary">{items.length}</Badge>
       </div>
-      <div className="flex flex-1 min-h-0 flex-col gap-block overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col gap-block overflow-y-auto">
         {items.map((submission, index) => (
           <KanbanCard
             key={submission.id}

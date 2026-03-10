@@ -105,9 +105,8 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
     },
   )
 
-  const { execute: executeSlugCheck, isPending: isCheckingSlug } = useAction(
-    checkSlugAvailability,
-  )
+  const { executeAsync: executeSlugCheck, isPending: isCheckingSlug } =
+    useAction(checkSlugAvailability)
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,

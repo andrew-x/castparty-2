@@ -80,7 +80,7 @@ export function ChangeRoleDialog({
     },
   })
 
-  const selectedRole = form.watch("role")
+  const selectedRole = form.watch("role") as z.infer<typeof schema>["role"]
   const isPending = updateRole.isPending || transfer.isPending
 
   // Reset form when a different member is selected

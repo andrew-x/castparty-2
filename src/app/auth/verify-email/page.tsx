@@ -19,7 +19,7 @@ export default async function VerifyEmailPage({
   if (token) {
     try {
       const result = await auth.api.verifyEmail({ query: { token } })
-      verified = result.status
+      verified = !!result?.status
     } catch {
       // Invalid or expired token — verified stays false
     }

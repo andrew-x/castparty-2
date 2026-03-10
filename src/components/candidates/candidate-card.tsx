@@ -39,6 +39,7 @@ export function CandidateCard({ candidate }: { candidate: Candidate }) {
     >
       <div className="relative aspect-square w-full bg-muted">
         {candidate.headshotUrl ? (
+          // biome-ignore lint/performance/noImgElement: external R2 URLs
           <img
             src={candidate.headshotUrl}
             alt={`${candidate.firstName} ${candidate.lastName}`}
@@ -46,7 +47,7 @@ export function CandidateCard({ candidate }: { candidate: Candidate }) {
           />
         ) : (
           <div className="flex size-full items-center justify-center">
-            <span className="text-heading font-medium text-muted-foreground">
+            <span className="font-medium text-heading text-muted-foreground">
               {getInitials(candidate.firstName, candidate.lastName)}
             </span>
           </div>
@@ -55,7 +56,7 @@ export function CandidateCard({ candidate }: { candidate: Candidate }) {
 
       <div className="flex flex-col gap-1 p-2">
         <div>
-          <p className="truncate text-caption font-medium text-foreground">
+          <p className="truncate font-medium text-caption text-foreground">
             {candidate.firstName} {candidate.lastName}
           </p>
           <p className="truncate text-caption text-muted-foreground">

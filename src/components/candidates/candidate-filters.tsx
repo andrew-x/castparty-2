@@ -117,9 +117,7 @@ export function CandidateFilters({ productions }: Props) {
     >
       <ComboboxChips ref={anchorRef} className="w-96">
         {selected.map((chip) => (
-          <ComboboxChip key={chip.value} value={chip}>
-            {chip.label}
-          </ComboboxChip>
+          <ComboboxChip key={chip.value}>{chip.label}</ComboboxChip>
         ))}
         <ComboboxChipsInput placeholder="Filter by production or role" />
       </ComboboxChips>
