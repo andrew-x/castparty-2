@@ -27,6 +27,7 @@ interface SubmissionRow {
   submission: SubmissionWithCandidate
   pipelineStages: PipelineStageData[]
   submissionFormFields: CustomForm[]
+  feedbackFormFields: CustomForm[]
   roleName: string
   productionName: string
 }
@@ -155,6 +156,7 @@ export function CandidateDetail({ candidate, submissions }: Props) {
           submission={selected?.submission ?? null}
           pipelineStages={selected?.pipelineStages ?? []}
           submissionFormFields={selected?.submissionFormFields ?? []}
+          feedbackFormFields={selected?.feedbackFormFields ?? []}
           onClose={() => setSelectedIndex(null)}
           onStageChange={handleStageChange}
         />

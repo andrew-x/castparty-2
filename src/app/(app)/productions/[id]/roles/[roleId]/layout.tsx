@@ -42,7 +42,7 @@ export default async function RoleLayout({
         }
         tabs={<RoleTabNav productionId={id} roleId={roleId} />}
       />
-      <PageContent>{children}</PageContent>
+      <PageContent className="min-h-0 overflow-hidden">{children}</PageContent>
     </Page>
   )
 }

@@ -48,12 +48,14 @@ interface Props {
   submissions: SubmissionWithCandidate[]
   pipelineStages: PipelineStageData[]
   submissionFormFields: CustomForm[]
+  feedbackFormFields: CustomForm[]
 }
 
 export function RoleSubmissions({
   submissions,
   pipelineStages,
   submissionFormFields,
+  feedbackFormFields,
 }: Props) {
   const router = useRouter()
   const [columns, setColumns] = useState(() =>
@@ -63,11 +65,15 @@ export function RoleSubmissions({
   const [selectedSubmission, setSelectedSubmission] =
     useState<SubmissionWithCandidate | null>(null)
 
-  // Sync columns from props when server data changes (e.g., after router.refresh())
+  // Sync columns and selected submission from props when server data changes
   const [prevSubmissions, setPrevSubmissions] = useState(submissions)
   if (submissions !== prevSubmissions) {
     setPrevSubmissions(submissions)
     setColumns(buildColumns(submissions, pipelineStages))
+    if (selectedSubmission) {
+      const updated = submissions.find((s) => s.id === selectedSubmission.id)
+      setSelectedSubmission(updated ?? null)
+    }
   }
 
   const { execute: executeStatusChange } = useAction(updateSubmissionStatus, {
@@ -131,7 +137,7 @@ export function RoleSubmissions({
           }
         }}
       >
-        <div className="flex gap-group overflow-x-auto pb-2">
+        <div className="flex flex-1 min-h-0 gap-block overflow-x-auto pb-2">
           {pipelineStages.map((stage) => (
             <KanbanColumn
               key={stage.id}
@@ -147,6 +153,7 @@ export function RoleSubmissions({
         submission={selectedSubmission}
         pipelineStages={pipelineStages}
         submissionFormFields={submissionFormFields}
+        feedbackFormFields={feedbackFormFields}
         onClose={() => setSelectedSubmission(null)}
         onStageChange={setSelectedSubmission}
       />
@@ -187,7 +194,7 @@ function KanbanColumn({
         </span>
         <Badge variant="secondary">{items.length}</Badge>
       </div>
-      <div className="flex flex-col gap-block">
+      <div className="flex flex-1 min-h-0 flex-col gap-block overflow-y-auto">
         {items.map((submission, index) => (
           <KanbanCard
             key={submission.id}

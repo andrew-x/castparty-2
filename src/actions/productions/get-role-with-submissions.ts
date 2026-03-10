@@ -4,10 +4,12 @@ import { eq } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
 import type {
+  FeedbackData,
   HeadshotData,
   ResumeData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
+import type { CustomForm } from "@/lib/types"
 
 export async function getRoleWithSubmissions(roleId: string) {
   const user = await checkAuth()
@@ -18,7 +20,7 @@ export async function getRoleWithSubmissions(roleId: string) {
     where: (r) => eq(r.id, roleId),
     with: {
       production: {
-        columns: { id: true, organizationId: true },
+        columns: { id: true, organizationId: true, feedbackFormFields: true },
       },
       pipelineStages: {
         orderBy: (s, { asc }) => [asc(s.order)],
@@ -29,6 +31,13 @@ export async function getRoleWithSubmissions(roleId: string) {
           stage: true,
           files: {
             orderBy: (f, { asc }) => [asc(f.order)],
+          },
+          feedback: {
+            with: {
+              submittedBy: { columns: { id: true, name: true, image: true } },
+              stage: { columns: { id: true, name: true } },
+            },
+            orderBy: (f, { desc }) => [desc(f.createdAt)],
           },
         },
       },
@@ -56,6 +65,17 @@ export async function getRoleWithSubmissions(roleId: string) {
         }
       : null
 
+    const feedback: FeedbackData[] = sub.feedback.map((fb) => ({
+      id: fb.id,
+      rating: fb.rating,
+      notes: fb.notes,
+      formFields: fb.formFields,
+      answers: fb.answers,
+      createdAt: fb.createdAt,
+      submittedBy: fb.submittedBy,
+      stage: fb.stage,
+    }))
+
     return {
       id: sub.id,
       firstName: sub.firstName,
@@ -70,9 +90,16 @@ export async function getRoleWithSubmissions(roleId: string) {
       headshots,
       resume,
       resumeText: sub.resumeText,
+      feedback,
       candidate: sub.candidate,
     }
   })
 
-  return { ...role, submissions }
+  // Resolve feedback form fields: role-level if non-empty, else production-level
+  const feedbackFormFields: CustomForm[] =
+    role.feedbackFormFields.length > 0
+      ? role.feedbackFormFields
+      : role.production.feedbackFormFields
+
+  return { ...role, submissions, feedbackFormFields }
 }
