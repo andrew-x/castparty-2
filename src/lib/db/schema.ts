@@ -391,6 +391,7 @@ export const Submission = pgTable("submission", {
   location: text().notNull().default(""),
 
   answers: jsonb().$type<CustomFormResponse[]>().notNull().default([]),
+  links: text().array().notNull().default([]),
   resumeText: text(),
 
   createdAt: timestamp().defaultNow().notNull(),

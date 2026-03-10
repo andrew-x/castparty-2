@@ -29,6 +29,15 @@ export const submissionFormSchema = z.object({
   phone: z.string().trim().optional(),
   location: z.string().trim().max(200).optional(),
   answers: z.record(z.string(), z.string()).default({}),
+  links: z
+    .preprocess(
+      (val) =>
+        Array.isArray(val)
+          ? val.filter((v) => typeof v === "string" && v.trim())
+          : [],
+      z.array(z.string().trim().url("Enter a valid URL.")),
+    )
+    .default([]),
 })
 
 export const submissionActionSchema = submissionFormSchema.extend({

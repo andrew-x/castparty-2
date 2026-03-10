@@ -33,6 +33,7 @@ import {
   type HeadshotFile,
   HeadshotUploader,
 } from "@/components/submissions/headshot-uploader"
+import { LinksEditor } from "@/components/submissions/links-editor"
 import { ResumeUploader } from "@/components/submissions/resume-uploader"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { formResolver } from "@/lib/schemas/resolve"
@@ -80,6 +81,7 @@ export function SubmissionForm({
           phone: "",
           location: "",
           answers: defaultAnswers,
+          links: [],
         },
       },
       actionProps: {
@@ -514,6 +516,22 @@ export function SubmissionForm({
           <FieldLabel>Resume (optional)</FieldLabel>
           <ResumeUploader file={resume} onChange={setResume} />
         </Field>
+        <Controller
+          name="links"
+          control={form.control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Links (optional)</FieldLabel>
+              <FieldDescription>
+                Add links to your portfolio, social media, or demo reels.
+              </FieldDescription>
+              <LinksEditor
+                value={(field.value as string[]) ?? []}
+                onChange={field.onChange}
+              />
+            </Field>
+          )}
+        />
         {form.formState.errors.root && (
           <Alert variant="destructive">
             <AlertDescription>

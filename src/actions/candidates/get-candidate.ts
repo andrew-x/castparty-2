@@ -83,6 +83,7 @@ export async function getCandidate(candidateId: string) {
           const r = (submission.files ?? []).find((f) => f.type === "RESUME")
           return r ? { id: r.id, url: r.url, filename: r.filename } : null
         })(),
+        links: submission.links,
         resumeText: submission.resumeText ?? null,
         candidate: {
           id: candidate.id,
@@ -93,7 +94,7 @@ export async function getCandidate(candidateId: string) {
         },
       },
       pipelineStages,
-      formFields,
+      submissionFormFields: formFields,
       roleName: submission.role?.name ?? "Unknown",
       productionName: submission.production?.name ?? "Unknown",
     }

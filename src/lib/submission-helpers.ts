@@ -31,6 +31,7 @@ export interface SubmissionWithCandidate {
   stageId: string
   stage: PipelineStageData | null
   answers: CustomFormResponse[]
+  links: string[]
   headshots: HeadshotData[]
   resume: ResumeData | null
   resumeText: string | null
