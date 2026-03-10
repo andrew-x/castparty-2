@@ -122,7 +122,6 @@ export async function getCandidate(candidateId: string) {
         },
       },
       pipelineStages,
-      formFields,
       submissionFormFields: formFields,
       feedbackFormFields,
       roleName: submission.role?.name ?? "Unknown",

@@ -218,15 +218,46 @@ export function SubmissionDetailSheet({
                       </a>
                     </div>
                   )}
+                </>
+              )}
 
+              {submission.links.length > 0 && (
+                <>
+                  <Separator />
                   <div className="flex flex-col gap-block">
                     <h3 className="font-medium text-foreground text-label">
-                      Submitted
+                      Links
                     </h3>
-                    <p className="text-label text-muted-foreground">
-                      {day(submission.createdAt).format("LLL")}
-                    </p>
+                    <div className="flex flex-col gap-element">
+                      {submission.links.map((link) => (
+                        <a
+                          key={link}
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-element text-label text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          <SocialIcon url={link} className="size-4 shrink-0" />
+                          <span className="min-w-0 truncate">
+                            {prettifyUrl(link)}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
                   </div>
+                </>
+              )}
+
+              <Separator />
+
+              <div className="flex flex-col gap-block">
+                <h3 className="font-medium text-foreground text-label">
+                  Submitted
+                </h3>
+                <p className="text-label text-muted-foreground">
+                  {day(submission.createdAt).format("LLL")}
+                </p>
+              </div>
 
                   {submission.answers.length > 0 && (
                     <div className="flex flex-col gap-block">
