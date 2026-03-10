@@ -507,7 +507,7 @@ export function DefaultFormFieldsEditor({
       isAdding={isAdding}
       isSaving={isSaving}
       removingFieldId={removingFieldId}
-      description="These are the default form fields for new roles. Updating them will not change forms on roles that have already been created."
+      description="Changes here only apply to new roles. Existing roles are not affected."
     />
   )
 }

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { getRole } from "@/actions/productions/get-role"
-import { RoleSettingsForm } from "@/components/productions/role-settings-form"
+import { RoleStagesEditor } from "@/components/productions/role-stages-editor"
 
 export async function generateMetadata({
   params,
@@ -11,12 +11,12 @@ export async function generateMetadata({
   const role = await getRole(roleId)
   return {
     title: role
-      ? `${role.name} Settings — Castparty`
-      : "Role Settings — Castparty",
+      ? `${role.name} Pipeline — Castparty`
+      : "Role Pipeline — Castparty",
   }
 }
 
-export default async function RoleSettingsPage({
+export default async function RolePipelinePage({
   params,
 }: {
   params: Promise<{ id: string; roleId: string }>
@@ -31,16 +31,8 @@ export default async function RoleSettingsPage({
   return (
     <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
       <section className="flex flex-col gap-group">
-        <h2 className="font-serif text-heading">General</h2>
-        <RoleSettingsForm
-          roleId={role.id}
-          orgSlug={role.production.organization.slug}
-          productionSlug={role.production.slug}
-          currentName={role.name}
-          currentSlug={role.slug}
-          currentDescription={role.description}
-          currentIsOpen={role.isOpen}
-        />
+        <h2 className="font-serif text-heading">Pipeline stages</h2>
+        <RoleStagesEditor roleId={role.id} stages={role.pipelineStages} />
       </section>
     </div>
   )

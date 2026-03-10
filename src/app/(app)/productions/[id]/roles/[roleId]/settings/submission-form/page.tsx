@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { getRole } from "@/actions/productions/get-role"
-import { RoleSettingsForm } from "@/components/productions/role-settings-form"
+import { RoleFormFieldsEditor } from "@/components/productions/role-form-fields-editor"
 
 export async function generateMetadata({
   params,
@@ -11,12 +11,12 @@ export async function generateMetadata({
   const role = await getRole(roleId)
   return {
     title: role
-      ? `${role.name} Settings — Castparty`
-      : "Role Settings — Castparty",
+      ? `${role.name} Submission Form — Castparty`
+      : "Role Submission Form — Castparty",
   }
 }
 
-export default async function RoleSettingsPage({
+export default async function RoleSubmissionFormPage({
   params,
 }: {
   params: Promise<{ id: string; roleId: string }>
@@ -31,15 +31,10 @@ export default async function RoleSettingsPage({
   return (
     <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
       <section className="flex flex-col gap-group">
-        <h2 className="font-serif text-heading">General</h2>
-        <RoleSettingsForm
+        <h2 className="font-serif text-heading">Submission form</h2>
+        <RoleFormFieldsEditor
           roleId={role.id}
-          orgSlug={role.production.organization.slug}
-          productionSlug={role.production.slug}
-          currentName={role.name}
-          currentSlug={role.slug}
-          currentDescription={role.description}
-          currentIsOpen={role.isOpen}
+          fields={role.submissionFormFields}
         />
       </section>
     </div>

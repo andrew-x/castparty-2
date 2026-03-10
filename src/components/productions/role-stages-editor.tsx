@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { addPipelineStage } from "@/actions/productions/add-pipeline-stage"
 import { removePipelineStage } from "@/actions/productions/remove-pipeline-stage"
 import { reorderRoleStages } from "@/actions/productions/reorder-role-stages"
@@ -19,6 +19,11 @@ interface Props {
 export function RoleStagesEditor({ roleId, stages }: Props) {
   const router = useRouter()
   const [localStages, setLocalStages] = useState(stages)
+
+  useEffect(() => {
+    setLocalStages(stages)
+    setRemovingStageId(null)
+  }, [stages])
 
   const { execute: executeReorder } = useAction(reorderRoleStages, {
     onError() {
