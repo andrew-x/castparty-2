@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
-import { ProductionSettingsForm } from "@/components/productions/production-settings-form"
+import { DefaultFormFieldsEditor } from "@/components/productions/form-fields-editor"
 
 export async function generateMetadata({
   params,
@@ -11,12 +11,12 @@ export async function generateMetadata({
   const production = await getProduction(id)
   return {
     title: production
-      ? `${production.name} Settings — Castparty`
-      : "Settings — Castparty",
+      ? `${production.name} Submission Form — Castparty`
+      : "Submission Form — Castparty",
   }
 }
 
-export default async function ProductionSettingsPage({
+export default async function ProductionSubmissionFormPage({
   params,
 }: {
   params: Promise<{ id: string }>
@@ -31,14 +31,10 @@ export default async function ProductionSettingsPage({
   return (
     <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
       <section className="flex flex-col gap-group">
-        <h2 className="font-serif text-heading">General</h2>
-        <ProductionSettingsForm
+        <h2 className="font-serif text-heading">Submission form</h2>
+        <DefaultFormFieldsEditor
           productionId={production.id}
-          orgSlug={production.organization.slug}
-          currentName={production.name}
-          currentLocation={production.location}
-          currentSlug={production.slug}
-          isOpen={production.isOpen}
+          fields={production.submissionFormFields}
         />
       </section>
     </div>

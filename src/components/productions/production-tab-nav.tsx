@@ -11,7 +11,10 @@ interface Props {
 
 const tabs = [
   { label: "Roles", segment: "" },
-  { label: "Settings", segment: "/settings" },
+  { label: "General", segment: "/settings" },
+  { label: "Pipeline", segment: "/settings/pipeline" },
+  { label: "Submission form", segment: "/settings/submission-form" },
+  { label: "Feedback form", segment: "/settings/feedback-form" },
 ] as const
 
 export function ProductionTabNav({ productionId }: Props) {
@@ -23,10 +26,7 @@ export function ProductionTabNav({ productionId }: Props) {
       <div className={cn(tabsListVariants({ variant: "line" }))}>
         {tabs.map((tab) => {
           const href = `${basePath}${tab.segment}`
-          const isActive =
-            tab.segment === ""
-              ? pathname === basePath
-              : pathname.startsWith(href)
+          const isActive = pathname === href
 
           return (
             <Link

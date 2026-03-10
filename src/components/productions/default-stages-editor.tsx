@@ -6,7 +6,7 @@ import { useSortable } from "@dnd-kit/react/sortable"
 import { GripVerticalIcon, XIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { addProductionStage } from "@/actions/productions/add-production-stage"
 import { removeProductionStage } from "@/actions/productions/remove-production-stage"
 import { reorderProductionStages } from "@/actions/productions/reorder-production-stages"
@@ -227,6 +227,11 @@ export function DefaultStagesEditor({
   const router = useRouter()
   const [localStages, setLocalStages] = useState(stages)
 
+  useEffect(() => {
+    setLocalStages(stages)
+    setRemovingStageId(null)
+  }, [stages])
+
   const { execute: executeReorder } = useAction(reorderProductionStages, {
     onError() {
       router.refresh()
@@ -281,7 +286,7 @@ export function DefaultStagesEditor({
       onReorder={handleReorder}
       isAdding={isAdding}
       removingStageId={removingStageId}
-      description="These are the default casting stages for new roles. Updating them will not change any role pipelines that have already been created."
+      description="Changes here only apply to new roles. Existing roles are not affected."
     />
   )
 }
