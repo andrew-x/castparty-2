@@ -7,6 +7,7 @@ import {
   ComboboxChip,
   ComboboxChips,
   ComboboxChipsInput,
+  ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxItem,
@@ -71,6 +72,7 @@ export function CandidateFilters({ productions }: Props) {
   const anchorRef = useComboboxAnchor()
 
   const byKey = buildOptions(productions)
+  const allItems = Array.from(byKey.values())
   const [selected, setSelected] = useState<ComboboxOption[]>(() =>
     initFromParams(new URLSearchParams(searchParams.toString()), byKey),
   )
@@ -110,9 +112,10 @@ export function CandidateFilters({ productions }: Props) {
       multiple
       value={selected}
       onValueChange={handleValueChange}
-      getOptionLabel={(opt: ComboboxOption) => opt.label}
+      isItemEqualToValue={(a, b) => a.value === b.value}
+      items={allItems}
     >
-      <ComboboxChips ref={anchorRef} className="min-w-72 max-w-md">
+      <ComboboxChips ref={anchorRef} className="w-96">
         {selected.map((chip) => (
           <ComboboxChip key={chip.value} value={chip}>
             {chip.label}
@@ -123,18 +126,13 @@ export function CandidateFilters({ productions }: Props) {
       <ComboboxContent anchor={anchorRef}>
         <ComboboxList>
           <ComboboxEmpty>No matches found</ComboboxEmpty>
-          {productions.map((prod) => (
-            <>
-              <ComboboxItem key={prod.id} value={byKey.get(`p:${prod.id}`)}>
-                {prod.name}
+          <ComboboxCollection>
+            {(item: ComboboxOption) => (
+              <ComboboxItem key={item.value} value={item}>
+                {item.label}
               </ComboboxItem>
-              {prod.roles.map((role) => (
-                <ComboboxItem key={role.id} value={byKey.get(`r:${role.id}`)}>
-                  {prod.name} / {role.name}
-                </ComboboxItem>
-              ))}
-            </>
-          ))}
+            )}
+          </ComboboxCollection>
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
