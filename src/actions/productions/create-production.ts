@@ -19,7 +19,16 @@ export const createProduction = secureActionClient
   .inputSchema(createProductionActionSchema)
   .action(
     async ({
-      parsedInput: { name, description, location, roles, slug, customStages },
+      parsedInput: {
+        name,
+        description,
+        location,
+        roles,
+        slug,
+        customStages,
+        submissionFormFields,
+        feedbackFormFields,
+      },
       ctx: { user },
     }) => {
       const orgId = user.activeOrganizationId
@@ -73,6 +82,8 @@ export const createProduction = secureActionClient
         description: description || "",
         location: location || "",
         isOpen: true,
+        submissionFormFields: submissionFormFields ?? [],
+        feedbackFormFields: feedbackFormFields ?? [],
       })
 
       // Build production-level template stages
@@ -103,6 +114,14 @@ export const createProduction = secureActionClient
             slug: roleSlug,
             description: role.description || "",
             isOpen: true,
+            submissionFormFields: (submissionFormFields ?? []).map((f) => ({
+              ...f,
+              id: generateId("ff"),
+            })),
+            feedbackFormFields: (feedbackFormFields ?? []).map((f) => ({
+              ...f,
+              id: generateId("fbf"),
+            })),
           }
         })
 

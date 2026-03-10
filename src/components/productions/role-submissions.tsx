@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/common/avatar"
 import { Badge } from "@/components/common/badge"
 import {
   Empty,
@@ -240,10 +241,25 @@ function KanbanCard({
           e.stopPropagation()
           onSelect(submission)
         }}
-        className="group flex items-center gap-1 font-medium text-foreground text-label hover:text-brand-text"
+        className="group flex items-center gap-element font-medium text-foreground text-label hover:text-brand-text"
       >
-        {submission.firstName} {submission.lastName}
-        <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+        <Avatar size="sm">
+          {submission.headshots[0]?.url ? (
+            <AvatarImage
+              src={submission.headshots[0].url}
+              alt={`${submission.firstName} ${submission.lastName}`}
+              className="object-cover"
+            />
+          ) : null}
+          <AvatarFallback>
+            {submission.firstName[0]}
+            {submission.lastName[0]}
+          </AvatarFallback>
+        </Avatar>
+        <span className="flex items-center gap-1">
+          {submission.firstName} {submission.lastName}
+          <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+        </span>
       </button>
       <p className="text-caption text-muted-foreground">
         {day(submission.createdAt).format("LL")}

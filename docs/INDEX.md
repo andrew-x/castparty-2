@@ -1,6 +1,6 @@
 # Documentation Index
 
-> **Status:** Active development — auth, organizations, productions, candidates, public submission flow, configurable pipeline stages, custom form fields, role Kanban board, candidate detail, admin, location fields, headshot upload, and resume upload (with server-side PDF text extraction) are shipped.
+> **Status:** Active development — auth, organizations, productions, candidates, public submission flow, configurable pipeline stages, custom form fields (submission + feedback), role Kanban board with candidate photo thumbnails, candidate detail, admin, location fields, headshot upload, and resume upload (with server-side PDF text extraction) are shipped.
 > **Maintained by:** Librarian agent (`.claude/agents/librarian.md`)
 
 | Document | Read when you need to... |

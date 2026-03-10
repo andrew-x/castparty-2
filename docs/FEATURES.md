@@ -11,7 +11,7 @@
 | Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | Org settings (name, slug, description, website, visibility), members table, invite/remove/role-change, ownership transfer; owner/admin only |
 | Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | Grid of production cards for the active org; each card shows submission count; empty state with create CTA |
 | Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | Production overview with roles list and submission counts per role; inline role creation |
-| Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | Multi-step form to create a new production |
+| Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | 5-step wizard to create a new production: Details → Casting Pipeline → Submission Form → Feedback Form → Roles |
 | Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | Edit production details (name, slug, description, location, open/closed), configure pipeline template stages, and manage the production-level custom application form |
 | Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/settings/page.tsx` | Edit role details (name, slug, description, open/closed), configure role-level pipeline stages, and manage the role-level custom application form |
 | Admin Panel | `shipped` | `src/app/admin/page.tsx` | Internal user management (list, create, change password, delete); bypasses org scope |
@@ -183,9 +183,12 @@ OnboardingFlow (client)
 
 - **Guard in `layout.tsx`, not `page.tsx`** — the redirect logic (no auth, already has org) lives in the layout so it applies to every child route under `/onboarding/`, not just the index page.
 
+- **`createOrganization` does not call `revalidatePath`** — the action intentionally omits `revalidatePath("/", "layout")` after org creation. Navigation from step 1 to step 2 is handled entirely by the `onComplete` callback in `OnboardingFlow`, which calls `router.refresh()` + `router.push("/home")` at the end. Adding `revalidatePath` here caused the App Router to redirect to `/home` before the invite step could render, skipping step 2.
+
 **Integration points:** Depends on `hasAnyOrganization` from `src/actions/organizations/get-user-memberships.ts`. On completion, the user lands at `/home`, which is guarded by `(app)/layout.tsx` — see the Auth Flow section. Invites use the same `inviteMember` action as the Organizations Management settings page.
 
 *Updated: 2026-03-02 — Documented multi-step onboarding flow (create org + invite team)*
+*Updated: 2026-03-10 — Noted why createOrganization omits revalidatePath (invite step skipping bug)*
 
 ---
 
@@ -246,6 +249,81 @@ OnboardingFlow (client)
 
 *Updated: 2026-02-28 — Initial sidebar layout documentation*
 *Updated: 2026-03-04 — Removed AppHeader (inlined in layout as mobile-only trigger), corrected sidebar footer (OrgSwitcher + PendingInvitesButton), added Settings nav conditional, added onboarding redirect*
+
+---
+
+## Create Production
+
+**Overview:** A 5-step wizard for creating a new production. Exists because a single large form would overwhelm directors making their first production — breaking it into focused steps keeps each decision manageable. The wizard is the primary entry point for getting a production live with a pipeline, custom forms, and initial roles in one sitting.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/app/(app)/productions/new/page.tsx` | Server component; renders `<CreateProductionForm orgSlug={...}>` |
+| `src/components/productions/create-production-form.tsx` | Client component; owns step state and all field callbacks; calls `createProduction` action on final submit |
+| `src/actions/productions/create-production.ts` | Mutation: creates Production, template pipeline stages, and optional Roles in a single server action |
+| `src/lib/schemas/production.ts` | `createProductionFormSchema` (form) and `createProductionActionSchema` (action, extends form with `customStages`, `submissionFormFields`, `feedbackFormFields`) |
+| `src/components/productions/default-stages-editor.tsx` | `StagesEditor` component — drag-to-reorder custom pipeline stages |
+| `src/components/productions/form-fields-editor.tsx` | `FormFieldsEditor` component — shared editor for submission and feedback form fields |
+
+**Wizard steps:**
+
+| Step | Key | What the user configures |
+|------|-----|--------------------------|
+| 1 | `details` | Name, description, location, URL slug (auto-derived from name; validated for uniqueness) |
+| 2 | `stages` | Casting pipeline template (custom stages between system stages Applied/Selected/Rejected) |
+| 3 | `submissionForm` | Custom questions on the candidate submission form (default for all roles) |
+| 4 | `feedbackForm` | Custom fields for the production team's review notes (default for all roles) |
+| 5 | `roles` | Optional initial roles (name + description); additional roles can be added later |
+
+**How it works:**
+
+```
+CreateProductionForm (client)
+  step state: "details" → "stages" → "submissionForm" → "feedbackForm" → "roles"
+  form state: useHookFormAction(createProduction, formResolver(createProductionFormSchema))
+  local state: customStages[], submissionFormFields[], feedbackFormFields[]
+
+  Step 1 (details)
+    └── validates name/description/location/slug; async slug uniqueness check via checkSlugAvailability action
+  Step 2 (stages)
+    └── StagesEditor — manages customStages[] in local state; system stages pinned at positions 0/1000/1001
+  Step 3 (submissionForm)
+    └── FormFieldsEditor — manages submissionFormFields[] in local state
+  Step 4 (feedbackForm)
+    └── FormFieldsEditor — manages feedbackFormFields[] in local state
+  Step 5 (roles)
+    └── useFieldArray(roles) — react-hook-form field array; roles with empty names are filtered on submit
+
+  handleSubmit → action.execute({
+    name, description, location, slug,
+    customStages: [stage names],         ← undefined = use defaults; [] = system stages only
+    roles,
+    submissionFormFields,
+    feedbackFormFields,
+  })
+```
+
+**Action behavior (`createProduction`):**
+
+- Inserts the `Production` record with `isOpen: true` and the provided form fields.
+- `customStages === undefined` → seeds default template pipeline (`buildProductionStages`); `customStages` provided → seeds only the specified custom stages (`buildCustomProductionStages`).
+- For each role in `roles`, inserts a `Role` row with `isOpen: true` and copies `submissionFormFields`/`feedbackFormFields` from the production with freshly generated IDs (so each role's fields are independent).
+- Inserts pipeline stages for each role derived from the production template via `buildStagesFromTemplate`.
+- Calls `revalidatePath("/", "layout")` and returns `{ id: productionId }` — the client redirects to `/productions/[id]`.
+
+**Architecture decisions:**
+
+- **Local state for steps 2–4, react-hook-form for steps 1 and 5.** Steps 2–4 manage arrays that need custom add/remove/reorder callbacks (`StagesEditor`, `FormFieldsEditor`). These don't fit cleanly into react-hook-form's `useFieldArray` API (which requires object arrays with `id` keys). They are kept in plain `useState` and merged into the action payload at submit time. Steps 1 and 5 are standard form fields managed by the `useHookFormAction` form.
+
+- **Slug auto-derived from name, user can override.** A `slugTouchedRef` tracks whether the user has manually edited the slug field. While untouched, the slug auto-updates as the user types the production name via `slugify()`. Once the user types in the slug field (or clears it to reset), the ref flips and auto-fill stops.
+
+- **Form fields set here copy to roles with new IDs.** Giving each role independent field arrays (rather than a foreign key reference to the production template) allows per-role customization later without affecting siblings. See the Custom Form Fields section for full details.
+
+**Integration points:** Depends on Custom Form Fields, Pipeline Stages, and URL Slugs. The wizard uses `checkSlugAvailability` (`src/actions/productions/check-slug.ts`) for real-time uniqueness validation. After creation, the user lands on the Production Detail page.
+
+*Updated: 2026-03-10 — Initial Create Production documentation (5-step wizard with submission/feedback form steps)*
 
 ---
 
@@ -351,6 +429,8 @@ Custom stages are inserted at orders between 1 and 999. The `order` integer colu
 
 **Production-template pipeline:** Each production also carries a set of template stages (`roleId = null`). When a new role is created, it inherits the production's template via `buildStagesFromTemplate()`. The default production template (`DEFAULT_PRODUCTION_STAGES`) is: Applied → Screening → Audition → Callback → Selected → Rejected. Teams can customize this per-production before adding roles.
 
+**Role creation defaults:** All roles — whether created via the production creation wizard or added inline on the Production Detail page — are inserted with `isOpen: true`. This means new roles are immediately open for submissions without requiring an explicit activation step. Roles can be closed later via role settings.
+
 **Architecture decisions:** Per-role pipelines (rather than per-production) allow different roles in the same production to have different evaluation criteria — a lead role might have three callback stages while an ensemble role goes straight from Applied to Selected. Terminal stage orders (1000/1001) leave a large range (1–999) for custom stages without requiring renumbering. See `docs/DECISIONS.md` ADR-007 for full rationale.
 
 **Integration points:** New submissions from the Public Submission Flow always land in the Applied stage. The Production Settings page (`src/app/(app)/productions/[id]/(production)/settings/page.tsx`) is the UI entry point for managing both role and production-template stages. Role settings (name, description, slug, open/closed) are updated via `src/actions/productions/update-role.ts`.
@@ -389,8 +469,9 @@ RolePage (server)
             ├── KanbanColumn (one per stage)
             │     └── useDroppable({ type: "column", accept: "item" })
             │           └── KanbanCard (one per submission)
-            │                 └── useSortable({ type: "item", group: stageId })
-            │                       onClick → setSelectedSubmission (if not dragging)
+            │                 ├── useSortable({ type: "item", group: stageId })
+            │                 ├── Avatar — headshots[0].url with object-cover crop, or initials fallback
+            │                 └── onClick → setSelectedSubmission (if not dragging)
             └── SubmissionDetailSheet (portal, controlled by selectedSubmission state)
 ```
 
@@ -408,9 +489,12 @@ RolePage (server)
 
 - **`isDragSource` click guard on `KanbanCard`.** A click fires on `pointerup` regardless of whether a drag occurred. Checking `isDragSource` ensures `setSelectedSubmission` only runs if the user tapped (not dragged) the card, preventing the detail sheet from opening mid-drag.
 
+- **Headshot thumbnail on Kanban cards.** Each `KanbanCard` renders an `Avatar` (size `sm`) using `submission.headshots[0].url` with `object-cover` cropping. If no headshot exists, the Avatar shows the candidate's initials derived from `firstName[0] + lastName[0]`. This makes scanning a packed column faster than name-only cards.
+
 **Integration points:** Depends on Pipeline Stages for column structure — stages come from `getRoleWithSubmissions` alongside the submissions. `SubmissionDetailSheet` (existing component, unchanged) is reused for the card detail view. The `updateSubmissionStatus` action writes to the same `PipelineUpdate` table used by all other stage transitions. See the Pipeline Stages section above for stage type definitions and audit trail details.
 
 *Updated: 2026-03-04 — Documented Kanban board replacing tabbed submission list; terminal stage unlock; optimistic drag-and-drop with @dnd-kit/react v0.3*
+*Updated: 2026-03-10 — Added candidate photo thumbnail (Avatar with headshot/initials fallback) on KanbanCard*
 
 ---
 
@@ -418,7 +502,12 @@ RolePage (server)
 
 **Overview:** Productions and roles can each define a custom application form that candidates fill out when submitting an audition. This supplements the standard submission fields (name, email) with production-specific questions — e.g., "What experience do you have with Shakespeare?" or "Can you attend a Saturday rehearsal?" Configured in production or role settings; rendered dynamically in the public submission form.
 
-**How it works:** Form fields are stored as JSONB in the `Production.formFields` and `Role.formFields` columns. The `CustomForm` type in `src/lib/types.ts` defines the field shape: `id`, `type`, `label`, `description`, `required`, and `options` (for SELECT/CHECKBOX_GROUP). Responses are stored as JSONB in `Submission.answers` using the `CustomFormResponse` type: `{ fieldId, textValue, booleanValue, optionValues }`.
+**How it works:** Form fields are stored as JSONB in the `Production.submissionFormFields`, `Production.feedbackFormFields`, `Role.submissionFormFields`, and `Role.feedbackFormFields` columns. The `CustomForm` type in `src/lib/types.ts` defines the field shape: `id`, `type`, `label`, `description`, `required`, and `options` (for SELECT/CHECKBOX_GROUP). Responses are stored as JSONB in `Submission.answers` using the `CustomFormResponse` type: `{ fieldId, textValue, booleanValue, optionValues }`.
+
+There are two distinct form field contexts:
+
+- **Submission form fields** — questions candidates answer when submitting (rendered in the public `SubmissionForm`).
+- **Feedback form fields** — structured scoring/notes for the production team to fill in when reviewing a candidate (rendered in `SubmissionDetailSheet`).
 
 **Supported field types** (`CustomFormFieldType` in `src/lib/types.ts`):
 
@@ -435,16 +524,24 @@ RolePage (server)
 | File | Role |
 |------|------|
 | `src/lib/types.ts` | `CustomForm`, `CustomFormFieldType`, `CustomFormResponse` types |
-| `src/lib/schemas/form-fields.ts` | Zod schemas for form field CRUD actions |
-| `src/components/productions/production-form-fields-editor.tsx` | Editor UI for production-level form fields (in production settings) |
-| `src/components/productions/role-form-fields-editor.tsx` | Editor UI for role-level form fields (in role settings) |
+| `src/lib/schemas/form-fields.ts` | `customFormItemSchema` (shared field shape) + Zod schemas for all CRUD actions |
+| `src/components/productions/form-fields-editor.tsx` | Generic editor UI used in both the creation wizard and production/role settings |
 | `src/actions/productions/` | Actions for add/remove/reorder form fields on productions and roles |
 
-**Architecture decisions:** JSONB is used for form field storage rather than a normalized `form_fields` table because the field shape is schema-on-read (typed via `CustomForm`), the data is always fetched with its parent production/role, and the flexibility to add new field types without migrations outweighs the join overhead.
+**Where form fields are configured:**
 
-**Integration points:** The `SubmissionForm` in `src/components/submissions/submission-form.tsx` reads `formFields` from the role (falling back to the production-level fields) and renders the appropriate input for each field type. Responses are submitted alongside standard fields via the `create-submission` action.
+1. **During production creation** — the 5-step wizard (`src/components/productions/create-production-form.tsx`) includes a Submission Form step and a Feedback Form step. Fields set here are stored on the `Production` record and copied (with regenerated IDs) to every role created in the same wizard run.
+2. **In production settings** — after creation, fields can be added/edited/removed/reordered via the settings page (`src/app/(app)/productions/[id]/(production)/settings/page.tsx`). Changes here do not retroactively update existing roles.
+3. **In role settings** — each role can independently override its inherited fields via `src/app/(app)/productions/[id]/roles/[roleId]/settings/page.tsx`.
+
+**Role field inheritance:** When a role is created (via the wizard or inline on the Production Detail page), its `submissionFormFields` and `feedbackFormFields` are copied from the parent production with freshly generated IDs. This keeps role fields decoupled — editing a role's fields later doesn't affect other roles or the production template, and vice versa.
+
+**Architecture decisions:** JSONB is used for form field storage rather than a normalized `form_fields` table because the field shape is schema-on-read (typed via `CustomForm`), the data is always fetched with its parent production/role, and the flexibility to add new field types without migrations outweighs the join overhead. The shared `customFormItemSchema` in `src/lib/schemas/form-fields.ts` validates both the inline creation wizard payload and individual CRUD action inputs.
+
+**Integration points:** The `SubmissionForm` in `src/components/submissions/submission-form.tsx` reads `submissionFormFields` from the role and renders the appropriate input for each field type. Responses are submitted alongside standard fields via the `create-submission` action. The feedback form is rendered in `SubmissionDetailSheet` for the production team.
 
 *Updated: 2026-03-06 — Initial custom form fields documentation*
+*Updated: 2026-03-10 — Split submission vs. feedback field contexts; documented creation wizard integration and role field inheritance; noted customFormItemSchema as shared schema; updated key files table*
 
 ---
 
