@@ -36,9 +36,9 @@ export async function getCandidate(candidateId: string) {
 
   const submissions = candidate.submissions.map((submission) => {
     const productionFormFields: CustomForm[] =
-      (submission.production?.formFields as CustomForm[]) ?? []
+      (submission.production?.submissionFormFields as CustomForm[]) ?? []
     const roleFormFields: CustomForm[] =
-      (submission.role?.formFields as CustomForm[]) ?? []
+      (submission.role?.submissionFormFields as CustomForm[]) ?? []
     const formFields = [...productionFormFields, ...roleFormFields]
 
     const pipelineStages: PipelineStageData[] = (

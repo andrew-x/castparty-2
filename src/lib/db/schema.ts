@@ -256,7 +256,8 @@ export const Production = pgTable(
     isOpen: boolean().default(false).notNull(),
 
     location: text().notNull().default(""),
-    formFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    submissionFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    feedbackFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
@@ -283,7 +284,8 @@ export const Role = pgTable(
     isOpen: boolean().default(false).notNull(),
 
     location: text().notNull().default(""),
-    formFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    submissionFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    feedbackFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
@@ -395,6 +397,13 @@ export const Submission = pgTable("submission", {
   updatedAt: timestamp().defaultNow().notNull(),
 })
 
+export const feedbackRatingEnum = pgEnum("feedback_rating", [
+  "STRONG_NO",
+  "NO",
+  "YES",
+  "STRONG_YES",
+])
+
 export const fileTypeEnum = pgEnum("file_type", ["HEADSHOT", "RESUME", "VIDEO"])
 
 export const File = pgTable(
@@ -422,6 +431,34 @@ export const File = pgTable(
   (table) => [
     index("file_submissionId_idx").on(table.submissionId),
     index("file_candidateId_idx").on(table.candidateId),
+  ],
+)
+
+export const Feedback = pgTable(
+  "feedback",
+  {
+    id: text().primaryKey(),
+    submissionId: text()
+      .notNull()
+      .references(() => Submission.id, { onDelete: "cascade" }),
+    submittedByUserId: text()
+      .notNull()
+      .references(() => User.id, { onDelete: "cascade" }),
+    stageId: text()
+      .notNull()
+      .references(() => PipelineStage.id, { onDelete: "restrict" }),
+
+    formFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    answers: jsonb().$type<CustomFormResponse[]>().notNull().default([]),
+    rating: feedbackRatingEnum().notNull(),
+    notes: text().notNull().default(""),
+
+    createdAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp().defaultNow().notNull(),
+  },
+  (table) => [
+    index("feedback_submissionId_idx").on(table.submissionId),
+    index("feedback_submittedByUserId_idx").on(table.submittedByUserId),
   ],
 )
 
@@ -492,6 +529,7 @@ export const submissionRelations = relations(Submission, ({ one, many }) => ({
   }),
   pipelineUpdates: many(PipelineUpdate),
   files: many(File),
+  feedback: many(Feedback),
 }))
 
 export const fileRelations = relations(File, ({ one }) => ({
@@ -523,6 +561,7 @@ export const pipelineStageRelations = relations(
     submissions: many(Submission),
     pipelineUpdatesFrom: many(PipelineUpdate, { relationName: "fromStage" }),
     pipelineUpdatesTo: many(PipelineUpdate, { relationName: "toStage" }),
+    feedback: many(Feedback),
   }),
 )
 
@@ -556,5 +595,20 @@ export const pipelineUpdateRelations = relations(PipelineUpdate, ({ one }) => ({
   changedBy: one(user, {
     fields: [PipelineUpdate.changeByUserId],
     references: [user.id],
+  }),
+}))
+
+export const feedbackRelations = relations(Feedback, ({ one }) => ({
+  submission: one(Submission, {
+    fields: [Feedback.submissionId],
+    references: [Submission.id],
+  }),
+  submittedBy: one(User, {
+    fields: [Feedback.submittedByUserId],
+    references: [User.id],
+  }),
+  stage: one(PipelineStage, {
+    fields: [Feedback.stageId],
+    references: [PipelineStage.id],
   }),
 }))

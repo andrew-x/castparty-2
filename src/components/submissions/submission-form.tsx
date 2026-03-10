@@ -45,7 +45,7 @@ interface Props {
   roleId: string
   orgSlug: string
   productionSlug: string
-  formFields: CustomForm[]
+  submissionFormFields: CustomForm[]
 }
 
 export function SubmissionForm({
@@ -54,7 +54,7 @@ export function SubmissionForm({
   roleId,
   orgSlug,
   productionSlug,
-  formFields,
+  submissionFormFields,
 }: Props) {
   const cityOptions = useCityOptions()
   const [submitted, setSubmitted] = useState(false)
@@ -64,7 +64,7 @@ export function SubmissionForm({
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   const defaultAnswers: Record<string, string> = {}
-  for (const field of formFields) {
+  for (const field of submissionFormFields) {
     defaultAnswers[field.id] = field.type === "TOGGLE" ? "false" : ""
   }
 
@@ -316,7 +316,7 @@ export function SubmissionForm({
             </Field>
           )}
         />
-        {formFields.map((formField) => {
+        {submissionFormFields.map((formField) => {
           switch (formField.type) {
             case "TEXT":
               return (

@@ -43,7 +43,7 @@ export const createSubmission = publicActionClient
           id: true,
           productionId: true,
           isOpen: true,
-          formFields: true,
+          submissionFormFields: true,
         },
       })
 
@@ -74,7 +74,7 @@ export const createSubmission = publicActionClient
       }
 
       // Validate required custom fields
-      const formFields = role.formFields ?? []
+      const formFields = role.submissionFormFields ?? []
       for (const field of formFields) {
         if (!field.required) continue
         const value = answers[field.id]

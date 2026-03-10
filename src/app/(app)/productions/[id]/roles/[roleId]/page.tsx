@@ -30,7 +30,7 @@ export default async function RolePage({
     <RoleSubmissions
       submissions={role.submissions}
       pipelineStages={role.pipelineStages}
-      formFields={role.formFields}
+      submissionFormFields={role.submissionFormFields}
     />
   )
 }

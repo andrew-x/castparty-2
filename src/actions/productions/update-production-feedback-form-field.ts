@@ -5,11 +5,11 @@ import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Production } from "@/lib/db/schema"
-import { updateProductionFormFieldSchema } from "@/lib/schemas/form-fields"
+import { updateProductionFeedbackFormFieldSchema } from "@/lib/schemas/form-fields"
 
-export const updateProductionFormField = secureActionClient
-  .metadata({ action: "update-production-form-field" })
-  .inputSchema(updateProductionFormFieldSchema)
+export const updateProductionFeedbackFormField = secureActionClient
+  .metadata({ action: "update-production-feedback-form-field" })
+  .inputSchema(updateProductionFeedbackFormFieldSchema)
   .action(
     async ({
       parsedInput: { productionId, fieldId, ...updates },
@@ -20,16 +20,16 @@ export const updateProductionFormField = secureActionClient
 
       const production = await db.query.Production.findFirst({
         where: (p) => and(eq(p.id, productionId), eq(p.organizationId, orgId)),
-        columns: { id: true, submissionFormFields: true },
+        columns: { id: true, feedbackFormFields: true },
       })
       if (!production) throw new Error("Production not found.")
 
-      const fieldIndex = production.submissionFormFields.findIndex(
+      const fieldIndex = production.feedbackFormFields.findIndex(
         (f) => f.id === fieldId,
       )
       if (fieldIndex === -1) throw new Error("Field not found.")
 
-      const field = production.submissionFormFields[fieldIndex]
+      const field = production.feedbackFormFields[fieldIndex]
 
       // Validate options for select/checkbox group
       if (
@@ -40,12 +40,12 @@ export const updateProductionFormField = secureActionClient
         throw new Error("Select fields must have at least one option.")
       }
 
-      const updated = [...production.submissionFormFields]
+      const updated = [...production.feedbackFormFields]
       updated[fieldIndex] = { ...field, ...updates }
 
       await db
         .update(Production)
-        .set({ submissionFormFields: updated })
+        .set({ feedbackFormFields: updated })
         .where(eq(Production.id, productionId))
 
       revalidatePath("/", "layout")
