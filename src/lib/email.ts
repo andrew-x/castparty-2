@@ -1,4 +1,5 @@
 import type { ReactElement } from "react"
+import { addEmail } from "@/lib/email-dev-store"
 import logger from "@/lib/logger"
 import { IS_DEV } from "@/lib/util"
 
@@ -18,7 +19,8 @@ export function sendEmail({ to, subject, react, text }: SendEmailOptions) {
       if (IS_DEV) {
         const { render } = await import("@react-email/components")
         const html = await render(react)
-        logger.info(`[Email] To: ${to} | Subject: ${subject}\n\n${html}`)
+        addEmail({ to, subject, html, text })
+        logger.info(`[Email] To: ${to} | Subject: ${subject}`)
         return
       }
 

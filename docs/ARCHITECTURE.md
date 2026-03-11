@@ -67,7 +67,7 @@ src/
 | `src/components/organizations/` | Org-scoped components (settings form, invite dialog, member management, org switcher) |
 | `src/components/candidates/` | Candidate-scoped components (candidates table) |
 | `src/components/submissions/` | Submission-scoped components (submission form for public flow) |
-| `src/components/admin/` | Admin panel components (add/delete user, change password dialogs) |
+| `src/components/admin/` | Admin panel components (add/delete user, change password dialogs; dev-only email emulator list and detail views) |
 | `src/components/onboarding/` | Onboarding flow (create organization form) |
 
 ## Key Patterns
@@ -105,6 +105,8 @@ Browser
 - `src/lib/r2.ts` — Cloudflare R2 file storage: `uploadFile`, `deleteFile`, `moveFile`, `getKeyFromUrl`; uses AWS SDK S3-compatible API
 - `src/lib/auth/auth-util.ts` — Auth utility: `checkAuth()` reads the session and throws if unauthenticated; used by all server-side read functions
 - `src/lib/auth/auth-client.ts` — Better Auth browser client; used in form components
+- `src/lib/email.ts` — `sendEmail()` entry point; dev branch stores emails via `email-dev-store.ts`, production branch calls Resend
+- `src/lib/email-dev-store.ts` — Dev-only in-memory email store (`globalThis.__devEmails`, HMR-safe, capped at 200); all functions guard on `IS_DEV`
 - `src/lib/db/db.ts` — Drizzle ORM instance; Neon serverless HTTP driver; `snake_case` column casing
 - `src/lib/db/schema.ts` — Drizzle schema (source of truth for DB shape)
 - `src/app/api/auth/[...all]/route.ts` — Better Auth catch-all API handler

@@ -35,6 +35,7 @@
 | Password Reset | `shipped` | `src/app/auth/reset-password/page.tsx` | Token-based password reset via email link |
 | Accept Invitation | `shipped` | `src/app/accept-invitation/[id]/page.tsx` | Token-based invitation acceptance that adds users to an organization |
 | Admin Organizations | `shipped` | `src/app/admin/organizations/page.tsx` | Admin-level organization management (list, delete) |
+| Email Emulator | `dev-only` | `src/app/admin/emails/page.tsx` | Dev-only inbox that captures outbound emails in memory and renders them as they'd appear in a real email client; replaces console HTML dumps |
 | 404 Page | `shipped` | `src/app/not-found.tsx` | Theatrical "didn't make the callback list" copy with decorative 404 display |
 | Route Error Page | `shipped` | `src/app/error.tsx` | "Something went wrong backstage" — try again + back to home; client component |
 | Global Error Page | `shipped` | `src/app/global-error.tsx` | Same content as error page; includes own `<html>/<body>` for root layout failures |
@@ -777,3 +778,61 @@ Radio buttons in the form are ordered 4 → 1 (top to bottom). The rating field 
 **Integration points:** `FeedbackPanel` is rendered inside `SubmissionDetailSheet` (`src/components/productions/submission-detail-sheet.tsx`). It receives `submission` (the `SubmissionWithCandidate` object, which includes the `feedback` array) and `feedbackFormFields` (the role's feedback form configuration). Depends on Custom Form Fields for the structured fields section — see that section for the shared `defaultValues.answers` initialization and required-field validation pattern. The `createFeedback` action is a `secureActionClient` action that requires an authenticated session.
 
 *Added: 2026-03-10 — Initial feedback panel documentation (rating system, form validation, card list UI)*
+
+---
+
+## Email Emulator
+
+**Overview:** A development-only inbox that intercepts outbound emails and stores them in memory instead of sending them via Resend. The production team can browse captured emails at `/admin/emails` and preview rendered HTML exactly as an email client would display it. Exists because the old approach (logging the full HTML string to the console) was unreadable for styled transactional emails.
+
+**How it works:**
+
+```
+sendEmail() called (dev only)
+  └── render(react) → HTML string   ← @react-email/components
+  └── addEmail({ to, subject, html, text })
+        └── globalThis.__devEmails.unshift(email)   ← capped at 200
+  └── logger.info("[Email] To: … | Subject: …")    ← short console line only
+
+GET /admin/emails
+  └── AdminEmailsPage (server)
+        └── getEmails() → StoredEmail[]
+        └── <AdminEmailsClient emails={...} />
+              └── Table of emails, each row links to /admin/emails/[id]
+
+GET /admin/emails/[id]
+  └── AdminEmailDetailPage (server)
+        └── getEmailById(id) → StoredEmail | undefined → notFound()
+        └── <AdminEmailDetailClient email={...} />
+              └── Metadata (subject, to, sent time)
+              └── <iframe srcDoc={email.html} sandbox="…" />
+                    └── JS resize listener sets iframe height to body.scrollHeight
+```
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/lib/email-dev-store.ts` | In-memory store: `addEmail`, `getEmails`, `getEmailById`; backed by `globalThis.__devEmails` (survives HMR); all functions guard on `IS_DEV` |
+| `src/lib/email.ts` | `sendEmail()` entry point; dev branch renders React to HTML and calls `addEmail`; production branch calls Resend |
+| `src/app/admin/emails/page.tsx` | Server page; reads `getEmails()` and passes array to `AdminEmailsClient`; `force-dynamic` so the list refreshes on every request |
+| `src/app/admin/emails/[id]/page.tsx` | Server page; resolves email by ID, calls `notFound()` if missing, passes to `AdminEmailDetailClient` |
+| `src/components/admin/admin-emails-client.tsx` | Client component; renders the email table or an empty state; each subject cell links to the detail route |
+| `src/components/admin/admin-email-detail-client.tsx` | Client component; renders metadata and a sandboxed iframe; a `load` event listener resizes the iframe to its content height |
+| `src/app/admin/layout.tsx` | Admin shell; restricted to `IS_DEV` via `notFound()`; "Emails" nav link added alongside "Users" and "Organizations" |
+
+**Architecture decisions:**
+
+- **`globalThis` for storage, not React state or a module variable.** Next.js dev mode re-imports modules on HMR, which would reset a module-level array between saves. `globalThis.__devEmails` persists across module reloads for the lifetime of the Node process, so in-flight emails survive hot reloads.
+
+- **Capped at 200 entries.** The store trims itself after every `addEmail` call. This prevents unbounded memory growth during a long dev session without adding any cleanup ceremony for the developer.
+
+- **`IS_DEV` guards on every store function, not just the call sites.** Each of `addEmail`, `getEmails`, and `getEmailById` returns early (empty/undefined) when `IS_DEV` is false. This makes it safe to import the store anywhere without risking a production code path writing to or reading from the in-memory store.
+
+- **Sandboxed iframe for HTML preview.** `sandbox="allow-same-origin allow-popups allow-top-navigation-by-user-activation"` allows links to open (email CTAs need to be testable) while blocking script execution. This prevents React Email's inline scripts from running in the admin panel's DOM context.
+
+- **`force-dynamic` on the list page.** Email sends are fire-and-forget side effects, not database writes, so the Next.js cache would serve a stale snapshot. `force-dynamic` ensures the page always reads the live store on request.
+
+**Integration points:** `sendEmail()` in `src/lib/email.ts` is the sole write path. The admin layout at `src/app/admin/layout.tsx` gates access to `IS_DEV` — this feature is unreachable in production by the same mechanism that hides the entire admin panel. No database, no migrations, no external service dependency.
+
+*Added: 2026-03-11 — Initial email emulator documentation*
