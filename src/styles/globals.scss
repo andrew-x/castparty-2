@@ -201,6 +201,11 @@ summary:not(:disabled) {
   }
 }
 
+/* Allow lightbox portal to receive clicks above Radix modal overlays */
+.yarl__portal {
+  pointer-events: auto;
+}
+
 .dark {
   --sidebar: hsl(240 5.9% 10%);
   --sidebar-foreground: hsl(240 4.8% 95.9%);

@@ -8,9 +8,19 @@ import {
   PhoneIcon,
   XCircleIcon,
 } from "lucide-react"
+import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+
+const HeadshotLightbox = dynamic(
+  () =>
+    import("@/components/productions/headshot-lightbox").then(
+      (mod) => mod.HeadshotLightbox,
+    ),
+  { ssr: false },
+)
+
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
@@ -63,6 +73,12 @@ export function SubmissionDetailSheet({
   })
 
   const [stagePopoverOpen, setStagePopoverOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset lightbox when active submission changes
+  useEffect(() => {
+    setLightboxIndex(null)
+  }, [submission?.id])
 
   function handleStatusChange(stageId: string) {
     if (!submission) return
@@ -76,7 +92,7 @@ export function SubmissionDetailSheet({
     <Sheet
       open={!!submission}
       onOpenChange={(open) => {
-        if (!open) onClose()
+        if (!open && lightboxIndex === null) onClose()
       }}
     >
       <SheetContent className="sm:max-w-[75vw]" showCloseButton={false}>
@@ -181,12 +197,11 @@ export function SubmissionDetailSheet({
                         Headshots
                       </h3>
                       <div className="grid grid-cols-3 gap-element">
-                        {submission.headshots.map((headshot) => (
-                          <a
+                        {submission.headshots.map((headshot, i) => (
+                          <button
                             key={headshot.id}
-                            href={headshot.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            type="button"
+                            onClick={() => setLightboxIndex(i)}
                             className="aspect-square overflow-hidden rounded-lg border border-border"
                           >
                             {/* biome-ignore lint/performance/noImgElement: external R2 URLs */}
@@ -195,9 +210,18 @@ export function SubmissionDetailSheet({
                               alt={headshot.filename}
                               className="size-full object-cover"
                             />
-                          </a>
+                          </button>
                         ))}
                       </div>
+                      <HeadshotLightbox
+                        open={lightboxIndex !== null}
+                        index={lightboxIndex ?? 0}
+                        onClose={() => setLightboxIndex(null)}
+                        slides={submission.headshots.map((h) => ({
+                          src: h.url,
+                          alt: h.filename,
+                        }))}
+                      />
                     </div>
                   )}
 
