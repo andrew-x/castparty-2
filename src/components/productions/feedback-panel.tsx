@@ -27,7 +27,6 @@ import {
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
 import day from "@/lib/dayjs"
-import { feedbackRatingEnum } from "@/lib/db/schema"
 import { createFeedbackFormSchema } from "@/lib/schemas/feedback"
 import { formResolver } from "@/lib/schemas/resolve"
 import type {
