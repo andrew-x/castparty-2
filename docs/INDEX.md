@@ -1,6 +1,6 @@
 # Documentation Index
 
-> **Status:** Active development — auth, organizations, productions, candidates, public submission flow, configurable pipeline stages, custom form fields (submission + feedback), role Kanban board with candidate photo thumbnails, candidate detail, admin, location fields, headshot upload, resume upload (with server-side PDF text extraction), and feedback panel (numeric rating system, per-stage feedback history, custom field support) are shipped.
+> **Status:** Active development — auth, organizations, productions, candidates, public submission flow, configurable pipeline stages, custom form fields (submission + feedback), role Kanban board with candidate photo thumbnails, candidate detail, admin, location fields, headshot upload, resume upload (with server-side PDF text extraction), feedback panel (numeric rating system, per-stage feedback history, custom field support), and dev-only email emulator are shipped.
 > **Maintained by:** Librarian agent (`.claude/agents/librarian.md`)
 
 | Document | Read when you need to... |

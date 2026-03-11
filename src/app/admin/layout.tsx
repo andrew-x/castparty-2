@@ -30,6 +30,12 @@ export default function AdminLayout({
             >
               Organizations
             </Link>
+            <Link
+              href="/admin/emails"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Emails
+            </Link>
           </nav>
         </div>
         {children}
