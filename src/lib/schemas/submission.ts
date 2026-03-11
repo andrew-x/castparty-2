@@ -47,3 +47,8 @@ export const submissionActionSchema = submissionFormSchema.extend({
   headshots: z.array(headShotFileSchema).max(10).default([]),
   resume: resumeFileSchema.optional(),
 })
+
+export const bulkUpdateSubmissionStatusSchema = z.object({
+  submissionIds: z.array(z.string().min(1)).min(1).max(100),
+  stageId: z.string().min(1),
+})

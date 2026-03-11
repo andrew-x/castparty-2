@@ -1,0 +1,95 @@
+"use server"
+
+import { and, eq, inArray } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
+import { secureActionClient } from "@/lib/action"
+import day from "@/lib/dayjs"
+import db from "@/lib/db/db"
+import { PipelineUpdate, Submission } from "@/lib/db/schema"
+import { bulkUpdateSubmissionStatusSchema } from "@/lib/schemas/submission"
+import { generateId } from "@/lib/util"
+
+export const bulkUpdateSubmissionStatus = secureActionClient
+  .metadata({ action: "bulk-update-submission-status" })
+  .inputSchema(bulkUpdateSubmissionStatusSchema)
+  .action(
+    async ({ parsedInput: { submissionIds, stageId }, ctx: { user } }) => {
+      const orgId = user.activeOrganizationId
+      if (!orgId) throw new Error("No active organization.")
+
+      // Load all submissions with their role's production for ownership check
+      const submissions = await db.query.Submission.findMany({
+        where: (s) => inArray(s.id, submissionIds),
+        columns: { id: true, roleId: true, stageId: true, productionId: true },
+        with: {
+          role: {
+            columns: { id: true },
+            with: {
+              production: {
+                columns: { organizationId: true },
+              },
+            },
+          },
+        },
+      })
+
+      // Verify all requested IDs were found and belong to this organization
+      if (submissions.length !== submissionIds.length) {
+        throw new Error("Submission not found.")
+      }
+      const unauthorized = submissions.some(
+        (s) => s.role.production.organizationId !== orgId,
+      )
+      if (unauthorized) {
+        throw new Error("Submission not found.")
+      }
+
+      // All submissions must belong to the same role (bulk move is per-role)
+      const roleIds = new Set(submissions.map((s) => s.roleId))
+      if (roleIds.size > 1) {
+        throw new Error("All submissions must belong to the same role.")
+      }
+
+      const roleId = submissions[0].roleId
+
+      // Verify the target stage belongs to the same role
+      const targetStage = await db.query.PipelineStage.findFirst({
+        where: (s) => and(eq(s.id, stageId), eq(s.roleId, roleId)),
+        columns: { id: true },
+      })
+
+      if (!targetStage) {
+        throw new Error("Invalid pipeline stage.")
+      }
+
+      // Skip submissions already at the target stage
+      const toMove = submissions.filter((s) => s.stageId !== stageId)
+
+      if (toMove.length === 0) {
+        return { movedCount: 0 }
+      }
+
+      const toMoveIds = toMove.map((s) => s.id)
+
+      await db
+        .update(Submission)
+        .set({ stageId, updatedAt: day().toDate() })
+        .where(inArray(Submission.id, toMoveIds))
+
+      await db.insert(PipelineUpdate).values(
+        toMove.map((s) => ({
+          id: generateId("pu"),
+          organizationId: orgId,
+          productionId: s.productionId,
+          roleId: s.roleId,
+          submissionId: s.id,
+          fromStage: s.stageId,
+          toStage: stageId,
+          changeByUserId: user.id,
+        })),
+      )
+
+      revalidatePath("/", "layout")
+      return { movedCount: toMove.length }
+    },
+  )
