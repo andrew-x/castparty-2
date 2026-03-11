@@ -42,13 +42,18 @@ interface Props {
 }
 
 const RATING_LABELS: Record<FeedbackData["rating"], string> = {
-  STRONG_YES: "Strong yes",
-  YES: "Yes",
-  NO: "No",
-  STRONG_NO: "Strong no",
+  STRONG_YES: "4 — Strong yes",
+  YES: "3 — Yes",
+  NO: "2 — No",
+  STRONG_NO: "1 — Strong no",
 }
 
-const RATING_OPTIONS = feedbackRatingEnum.enumValues
+const RATING_OPTIONS: FeedbackData["rating"][] = [
+  "STRONG_YES",
+  "YES",
+  "NO",
+  "STRONG_NO",
+]
 
 function getRatingBadgeProps(rating: FeedbackData["rating"]) {
   if (rating === "STRONG_YES" || rating === "YES") {
@@ -96,20 +101,25 @@ function formatAnswerValue(
 export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
   const router = useRouter()
 
+  const defaultAnswers: Record<string, string> = {}
+  for (const field of feedbackFormFields) {
+    defaultAnswers[field.id] = field.type === "TOGGLE" ? "false" : ""
+  }
+
+  const defaultValues = {
+    rating: undefined as FeedbackData["rating"] | undefined,
+    notes: "",
+    answers: defaultAnswers,
+  }
+
   const { form, action } = useHookFormAction(
     createFeedback,
     formResolver(createFeedbackFormSchema),
     {
-      formProps: {
-        defaultValues: {
-          rating: undefined,
-          notes: "",
-          answers: {},
-        },
-      },
+      formProps: { defaultValues },
       actionProps: {
         onSuccess() {
-          form.reset()
+          form.reset(defaultValues)
           router.refresh()
         },
         onError({ error }) {
@@ -131,9 +141,12 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
             No feedback yet.
           </p>
         ) : (
-          <div className="mt-block flex flex-col gap-group">
+          <div className="mt-block flex flex-col gap-block">
             {submission.feedback.map((fb) => (
-              <div key={fb.id} className="flex flex-col gap-element">
+              <div
+                key={fb.id}
+                className="flex flex-col gap-block rounded-md border bg-muted/30 p-block"
+              >
                 <div className="flex items-center gap-element">
                   <Avatar size="sm">
                     {fb.submittedBy.image && (
@@ -154,12 +167,12 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
                       {day(fb.createdAt).format("LLL")}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-center gap-element">
-                  <Badge {...getRatingBadgeProps(fb.rating)}>
-                    {RATING_LABELS[fb.rating]}
-                  </Badge>
-                  <Badge variant="outline">{fb.stage.name}</Badge>
+                  <div className="flex items-center gap-element">
+                    <Badge {...getRatingBadgeProps(fb.rating)}>
+                      {RATING_LABELS[fb.rating]}
+                    </Badge>
+                    <Badge variant="outline">{fb.stage.name}</Badge>
+                  </div>
                 </div>
                 {fb.notes && (
                   <p className="text-foreground text-label">{fb.notes}</p>
@@ -203,13 +216,30 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
           </AccordionTrigger>
           <AccordionContent>
             <form
-              onSubmit={form.handleSubmit((values) =>
+              onSubmit={form.handleSubmit((values) => {
+                form.clearErrors("root")
+
+                // Validate required custom fields client-side
+                let hasFieldErrors = false
+                for (const formField of feedbackFormFields) {
+                  if (!formField.required) continue
+                  const value = values.answers[formField.id]
+                  if (!value || !value.trim()) {
+                    form.setError(`answers.${formField.id}`, {
+                      type: "required",
+                      message: `${formField.label} is required.`,
+                    })
+                    hasFieldErrors = true
+                  }
+                }
+                if (hasFieldErrors) return
+
                 action.execute({
                   ...values,
                   submissionId: submission.id,
                   stageId: submission.stageId,
-                }),
-              )}
+                })
+              })}
               className="flex max-h-[50vh] flex-col gap-block overflow-y-auto px-block pb-block"
             >
               {/* Rating */}
@@ -265,6 +295,11 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
                       shouldDirty: true,
                     })
                   }
+                  error={
+                    form.formState.errors.answers?.[field.id]?.message as
+                      | string
+                      | undefined
+                  }
                 />
               ))}
 
@@ -274,11 +309,7 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
                 </p>
               )}
 
-              <Button
-                type="submit"
-                loading={action.isPending}
-                disabled={!form.watch("rating")}
-              >
+              <Button type="submit" loading={action.isPending}>
                 Submit feedback
               </Button>
             </form>
@@ -294,12 +325,14 @@ function CustomFormField({
   register,
   value,
   onChange,
+  error,
 }: {
   field: CustomForm
   // biome-ignore lint/suspicious/noExplicitAny: dynamic record paths aren't statically typeable
   register: (name: any) => any
   value: string
   onChange: (value: string) => void
+  error?: string
 }) {
   switch (field.type) {
     case "TEXT":
@@ -311,10 +344,8 @@ function CustomFormField({
               {field.description}
             </p>
           )}
-          <Input
-            {...register(`answers.${field.id}`)}
-            required={field.required}
-          />
+          <Input {...register(`answers.${field.id}`)} />
+          {error && <p className="text-caption text-destructive">{error}</p>}
         </div>
       )
     case "TEXTAREA":
@@ -326,11 +357,8 @@ function CustomFormField({
               {field.description}
             </p>
           )}
-          <Textarea
-            {...register(`answers.${field.id}`)}
-            rows={3}
-            required={field.required}
-          />
+          <Textarea {...register(`answers.${field.id}`)} rows={3} />
+          {error && <p className="text-caption text-destructive">{error}</p>}
         </div>
       )
     case "SELECT":
@@ -354,6 +382,7 @@ function CustomFormField({
               ))}
             </SelectContent>
           </Select>
+          {error && <p className="text-caption text-destructive">{error}</p>}
         </div>
       )
     case "CHECKBOX_GROUP":
@@ -388,23 +417,27 @@ function CustomFormField({
               )
             })}
           </div>
+          {error && <p className="text-caption text-destructive">{error}</p>}
         </div>
       )
     case "TOGGLE":
       return (
-        <div className="flex items-center justify-between gap-element">
-          <div>
-            <Label>{field.label}</Label>
-            {field.description && (
-              <p className="text-caption text-muted-foreground">
-                {field.description}
-              </p>
-            )}
+        <div className="flex flex-col gap-element">
+          <div className="flex items-center justify-between gap-element">
+            <div>
+              <Label>{field.label}</Label>
+              {field.description && (
+                <p className="text-caption text-muted-foreground">
+                  {field.description}
+                </p>
+              )}
+            </div>
+            <Switch
+              checked={value === "true"}
+              onCheckedChange={(checked) => onChange(String(checked))}
+            />
           </div>
-          <Switch
-            checked={value === "true"}
-            onCheckedChange={(checked) => onChange(String(checked))}
-          />
+          {error && <p className="text-caption text-destructive">{error}</p>}
         </div>
       )
     default:

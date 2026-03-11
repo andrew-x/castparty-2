@@ -123,7 +123,23 @@ export function SubmissionForm({
   return (
     <form
       onSubmit={form.handleSubmit(async (v) => {
+        form.clearErrors("root")
         setUploadError(null)
+
+        // Validate required custom fields client-side
+        let hasFieldErrors = false
+        for (const formField of submissionFormFields) {
+          if (!formField.required) continue
+          const value = v.answers[formField.id]
+          if (!value || !value.trim()) {
+            form.setError(`answers.${formField.id}`, {
+              type: "required",
+              message: `${formField.label} is required.`,
+            })
+            hasFieldErrors = true
+          }
+        }
+        if (hasFieldErrors) return
 
         let headshotMeta: {
           key: string
@@ -519,8 +535,8 @@ export function SubmissionForm({
         <Controller
           name="links"
           control={form.control}
-          render={({ field }) => (
-            <Field>
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
               <FieldLabel>Links (optional)</FieldLabel>
               <FieldDescription>
                 Add links to your portfolio, social media, or demo reels.
@@ -529,6 +545,7 @@ export function SubmissionForm({
                 value={(field.value as string[]) ?? []}
                 onChange={field.onChange}
               />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
         />

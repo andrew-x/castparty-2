@@ -26,6 +26,7 @@
 | Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | Multi-org switching in sidebar footer; lets users switch between organizations they belong to |
 | R2 File Storage | `shipped` | `src/lib/r2.ts` | Cloudflare R2 utility for uploading, deleting, and moving files; uses AWS SDK S3-compatible API; used by headshot and resume upload |
 | Resume Upload | `shipped` | `src/components/submissions/resume-uploader.tsx` | Candidates upload a PDF resume when submitting for a role; text is extracted server-side and stored for future search/AI use |
+| Feedback Panel | `shipped` | `src/components/productions/feedback-panel.tsx` | Production team members rate submissions (4-point numeric scale) and add notes + custom field answers per pipeline stage; history shown as comment cards |
 | AutocompleteInput | `shipped` | `src/components/common/autocomplete-input.tsx` | Free-form combobox input with keyboard navigation and a filtered dropdown; not constrained to options — users can type any value |
 | useCityOptions | `shipped` | `src/hooks/use-city-options.ts` | Hook that lazy-loads and caches US + Canadian city names for use with AutocompleteInput |
 | Location Fields | `shipped` | `src/lib/schemas/production.ts`, `src/lib/schemas/submission.ts` | Free-text location on productions (create + settings) and submissions (form + detail view); city autocomplete via useCityOptions |
@@ -323,6 +324,8 @@ CreateProductionForm (client)
 
 **Integration points:** Depends on Custom Form Fields, Pipeline Stages, and URL Slugs. The wizard uses `checkSlugAvailability` (`src/actions/productions/check-slug.ts`) for real-time uniqueness validation. After creation, the user lands on the Production Detail page.
 
+See the Feedback Panel section for how feedback form fields are rendered and validated at review time.
+
 *Updated: 2026-03-10 — Initial Create Production documentation (5-step wizard with submission/feedback form steps)*
 
 ---
@@ -395,6 +398,7 @@ Each page is a server component that calls its corresponding public server funct
 
 *Updated: 2026-03-01 — Initial public submission flow documentation*
 *Updated: 2026-03-04 — Fixed route prefix /submit/ → /s/, added get-public-org-profile.ts, fixed Applied stage reference*
+*Updated: 2026-03-10 — Links field now surfaces validation errors via FieldError; root errors cleared on each submit attempt*
 
 ---
 
@@ -538,10 +542,15 @@ There are two distinct form field contexts:
 
 **Architecture decisions:** JSONB is used for form field storage rather than a normalized `form_fields` table because the field shape is schema-on-read (typed via `CustomForm`), the data is always fetched with its parent production/role, and the flexibility to add new field types without migrations outweighs the join overhead. The shared `customFormItemSchema` in `src/lib/schemas/form-fields.ts` validates both the inline creation wizard payload and individual CRUD action inputs.
 
-**Integration points:** The `SubmissionForm` in `src/components/submissions/submission-form.tsx` reads `submissionFormFields` from the role and renders the appropriate input for each field type. Responses are submitted alongside standard fields via the `create-submission` action. The feedback form is rendered in `SubmissionDetailSheet` for the production team.
+**Client-side required-field validation:** The `SubmissionForm` and `FeedbackPanel` both validate required custom fields client-side before the server action fires. The Zod schema for `answers` uses `z.record(z.string(), z.string())`, which accepts empty strings, so empty required fields pass schema validation. Both forms walk `submissionFormFields` / `feedbackFormFields` before calling `action.execute`, set per-field errors via `form.setError(\`answers.${field.id}\`, ...)`, and abort if any required field is blank. `form.clearErrors("root")` is called at the start of each submission attempt to clear stale server errors.
+
+**defaultValues for `answers`:** Both forms initialize `defaultValues.answers` by iterating the field list — text-type fields get `""`, TOGGLE fields get `"false"`. This ensures `form.reset(defaultValues)` properly clears custom fields after a successful submission (an empty `{}` left stale values in place).
+
+**Integration points:** The `SubmissionForm` in `src/components/submissions/submission-form.tsx` reads `submissionFormFields` from the role and renders the appropriate input for each field type. Responses are submitted alongside standard fields via the `create-submission` action. The feedback form is rendered via `FeedbackPanel` in `src/components/productions/feedback-panel.tsx` — see the Feedback Panel section.
 
 *Updated: 2026-03-06 — Initial custom form fields documentation*
 *Updated: 2026-03-10 — Split submission vs. feedback field contexts; documented creation wizard integration and role field inheritance; noted customFormItemSchema as shared schema; updated key files table*
+*Updated: 2026-03-10 — Documented client-side required-field validation and defaultValues.answers initialization (both SubmissionForm and FeedbackPanel)*
 
 ---
 
@@ -704,3 +713,67 @@ The PDF parsing step is wrapped in try/catch and does not fail the submission if
 **Integration points:** Depends on R2 File Storage (`src/lib/r2.ts`) for presign and move operations. The `File` table (defined in `src/lib/db/schema.ts`) stores the permanent record. The `SubmissionDetailSheet` in `src/components/productions/submission-detail-sheet.tsx` is the display surface for the download link. `SubmissionWithCandidate` in `src/lib/submission-helpers.ts` is the shared data contract between the server actions and the Kanban/detail sheet layer — see the Role Submissions Kanban section.
 
 *Added: 2026-03-07 — Initial resume upload documentation*
+
+---
+
+## Feedback Panel
+
+**Overview:** The feedback panel lets production team members record a structured rating and notes for each submission while reviewing it. It lives inside `SubmissionDetailSheet` and renders as an expandable accordion section below the feedback history list. Every submission review produces a `Feedback` record linked to the submission's current pipeline stage, creating a per-stage audit trail of team opinions.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/components/productions/feedback-panel.tsx` | Client component; renders feedback history list + collapsible feedback form |
+| `src/actions/feedback/create-feedback.ts` | Mutation: inserts a `Feedback` row linked to submission + pipeline stage |
+| `src/lib/schemas/feedback.ts` | `createFeedbackFormSchema` (form) + `createFeedbackActionSchema` (extends with `submissionId`, `stageId`) |
+| `src/lib/submission-helpers.ts` | `FeedbackData` interface; `feedback` array on `SubmissionWithCandidate` |
+
+**How it works:**
+
+```
+FeedbackPanel (client)
+  ├── Feedback list (scrollable, top section)
+  │     └── Each entry: card/comment bubble (border, bg-muted/30, rounded, padding)
+  │           ├── Header row: Avatar + name + timestamp (left) | rating badge + stage badge (right)
+  │           ├── Notes paragraph (if present)
+  │           └── Custom field answers (label + value pairs, filtered for non-empty)
+  │
+  └── Accordion ("Add feedback") — collapsible, anchored to bottom
+        └── form onSubmit → form.handleSubmit(handler)
+              ├── form.clearErrors("root")
+              ├── Client-side required custom field validation (see Custom Form Fields section)
+              ├── [abort if any required field is blank]
+              └── action.execute({ rating, notes, answers, submissionId, stageId })
+                    onSuccess → form.reset(defaultValues); router.refresh()
+                    onError   → form.setError("root", serverError)
+```
+
+**Rating system:**
+
+Ratings are stored as an enum (`feedbackRatingEnum`) and carry a numeric association for sorting and display. All labels include their number so reviewers can mentally rank them without re-reading definitions.
+
+| Enum value | Numeric | Label |
+|-----------|---------|-------|
+| `STRONG_YES` | 4 | "4 — Strong yes" |
+| `YES` | 3 | "3 — Yes" |
+| `NO` | 2 | "2 — No" |
+| `STRONG_NO` | 1 | "1 — Strong no" |
+
+Radio buttons in the form are ordered 4 → 1 (top to bottom). The rating field is required — the Zod schema uses a custom error message (`"Select a rating."`) rather than the default enum error. The submit button is never disabled; schema validation surfaces the error message inline on submit if no rating is selected.
+
+**Rating badge styling:** `STRONG_YES` and `YES` render with a green success badge; `NO` and `STRONG_NO` render with the destructive (red) badge variant.
+
+**Form reset after success:** `defaultValues.answers` is built from `feedbackFormFields` at component render time — text fields initialize to `""`, TOGGLE fields to `"false"`. `form.reset(defaultValues)` is called in `onSuccess`, which correctly clears all custom fields. Passing an empty `{}` as default would leave stale values after reset.
+
+**Architecture decisions:**
+
+- **Stage captured at submit time, not display time.** The `stageId` is read from `submission.stageId` when the form submits, not when the panel opens. This means feedback is always tagged to the stage the submission was in at review time — important for understanding how a candidate was rated at each pipeline step.
+
+- **Submit button always enabled.** Disabling the button until a rating is selected adds friction for a common path (rating is almost always selected first). Instead, the error appears inline only if the user actually tries to submit without one — the schema's custom message ("Select a rating.") is clear enough.
+
+- **Feedback list as cards, not a flat list.** Each entry uses a bordered, muted-background card to visually group all the data for one reviewer's opinion (header, notes, custom field answers) before the next entry starts. A flat list would require extra separators and makes it harder to scan who said what at a glance.
+
+**Integration points:** `FeedbackPanel` is rendered inside `SubmissionDetailSheet` (`src/components/productions/submission-detail-sheet.tsx`). It receives `submission` (the `SubmissionWithCandidate` object, which includes the `feedback` array) and `feedbackFormFields` (the role's feedback form configuration). Depends on Custom Form Fields for the structured fields section — see that section for the shared `defaultValues.answers` initialization and required-field validation pattern. The `createFeedback` action is a `secureActionClient` action that requires an authenticated session.
+
+*Added: 2026-03-10 — Initial feedback panel documentation (rating system, form validation, card list UI)*
