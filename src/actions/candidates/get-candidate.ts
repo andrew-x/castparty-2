@@ -126,6 +126,8 @@ export async function getCandidate(candidateId: string) {
       feedbackFormFields,
       roleName: submission.role?.name ?? "Unknown",
       productionName: submission.production?.name ?? "Unknown",
+      productionId: submission.productionId,
+      roleId: submission.roleId,
     }
   })
 

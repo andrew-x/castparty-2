@@ -102,13 +102,19 @@ function PageHeader({
 function PageContent({
   children,
   className,
+  isFlush,
 }: {
   children: React.ReactNode
   className?: string
+  isFlush?: boolean
 }) {
   return (
     <div
-      className={cn("flex flex-1 flex-col pt-group pb-section", className)}
+      className={cn(
+        "flex flex-1 flex-col",
+        isFlush ? "pt-0 pb-0" : "pt-group pb-section",
+        className,
+      )}
       data-slot="page-content"
     >
       {children}
