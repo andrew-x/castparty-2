@@ -1,5 +1,7 @@
 ---
-globs: ["src/**/*.tsx", "src/**/*.jsx"]
+paths:
+  - "src/**/*.tsx"
+  - "src/**/*.jsx"
 ---
 
 # Voice & Tone (UI Copy)

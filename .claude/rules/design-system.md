@@ -1,5 +1,9 @@
 ---
-globs: ["src/**/*.tsx", "src/**/*.jsx", "src/**/*.css", "src/**/*.scss"]
+paths:
+  - "src/**/*.tsx"
+  - "src/**/*.jsx"
+  - "src/**/*.css"
+  - "src/**/*.scss"
 ---
 
 # Design System

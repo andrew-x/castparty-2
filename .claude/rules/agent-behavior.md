@@ -31,56 +31,17 @@ Prefer subagents for any task that doesn't require direct conversation with the 
 Never read a large file into main context when a focused subagent query would suffice.
 Never guess at a library's API — invoke the dev-docs skill to get version-accurate docs.
 
-## Available Agents & Skills
+## Available Skills
 
-### Built-in Agents
+**Built-in agents:** Explore (codebase research), Plan (architecture), Librarian (`docs/` queries & updates), Code Reviewer (comprehensive pre-commit review)
 
-| Agent | When to Use |
-|-------|-------------|
-| **Explore** (Task tool) | Reading files, searching code, understanding patterns |
-| **Plan** (Task tool) | Designing implementations, evaluating architectural trade-offs |
-| **Librarian** (`.claude/agents/librarian.md`) | Querying or updating `docs/` |
-| **Code Reviewer** (`.claude/agents/code-reviewer.md`) | Post-change review against project conventions |
+**Process (invoke first):** brainstorming → writing-plans → systematic-debugging → TDD → verification-before-completion
 
-### Superpowers Skills (Process & Workflow)
+**Implementation:** feature-dev (multi-file features), frontend-design (auto for UI), dev-docs (library APIs)
 
-| Skill | When to Use |
-|-------|-------------|
-| **brainstorming** | BEFORE any creative work — new features, components, or behavior changes. Explores intent and requirements before implementation. |
-| **writing-plans** | When you have a spec or requirements for a multi-step task, before writing code |
-| **executing-plans** | When you have a written plan to execute in a separate session with review checkpoints |
-| **subagent-driven-development** | Executing multi-step implementation plans with independent tasks in the current session |
-| **dispatching-parallel-agents** | 2+ independent tasks that can run concurrently without shared state |
-| **systematic-debugging** | Any bug, test failure, or unexpected behavior — invoke BEFORE proposing fixes |
-| **test-driven-development** | Implementing any feature or bugfix — invoke before writing implementation code |
-| **verification-before-completion** | Before claiming work is done — requires running verification commands and confirming output |
-| **requesting-code-review** | After completing a task or major feature, before merging |
-| **receiving-code-review** | When receiving review feedback — requires technical rigor, not blind agreement |
-| **finishing-a-development-branch** | When implementation is complete and you need to decide how to integrate (merge, PR, cleanup) |
-| **using-git-worktrees** | When feature work needs isolation from the current workspace |
+**Post-implementation:** requesting-code-review, finishing-a-development-branch
 
-### Feature & UI Skills
-
-| Skill | When to Use |
-|-------|-------------|
-| **feature-dev** | End-to-end feature development: 7-phase guided workflow with code-explorer, code-architect, and code-reviewer agents. Use for features touching multiple files or requiring architectural decisions. |
-| **frontend-design** | Auto-invoked for frontend work. Creates distinctive, production-grade UI that avoids generic AI aesthetics. |
-| **dev-docs** (`.claude/skills/dev-docs/`) | Looking up library/dependency APIs, config options, or usage patterns |
-
-### Code Quality Skills
-
-| Skill | When to Use |
-|-------|-------------|
-| **code-review** (plugin command: `/code-review`) | Automated PR review with 5 parallel agents (CLAUDE.md compliance, bugs, history, code comments). Use for PR-level reviews. |
-| **Code Reviewer** (custom agent) | Post-change review against Castparty conventions. Use for in-progress work before committing. |
-
-### Meta & Maintenance Skills
-
-| Skill | When to Use |
-|-------|-------------|
-| **claude-md-management** (`revise-claude-md`, `claude-md-improver`) | Auditing, improving, or updating CLAUDE.md files with session learnings |
-| **claude-code-setup** (`claude-automation-recommender`) | Analyzing the codebase and recommending Claude Code automations (hooks, skills, MCP servers) |
-| **skill-creator** | Creating new skills, improving existing skills, or measuring skill performance with evals |
+**Meta (disabled by default, enable on demand):** claude-md-management, claude-code-setup, skill-creator
 
 ## Hands-Off Operations
 
@@ -105,12 +66,13 @@ When multiple skills could apply, use process skills first, then implementation 
 6. **verification-before-completion** — before claiming done
 7. **requesting-code-review** / custom Code Reviewer — after implementation
 
-## Two Code Review Tools — Use the Right One
+## Code Review — Three Tools, Different Scopes
 
 | Tool | Scope | When |
 |------|-------|------|
-| Custom Code Reviewer (`.claude/agents/code-reviewer.md`) | Unstaged/uncommitted changes | During development, before committing. Reviews against Castparty conventions. |
-| `/code-review` plugin | Full PR diff | After creating a PR. Runs 5 parallel agents for comprehensive review. |
+| `/review-diff` skill | Quick sanity check on current changes | User-invoked when you want a fast second opinion — lightweight, focused on bugs and obvious issues |
+| Code Reviewer agent (`.claude/agents/code-reviewer.md`) | Comprehensive review of uncommitted changes | Agent-spawned after major features — reads all rules, traces dependencies, produces full severity report |
+| `/code-review` plugin | Full PR diff | After creating a PR — runs 5 parallel agents for comprehensive review |
 
 ## Plans Must Name Their Subagents
 
