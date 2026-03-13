@@ -2,11 +2,14 @@
 
 import {
   ArrowRightLeftIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   FileTextIcon,
   MailIcon,
   MapPinIcon,
   PhoneIcon,
   XCircleIcon,
+  XIcon,
 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
@@ -54,6 +57,8 @@ interface Props {
   feedbackFormFields: CustomForm[]
   onClose: () => void
   onStageChange?: (submission: SubmissionWithCandidate) => void
+  onPrev: (() => void) | null
+  onNext: (() => void) | null
 }
 
 export function SubmissionDetailSheet({
@@ -63,6 +68,8 @@ export function SubmissionDetailSheet({
   feedbackFormFields,
   onClose,
   onStageChange,
+  onPrev,
+  onNext,
 }: Props) {
   const router = useRouter()
 
@@ -95,9 +102,42 @@ export function SubmissionDetailSheet({
         if (!open && lightboxIndex === null) onClose()
       }}
     >
-      <SheetContent className="sm:max-w-[75vw]" showCloseButton={false}>
+      <SheetContent
+        className="overflow-visible p-0 sm:max-w-[75vw]"
+        showCloseButton={false}
+      >
         {submission && (
           <>
+            <nav className="absolute top-6 -left-10 z-10 flex flex-col items-center gap-element rounded-l-lg border border-r-0 bg-card py-element shadow-md">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                tooltip="Close"
+                onClick={onClose}
+              >
+                <XIcon />
+              </Button>
+              {onPrev && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  tooltip="Previous candidate"
+                  onClick={onPrev}
+                >
+                  <ChevronLeftIcon />
+                </Button>
+              )}
+              {onNext && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  tooltip="Next candidate"
+                  onClick={onNext}
+                >
+                  <ChevronRightIcon />
+                </Button>
+              )}
+            </nav>
             <SheetHeader className="border-b pb-block">
               <div className="flex items-center justify-between gap-group">
                 <div className="min-w-0 flex-1">

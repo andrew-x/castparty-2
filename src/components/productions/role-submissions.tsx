@@ -80,6 +80,30 @@ export function RoleSubmissions({
     useState<SubmissionWithCandidate | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
+  const selectedColumn = selectedSubmission
+    ? (columns[selectedSubmission.stageId] ?? [])
+    : []
+  const selectedIndex = selectedSubmission
+    ? selectedColumn.findIndex((s) => s.id === selectedSubmission.id)
+    : -1
+
+  const canNavigate = selectedColumn.length > 1
+
+  const handlePrev = canNavigate
+    ? () => {
+        const prevIndex =
+          selectedIndex <= 0 ? selectedColumn.length - 1 : selectedIndex - 1
+        setSelectedSubmission(selectedColumn[prevIndex])
+      }
+    : null
+  const handleNext = canNavigate
+    ? () => {
+        const nextIndex =
+          selectedIndex >= selectedColumn.length - 1 ? 0 : selectedIndex + 1
+        setSelectedSubmission(selectedColumn[nextIndex])
+      }
+    : null
+
   const MAX_BULK_SELECTION = 100
 
   function toggleSelection(id: string) {
@@ -285,6 +309,8 @@ export function RoleSubmissions({
         feedbackFormFields={feedbackFormFields}
         onClose={() => setSelectedSubmission(null)}
         onStageChange={setSelectedSubmission}
+        onPrev={handlePrev}
+        onNext={handleNext}
       />
     </>
   )
