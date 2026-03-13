@@ -75,6 +75,32 @@ export const reorderRoleFormFieldsSchema = z.object({
   fieldIds: z.array(z.string().min(1)).min(1),
 })
 
+// --- System field config ---
+
+export const systemFieldVisibilitySchema = z.enum([
+  "hidden",
+  "optional",
+  "required",
+])
+
+export const systemFieldConfigSchema = z.object({
+  phone: systemFieldVisibilitySchema,
+  location: systemFieldVisibilitySchema,
+  headshots: systemFieldVisibilitySchema,
+  resume: systemFieldVisibilitySchema,
+  links: systemFieldVisibilitySchema,
+})
+
+export const updateProductionSystemFieldConfigSchema = z.object({
+  productionId: z.string().min(1),
+  systemFieldConfig: systemFieldConfigSchema,
+})
+
+export const updateRoleSystemFieldConfigSchema = z.object({
+  roleId: z.string().min(1),
+  systemFieldConfig: systemFieldConfigSchema,
+})
+
 // --- Production feedback form field actions ---
 
 export const addProductionFeedbackFormFieldSchema = z.object({

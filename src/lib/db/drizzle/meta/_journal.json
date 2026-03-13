@@ -15,6 +15,13 @@
       "when": 1773137709142,
       "tag": "0001_new_cardiac",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773393763551,
+      "tag": "0002_fantastic_stepford_cuckoos",
+      "breakpoints": true
     }
   ]
 }

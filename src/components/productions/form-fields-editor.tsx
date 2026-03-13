@@ -11,6 +11,7 @@ import { addProductionFormField } from "@/actions/productions/add-production-for
 import { removeProductionFormField } from "@/actions/productions/remove-production-form-field"
 import { reorderProductionFormFields } from "@/actions/productions/reorder-production-form-fields"
 import { updateProductionFormField } from "@/actions/productions/update-production-form-field"
+import { updateProductionSystemFieldConfig } from "@/actions/productions/update-production-system-field-config"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
@@ -22,7 +23,13 @@ import {
   SelectValue,
 } from "@/components/common/select"
 import { Switch } from "@/components/common/switch"
-import type { CustomForm, CustomFormFieldType } from "@/lib/types"
+import { FormBuilder } from "@/components/productions/form-builder"
+import type {
+  CustomForm,
+  CustomFormFieldType,
+  SystemFieldConfig,
+} from "@/lib/types"
+import { DEFAULT_SYSTEM_FIELD_CONFIG } from "@/lib/types"
 
 const FIELD_TYPE_LABELS: Record<CustomFormFieldType, string> = {
   TEXT: "Text",
@@ -421,19 +428,40 @@ export function FormFieldsEditor({
 interface DefaultFormFieldsEditorProps {
   productionId: string
   fields: CustomForm[]
+  systemFieldConfig?: SystemFieldConfig
 }
 
 export function DefaultFormFieldsEditor({
   productionId,
   fields,
+  systemFieldConfig: initialSystemFieldConfig,
 }: DefaultFormFieldsEditorProps) {
   const router = useRouter()
   const [localFields, setLocalFields] = useState(fields)
+  const [localSystemFieldConfig, setLocalSystemFieldConfig] =
+    useState<SystemFieldConfig>(
+      initialSystemFieldConfig ?? DEFAULT_SYSTEM_FIELD_CONFIG,
+    )
 
   useEffect(() => {
     setLocalFields(fields)
     setRemovingFieldId(null)
   }, [fields])
+
+  useEffect(() => {
+    if (initialSystemFieldConfig) {
+      setLocalSystemFieldConfig(initialSystemFieldConfig)
+    }
+  }, [initialSystemFieldConfig])
+
+  const { execute: executeUpdateSystemFieldConfig } = useAction(
+    updateProductionSystemFieldConfig,
+    {
+      onError() {
+        router.refresh()
+      },
+    },
+  )
 
   const { execute: executeReorder } = useAction(reorderProductionFormFields, {
     onError() {
@@ -475,6 +503,11 @@ export function DefaultFormFieldsEditor({
     },
   )
 
+  function handleSystemFieldConfigChange(config: SystemFieldConfig) {
+    setLocalSystemFieldConfig(config)
+    executeUpdateSystemFieldConfig({ productionId, systemFieldConfig: config })
+  }
+
   function handleAdd(type: CustomFormFieldType, label: string) {
     executeAdd({ productionId, type, label })
   }
@@ -498,8 +531,10 @@ export function DefaultFormFieldsEditor({
   }
 
   return (
-    <FormFieldsEditor
-      fields={localFields}
+    <FormBuilder
+      systemFieldConfig={localSystemFieldConfig}
+      customFields={localFields}
+      onSystemFieldConfigChange={handleSystemFieldConfigChange}
       onAdd={handleAdd}
       onSave={handleSave}
       onRemove={handleRemove}

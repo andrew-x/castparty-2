@@ -9,26 +9,15 @@ import { presignResumeUpload } from "@/actions/submissions/presign-resume-upload
 import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
 import { AutocompleteInput } from "@/components/common/autocomplete-input"
 import { Button } from "@/components/common/button"
-import { Checkbox } from "@/components/common/checkbox"
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldLegend,
-  FieldSet,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/common/select"
-import { Switch } from "@/components/common/switch"
-import { Textarea } from "@/components/common/textarea"
+import { CustomFieldDisplay } from "@/components/submissions/custom-field-display"
 import {
   type HeadshotFile,
   HeadshotUploader,
@@ -38,7 +27,21 @@ import { ResumeUploader } from "@/components/submissions/resume-uploader"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { formResolver } from "@/lib/schemas/resolve"
 import { submissionFormSchema } from "@/lib/schemas/submission"
-import type { CustomForm } from "@/lib/types"
+import type {
+  CustomForm,
+  SystemFieldConfig,
+  SystemFieldVisibility,
+} from "@/lib/types"
+import { DEFAULT_SYSTEM_FIELD_CONFIG } from "@/lib/types"
+
+function systemFieldLabel(label: string, visibility: SystemFieldVisibility) {
+  if (visibility === "optional") return `${label} (optional)`
+  return label
+}
+
+function RequiredMarker() {
+  return <span className="text-destructive"> *</span>
+}
 
 interface Props {
   orgId: string
@@ -47,6 +50,7 @@ interface Props {
   orgSlug: string
   productionSlug: string
   submissionFormFields: CustomForm[]
+  systemFieldConfig?: SystemFieldConfig
 }
 
 export function SubmissionForm({
@@ -56,6 +60,7 @@ export function SubmissionForm({
   orgSlug,
   productionSlug,
   submissionFormFields,
+  systemFieldConfig = DEFAULT_SYSTEM_FIELD_CONFIG,
 }: Props) {
   const cityOptions = useCityOptions()
   const [submitted, setSubmitted] = useState(false)
@@ -63,6 +68,7 @@ export function SubmissionForm({
   const [resume, setResume] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [resumeError, setResumeError] = useState<string | null>(null)
 
   const defaultAnswers: Record<string, string> = {}
   for (const field of submissionFormFields) {
@@ -125,6 +131,7 @@ export function SubmissionForm({
       onSubmit={form.handleSubmit(async (v) => {
         form.clearErrors("root")
         setUploadError(null)
+        setResumeError(null)
 
         // Validate required custom fields client-side
         let hasFieldErrors = false
@@ -138,6 +145,49 @@ export function SubmissionForm({
             })
             hasFieldErrors = true
           }
+        }
+
+        // Validate required system fields client-side
+        if (
+          systemFieldConfig.phone === "required" &&
+          (!v.phone || !v.phone.trim())
+        ) {
+          form.setError("phone", {
+            type: "required",
+            message: "Phone number is required.",
+          })
+          hasFieldErrors = true
+        }
+        if (
+          systemFieldConfig.location === "required" &&
+          (!v.location || !v.location.trim())
+        ) {
+          form.setError("location", {
+            type: "required",
+            message: "Location is required.",
+          })
+          hasFieldErrors = true
+        }
+        if (
+          systemFieldConfig.headshots === "required" &&
+          headshots.length === 0
+        ) {
+          setUploadError("At least one headshot is required.")
+          hasFieldErrors = true
+        }
+        if (systemFieldConfig.resume === "required" && !resume) {
+          setResumeError("Resume is required.")
+          hasFieldErrors = true
+        }
+        if (
+          systemFieldConfig.links === "required" &&
+          (!v.links || v.links.length === 0)
+        ) {
+          form.setError("links", {
+            type: "required",
+            message: "At least one link is required.",
+          })
+          hasFieldErrors = true
         }
         if (hasFieldErrors) return
 
@@ -257,7 +307,10 @@ export function SubmissionForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>First name</FieldLabel>
+              <FieldLabel htmlFor={field.name}>
+                First name
+                <RequiredMarker />
+              </FieldLabel>
               <Input
                 {...field}
                 id={field.name}
@@ -273,7 +326,10 @@ export function SubmissionForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Last name</FieldLabel>
+              <FieldLabel htmlFor={field.name}>
+                Last name
+                <RequiredMarker />
+              </FieldLabel>
               <Input
                 {...field}
                 id={field.name}
@@ -289,7 +345,10 @@ export function SubmissionForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+              <FieldLabel htmlFor={field.name}>
+                Email
+                <RequiredMarker />
+              </FieldLabel>
               <Input
                 {...field}
                 id={field.name}
@@ -300,255 +359,123 @@ export function SubmissionForm({
             </Field>
           )}
         />
-        <Controller
-          name="phone"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Phone</FieldLabel>
-              <Input
-                {...field}
-                id={field.name}
-                type="tel"
-                aria-invalid={fieldState.invalid}
-              />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-        <Controller
-          name="location"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Location (optional)</FieldLabel>
-              <AutocompleteInput
-                id={field.name}
+
+        {systemFieldConfig.phone !== "hidden" && (
+          <Controller
+            name="phone"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid || undefined}>
+                <FieldLabel htmlFor={field.name}>
+                  {systemFieldLabel("Phone", systemFieldConfig.phone)}
+                  {systemFieldConfig.phone === "required" && <RequiredMarker />}
+                </FieldLabel>
+                <Input
+                  {...field}
+                  id={field.name}
+                  type="tel"
+                  aria-invalid={fieldState.invalid}
+                />
+                {fieldState.error && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        )}
+
+        {systemFieldConfig.location !== "hidden" && (
+          <Controller
+            name="location"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid || undefined}>
+                <FieldLabel htmlFor={field.name}>
+                  {systemFieldLabel("Location", systemFieldConfig.location)}
+                  {systemFieldConfig.location === "required" && (
+                    <RequiredMarker />
+                  )}
+                </FieldLabel>
+                <AutocompleteInput
+                  id={field.name}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  options={cityOptions}
+                  placeholder="e.g. Toronto, ON"
+                  aria-invalid={fieldState.invalid}
+                />
+                {fieldState.error && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        )}
+
+        {submissionFormFields.map((formField) => (
+          <Controller
+            key={formField.id}
+            name={`answers.${formField.id}`}
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <CustomFieldDisplay
+                field={formField}
                 value={field.value ?? ""}
                 onChange={field.onChange}
-                options={cityOptions}
-                placeholder="e.g. Toronto, ON"
-                aria-invalid={fieldState.invalid}
+                error={fieldState.error}
+                id={field.name}
               />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-        {submissionFormFields.map((formField) => {
-          switch (formField.type) {
-            case "TEXT":
-              return (
-                <Controller
-                  key={formField.id}
-                  name={`answers.${formField.id}`}
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid || undefined}>
-                      <FieldLabel htmlFor={field.name}>
-                        {formField.label}
-                      </FieldLabel>
-                      {formField.description && (
-                        <FieldDescription>
-                          {formField.description}
-                        </FieldDescription>
-                      )}
-                      <Input
-                        {...field}
-                        id={field.name}
-                        type="text"
-                        aria-invalid={fieldState.invalid}
-                      />
-                      {fieldState.error && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-              )
-            case "TEXTAREA":
-              return (
-                <Controller
-                  key={formField.id}
-                  name={`answers.${formField.id}`}
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid || undefined}>
-                      <FieldLabel htmlFor={field.name}>
-                        {formField.label}
-                      </FieldLabel>
-                      {formField.description && (
-                        <FieldDescription>
-                          {formField.description}
-                        </FieldDescription>
-                      )}
-                      <Textarea
-                        {...field}
-                        id={field.name}
-                        aria-invalid={fieldState.invalid}
-                      />
-                      {fieldState.error && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-              )
-            case "SELECT":
-              return (
-                <Controller
-                  key={formField.id}
-                  name={`answers.${formField.id}`}
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid || undefined}>
-                      <FieldLabel htmlFor={field.name}>
-                        {formField.label}
-                      </FieldLabel>
-                      {formField.description && (
-                        <FieldDescription>
-                          {formField.description}
-                        </FieldDescription>
-                      )}
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger
-                          id={field.name}
-                          className="w-full"
-                          aria-invalid={fieldState.invalid}
-                        >
-                          <SelectValue placeholder="Select an option" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {formField.options.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {fieldState.error && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-              )
-            case "CHECKBOX_GROUP":
-              return (
-                <Controller
-                  key={formField.id}
-                  name={`answers.${formField.id}`}
-                  control={form.control}
-                  render={({ field, fieldState }) => {
-                    const selected = field.value ? field.value.split(",") : []
-                    function toggle(option: string) {
-                      const next = selected.includes(option)
-                        ? selected.filter((s) => s !== option)
-                        : [...selected, option]
-                      field.onChange(next.join(","))
-                    }
-                    return (
-                      <FieldSet data-invalid={fieldState.invalid || undefined}>
-                        <FieldLegend variant="label">
-                          {formField.label}
-                        </FieldLegend>
-                        {formField.description && (
-                          <FieldDescription>
-                            {formField.description}
-                          </FieldDescription>
-                        )}
-                        <div className="flex flex-col gap-element">
-                          {formField.options.map((option) => (
-                            <FieldLabel
-                              key={option}
-                              className="flex items-center gap-2 text-label"
-                            >
-                              <Checkbox
-                                checked={selected.includes(option)}
-                                onCheckedChange={() => toggle(option)}
-                              />
-                              {option}
-                            </FieldLabel>
-                          ))}
-                        </div>
-                        {fieldState.error && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                      </FieldSet>
-                    )
-                  }}
-                />
-              )
-            case "TOGGLE":
-              return (
-                <Controller
-                  key={formField.id}
-                  name={`answers.${formField.id}`}
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field
-                      orientation="horizontal"
-                      data-invalid={fieldState.invalid || undefined}
-                    >
-                      <div className="flex flex-col gap-1">
-                        <FieldLabel htmlFor={field.name}>
-                          {formField.label}
-                        </FieldLabel>
-                        {formField.description && (
-                          <FieldDescription>
-                            {formField.description}
-                          </FieldDescription>
-                        )}
-                      </div>
-                      <Switch
-                        id={field.name}
-                        checked={field.value === "true"}
-                        onCheckedChange={(checked) =>
-                          field.onChange(checked ? "true" : "false")
-                        }
-                      />
-                      {fieldState.error && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-              )
-            default:
-              return null
-          }
-        })}
-        <Field>
-          <FieldLabel>Headshots</FieldLabel>
-          <HeadshotUploader
-            files={headshots}
-            onChange={setHeadshots}
-            error={uploadError ?? undefined}
+            )}
           />
-        </Field>
-        <Field>
-          <FieldLabel>Resume (optional)</FieldLabel>
-          <ResumeUploader file={resume} onChange={setResume} />
-        </Field>
-        <Controller
-          name="links"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel>Links (optional)</FieldLabel>
-              <FieldDescription>
-                Add links to your portfolio, social media, or demo reels.
-              </FieldDescription>
-              <LinksEditor
-                value={(field.value as string[]) ?? []}
-                onChange={field.onChange}
-              />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+        ))}
+
+        {systemFieldConfig.headshots !== "hidden" && (
+          <Field>
+            <FieldLabel>
+              {systemFieldLabel("Headshots", systemFieldConfig.headshots)}
+              {systemFieldConfig.headshots === "required" && <RequiredMarker />}
+            </FieldLabel>
+            <HeadshotUploader
+              files={headshots}
+              onChange={setHeadshots}
+              error={uploadError ?? undefined}
+            />
+          </Field>
+        )}
+
+        {systemFieldConfig.resume !== "hidden" && (
+          <Field>
+            <FieldLabel>
+              {systemFieldLabel("Resume", systemFieldConfig.resume)}
+              {systemFieldConfig.resume === "required" && <RequiredMarker />}
+            </FieldLabel>
+            <ResumeUploader
+              file={resume}
+              onChange={setResume}
+              error={resumeError ?? undefined}
+            />
+          </Field>
+        )}
+
+        {systemFieldConfig.links !== "hidden" && (
+          <Controller
+            name="links"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid || undefined}>
+                <FieldLabel>
+                  {systemFieldLabel("Links", systemFieldConfig.links)}
+                  {systemFieldConfig.links === "required" && <RequiredMarker />}
+                </FieldLabel>
+                <FieldDescription>
+                  Add links to your portfolio, social media, or demo reels.
+                </FieldDescription>
+                <LinksEditor
+                  value={(field.value as string[]) ?? []}
+                  onChange={field.onChange}
+                />
+                {fieldState.error && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        )}
+
         {form.formState.errors.root && (
           <Alert variant="destructive">
             <AlertDescription>

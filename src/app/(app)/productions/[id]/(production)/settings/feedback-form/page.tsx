@@ -29,14 +29,9 @@ export default async function ProductionFeedbackFormPage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
-      <section className="flex flex-col gap-group">
-        <h2 className="font-serif text-heading">Feedback form</h2>
-        <DefaultFeedbackFormFieldsEditor
-          productionId={production.id}
-          fields={production.feedbackFormFields}
-        />
-      </section>
-    </div>
+    <DefaultFeedbackFormFieldsEditor
+      productionId={production.id}
+      fields={production.feedbackFormFields}
+    />
   )
 }

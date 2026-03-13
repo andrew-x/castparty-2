@@ -10,7 +10,11 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
-import type { CustomForm, CustomFormResponse } from "@/lib/types"
+import type {
+  CustomForm,
+  CustomFormResponse,
+  SystemFieldConfig,
+} from "@/lib/types"
 
 // --- BETTER AUTH ---
 export const user = pgTable("user", {
@@ -257,6 +261,13 @@ export const Production = pgTable(
 
     location: text().notNull().default(""),
     submissionFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    systemFieldConfig: jsonb().$type<SystemFieldConfig>().notNull().default({
+      phone: "optional",
+      location: "optional",
+      headshots: "optional",
+      resume: "optional",
+      links: "optional",
+    }),
     feedbackFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
@@ -285,6 +296,13 @@ export const Role = pgTable(
 
     location: text().notNull().default(""),
     submissionFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    systemFieldConfig: jsonb().$type<SystemFieldConfig>().notNull().default({
+      phone: "optional",
+      location: "optional",
+      headshots: "optional",
+      resume: "optional",
+      links: "optional",
+    }),
     feedbackFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
