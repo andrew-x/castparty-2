@@ -7,22 +7,52 @@ import { addRoleFormField } from "@/actions/productions/add-role-form-field"
 import { removeRoleFormField } from "@/actions/productions/remove-role-form-field"
 import { reorderRoleFormFields } from "@/actions/productions/reorder-role-form-fields"
 import { updateRoleFormField } from "@/actions/productions/update-role-form-field"
-import { FormFieldsEditor } from "@/components/productions/form-fields-editor"
-import type { CustomForm, CustomFormFieldType } from "@/lib/types"
+import { updateRoleSystemFieldConfig } from "@/actions/productions/update-role-system-field-config"
+import { FormBuilder } from "@/components/productions/form-builder"
+import type {
+  CustomForm,
+  CustomFormFieldType,
+  SystemFieldConfig,
+} from "@/lib/types"
+import { DEFAULT_SYSTEM_FIELD_CONFIG } from "@/lib/types"
 
 interface Props {
   roleId: string
   fields: CustomForm[]
+  systemFieldConfig?: SystemFieldConfig
 }
 
-export function RoleFormFieldsEditor({ roleId, fields }: Props) {
+export function RoleFormFieldsEditor({
+  roleId,
+  fields,
+  systemFieldConfig: initialSystemFieldConfig,
+}: Props) {
   const router = useRouter()
   const [localFields, setLocalFields] = useState(fields)
+  const [localSystemFieldConfig, setLocalSystemFieldConfig] =
+    useState<SystemFieldConfig>(
+      initialSystemFieldConfig ?? DEFAULT_SYSTEM_FIELD_CONFIG,
+    )
 
   useEffect(() => {
     setLocalFields(fields)
     setRemovingFieldId(null)
   }, [fields])
+
+  useEffect(() => {
+    if (initialSystemFieldConfig) {
+      setLocalSystemFieldConfig(initialSystemFieldConfig)
+    }
+  }, [initialSystemFieldConfig])
+
+  const { execute: executeUpdateSystemFieldConfig } = useAction(
+    updateRoleSystemFieldConfig,
+    {
+      onError() {
+        router.refresh()
+      },
+    },
+  )
 
   const { execute: executeReorder } = useAction(reorderRoleFormFields, {
     onError() {
@@ -64,6 +94,11 @@ export function RoleFormFieldsEditor({ roleId, fields }: Props) {
     },
   )
 
+  function handleSystemFieldConfigChange(config: SystemFieldConfig) {
+    setLocalSystemFieldConfig(config)
+    executeUpdateSystemFieldConfig({ roleId, systemFieldConfig: config })
+  }
+
   function handleAdd(type: CustomFormFieldType, label: string) {
     executeAdd({ roleId, type, label })
   }
@@ -87,8 +122,10 @@ export function RoleFormFieldsEditor({ roleId, fields }: Props) {
   }
 
   return (
-    <FormFieldsEditor
-      fields={localFields}
+    <FormBuilder
+      systemFieldConfig={localSystemFieldConfig}
+      customFields={localFields}
+      onSystemFieldConfigChange={handleSystemFieldConfigChange}
       onAdd={handleAdd}
       onSave={handleSave}
       onRemove={handleRemove}

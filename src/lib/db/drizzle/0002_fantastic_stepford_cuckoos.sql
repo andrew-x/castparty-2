@@ -1,0 +1,2 @@
+ALTER TABLE "production" ADD COLUMN "system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional"}'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "role" ADD COLUMN "system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional"}'::jsonb NOT NULL;

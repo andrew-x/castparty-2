@@ -33,6 +33,7 @@ export const createRole = secureActionClient
         columns: {
           id: true,
           submissionFormFields: true,
+          systemFieldConfig: true,
           feedbackFormFields: true,
         },
       })
@@ -57,6 +58,7 @@ export const createRole = secureActionClient
           ...f,
           id: generateId("ff"),
         })),
+        systemFieldConfig: production.systemFieldConfig,
         feedbackFormFields: production.feedbackFormFields.map((f) => ({
           ...f,
           id: generateId("fbf"),

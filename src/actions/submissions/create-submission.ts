@@ -10,6 +10,7 @@ import logger from "@/lib/logger"
 import { checkFileExists, moveFileByKey, r2Root } from "@/lib/r2"
 import { submissionActionSchema } from "@/lib/schemas/submission"
 import type { CustomFormResponse } from "@/lib/types"
+import { DEFAULT_SYSTEM_FIELD_CONFIG } from "@/lib/types"
 import { generateId } from "@/lib/util"
 
 export const createSubmission = publicActionClient
@@ -45,6 +46,7 @@ export const createSubmission = publicActionClient
           productionId: true,
           isOpen: true,
           submissionFormFields: true,
+          systemFieldConfig: true,
         },
       })
 
@@ -72,6 +74,24 @@ export const createSubmission = publicActionClient
 
       if (!appliedStage) {
         throw new Error("Pipeline is not configured for this role.")
+      }
+
+      // Validate required system fields
+      const sfc = role.systemFieldConfig ?? DEFAULT_SYSTEM_FIELD_CONFIG
+      if (sfc.phone === "required" && (!phone || !phone.trim())) {
+        throw new Error("Phone number is required.")
+      }
+      if (sfc.location === "required" && (!location || !location.trim())) {
+        throw new Error("Location is required.")
+      }
+      if (sfc.headshots === "required" && headshots.length === 0) {
+        throw new Error("At least one headshot is required.")
+      }
+      if (sfc.resume === "required" && !resume) {
+        throw new Error("Resume is required.")
+      }
+      if (sfc.links === "required" && (!links || links.length === 0)) {
+        throw new Error("At least one link is required.")
       }
 
       // Validate required custom fields

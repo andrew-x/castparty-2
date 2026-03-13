@@ -29,12 +29,12 @@ export default async function ProductionSubmissionFormPage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
+    <div className="flex w-full flex-col gap-section">
       <section className="flex flex-col gap-group">
-        <h2 className="font-serif text-heading">Submission form</h2>
         <DefaultFormFieldsEditor
           productionId={production.id}
           fields={production.submissionFormFields}
+          systemFieldConfig={production.systemFieldConfig}
         />
       </section>
     </div>

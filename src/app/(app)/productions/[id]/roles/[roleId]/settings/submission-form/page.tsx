@@ -29,12 +29,12 @@ export default async function RoleSubmissionFormPage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
+    <div className="flex w-full flex-col gap-section">
       <section className="flex flex-col gap-group">
-        <h2 className="font-serif text-heading">Submission form</h2>
         <RoleFormFieldsEditor
           roleId={role.id}
           fields={role.submissionFormFields}
+          systemFieldConfig={role.systemFieldConfig}
         />
       </section>
     </div>

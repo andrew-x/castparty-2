@@ -19,3 +19,29 @@ export type CustomFormResponse = {
   booleanValue: boolean | null
   optionValues: string[] | null
 }
+
+export type SystemFieldVisibility = "hidden" | "optional" | "required"
+
+export type SystemFieldConfig = {
+  phone: SystemFieldVisibility
+  location: SystemFieldVisibility
+  headshots: SystemFieldVisibility
+  resume: SystemFieldVisibility
+  links: SystemFieldVisibility
+}
+
+export const DEFAULT_SYSTEM_FIELD_CONFIG: SystemFieldConfig = {
+  phone: "optional",
+  location: "optional",
+  headshots: "optional",
+  resume: "optional",
+  links: "optional",
+}
+
+export const SYSTEM_FIELD_LABELS: Record<keyof SystemFieldConfig, string> = {
+  phone: "Phone number",
+  location: "Location",
+  headshots: "Headshots",
+  resume: "Resume",
+  links: "Links",
+}

@@ -7,7 +7,7 @@ import { addProductionFeedbackFormField } from "@/actions/productions/add-produc
 import { removeProductionFeedbackFormField } from "@/actions/productions/remove-production-feedback-form-field"
 import { reorderProductionFeedbackFormFields } from "@/actions/productions/reorder-production-feedback-form-fields"
 import { updateProductionFeedbackFormField } from "@/actions/productions/update-production-feedback-form-field"
-import { FormFieldsEditor } from "@/components/productions/form-fields-editor"
+import { FeedbackFormBuilder } from "@/components/productions/feedback-form-builder"
 import type { CustomForm, CustomFormFieldType } from "@/lib/types"
 
 interface Props {
@@ -96,7 +96,7 @@ export function DefaultFeedbackFormFieldsEditor({
   }
 
   return (
-    <FormFieldsEditor
+    <FeedbackFormBuilder
       fields={localFields}
       onAdd={handleAdd}
       onSave={handleSave}

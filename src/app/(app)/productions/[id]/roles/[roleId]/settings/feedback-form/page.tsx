@@ -29,14 +29,9 @@ export default async function RoleFeedbackFormPage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
-      <section className="flex flex-col gap-group">
-        <h2 className="font-serif text-heading">Feedback form</h2>
-        <RoleFeedbackFormFieldsEditor
-          roleId={role.id}
-          fields={role.feedbackFormFields}
-        />
-      </section>
-    </div>
+    <RoleFeedbackFormFieldsEditor
+      roleId={role.id}
+      fields={role.feedbackFormFields}
+    />
   )
 }

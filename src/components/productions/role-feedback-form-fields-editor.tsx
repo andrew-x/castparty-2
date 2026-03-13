@@ -7,7 +7,7 @@ import { addRoleFeedbackFormField } from "@/actions/productions/add-role-feedbac
 import { removeRoleFeedbackFormField } from "@/actions/productions/remove-role-feedback-form-field"
 import { reorderRoleFeedbackFormFields } from "@/actions/productions/reorder-role-feedback-form-fields"
 import { updateRoleFeedbackFormField } from "@/actions/productions/update-role-feedback-form-field"
-import { FormFieldsEditor } from "@/components/productions/form-fields-editor"
+import { FeedbackFormBuilder } from "@/components/productions/feedback-form-builder"
 import type { CustomForm, CustomFormFieldType } from "@/lib/types"
 
 interface Props {
@@ -87,7 +87,7 @@ export function RoleFeedbackFormFieldsEditor({ roleId, fields }: Props) {
   }
 
   return (
-    <FormFieldsEditor
+    <FeedbackFormBuilder
       fields={localFields}
       onAdd={handleAdd}
       onSave={handleSave}
