@@ -1,3 +1,11 @@
+---
+paths:
+  - "src/components/**/*-form.tsx"
+  - "src/components/**/*-dialog.tsx"
+  - "src/lib/schemas/**/*.ts"
+  - "src/actions/**/*.ts"
+---
+
 # Form Conventions
 
 ## Always use `useHookFormAction` for action-connected forms

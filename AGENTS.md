@@ -42,7 +42,7 @@ Package manager is **Bun** (not npm/yarn/pnpm).
 
 - **Next.js App Router** -- routes live under `src/app/`, server components by default.
 - **Path alias** -- `@/*` maps to `./src/*`.
-- **Styling** -- Tailwind CSS v4 via PostCSS + Sass. Theme variables in `src/app/globals.scss`.
+- **Styling** -- Tailwind CSS v4 via PostCSS + Sass. Theme variables in `src/styles/globals.scss`.
 - **Components** -- shadcn/ui primitives in `src/components/common/`. Always use existing common components; ask before adding new shadcn components or building custom ones.
 - **Fonts** -- DM Sans (body) + DM Serif Display (headings) + DM Mono via `next/font/google` in root layout. Use `font-serif` for display/heading text.
 - **React Compiler** -- enabled experimentally (skip manual useMemo/useCallback).
@@ -76,10 +76,6 @@ After completing a feature or significant change, update the relevant docs (espe
 
 Optimize for the developer reading the code. When brevity conflicts with clarity, choose clarity. Add comments only for non-obvious logic, workarounds, or intentional deviations from convention. Don't comment what the code clearly does -- comment *why* it does it.
 
-### Server Components First
-
-Default to server components and pages. Only add `"use client"` when a component genuinely needs browser APIs, event handlers, or React state. Pass server-fetched data down as props rather than fetching in client components.
-
 ### Backend Business Logic
 
 All backend logic lives in `src/actions/[feature]/`. Organized by feature area.
@@ -103,21 +99,6 @@ export async function getProductions() {
   // query and return
 }
 ```
-
-### Always Use Common Components
-
-All UI elements must use components from `src/components/common/`. Never use raw HTML elements (`<button>`, `<input>`, `<select>`, `<textarea>`, etc.) when a common component exists.
-
-```tsx
-// Correct
-import { Button } from "@/components/common/button"
-import { Input } from "@/components/common/input"
-
-// Wrong -- raw HTML bypasses design system
-<button className="rounded bg-primary px-4 py-2">Save</button>
-```
-
-If a common component doesn't support your use case, flag it rather than working around it.
 
 ### Trim Whitespace on Text Input
 
@@ -167,6 +148,39 @@ const production = await db.query.Production.findFirst({
 - Fall back to `db.select()` for aggregations or complex joins
 - No raw SQL. If a query can't be expressed in Drizzle, flag it
 - PascalCase table references. Better Auth tables have PascalCase aliases
+
+### Form Conventions
+
+When building a form that submits to a `next-safe-action` action, use the `useHookFormAction` adapter hook. Never wire `useForm` + `useAction` separately.
+
+```tsx
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
+import { formResolver } from "@/lib/schemas/resolve"
+
+const { form, action } = useHookFormAction(
+  myAction,
+  formResolver(myFormSchema),
+  {
+    formProps: { defaultValues: { name: "", email: "" } },
+    actionProps: {
+      onSuccess() { /* ... */ },
+      onError({ error }) {
+        form.setError("root", {
+          message: error.serverError ?? "Something went wrong. Try again.",
+        })
+      },
+    },
+  },
+)
+```
+
+**Centralized schemas:** Define all Zod schemas in `src/lib/schemas/[feature].ts`. Form schemas contain user-input fields only. Action schemas extend form schemas with IDs and server-only refinements via `.extend()`.
+
+**Loading state:** Use `action.isPending`. **Server errors:** Use `form.setError("root", ...)` in `onError`. **Validation errors:** Automatically mapped by the adapter.
+
+Always use `formResolver` from `@/lib/schemas/resolve` instead of `zodResolver` directly.
+
+**Exception:** Auth forms using Better Auth (`authClient`) don't use `next-safe-action` -- standard `useForm` is fine for those.
 
 ---
 

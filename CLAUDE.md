@@ -32,7 +32,7 @@ Package manager is **Bun** (not npm/yarn/pnpm).
 
 - **Next.js App Router** -- routes live under `src/app/`, server components by default.
 - **Path alias** -- `@/*` maps to `./src/*`.
-- **Styling** -- Tailwind CSS v4 via PostCSS + Sass. Theme variables in `src/app/globals.scss`.
+- **Styling** -- Tailwind CSS v4 via PostCSS + Sass. Theme variables in `src/styles/globals.scss`.
 - **Components** -- shadcn/ui primitives in `src/components/common/`. Always use existing common components; ask before adding new shadcn components or building custom ones.
 - **Fonts** -- DM Sans (body) + DM Serif Display (headings) + DM Mono via `next/font/google` in root layout. Use `font-serif` for display/heading text.
 - **React Compiler** -- enabled experimentally (skip manual useMemo/useCallback).
@@ -101,16 +101,4 @@ After completing a feature or significant change, spawn a librarian update subag
 
 ## Plugins & Skills
 
-This project uses several Claude Code plugins (configured in `.claude/settings.json`). Detailed routing rules live in `.claude/rules/agent-behavior.md`. Quick reference:
-
-| Plugin | Key Skills | Purpose |
-|--------|-----------|---------|
-| **superpowers** | brainstorming, writing-plans, TDD, systematic-debugging, verification-before-completion | Process discipline — how to approach work |
-| **feature-dev** | `/feature-dev`, code-explorer, code-architect, code-reviewer agents | 7-phase guided feature development |
-| **frontend-design** | frontend-design (auto-invoked) | Production-grade UI with high design quality |
-| **code-review** | `/code-review` | Automated PR review with 5 parallel agents |
-| **claude-md-management** | revise-claude-md, claude-md-improver | Audit and improve CLAUDE.md files |
-| **claude-code-setup** | claude-automation-recommender | Analyze codebase, recommend automations |
-| **skill-creator** | skill-creator | Create, test, and benchmark custom skills |
-
-**Rule:** Process skills (brainstorming, debugging, TDD) go first — they determine the approach. Implementation skills (feature-dev, frontend-design) go second.
+Plugins are configured in `.claude/settings.json`. Routing rules and the full skill inventory live in `.claude/rules/agent-behavior.md`.

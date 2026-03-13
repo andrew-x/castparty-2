@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "hooks": {
     "SessionStart": [
       {
@@ -7,6 +8,17 @@
           {
             "type": "command",
             "command": "find .claude/plans -name '*.md' -mtime +7 -delete 2>/dev/null; true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(cat | jq -r '.tool_input.file_path // empty') && case \"$FILE\" in */.env*|*/credentials*|*/.claude/settings.json) echo '{\"decision\": \"block\", \"reason\": \"Sensitive file — confirm with user before modifying.\"}'; exit 0;; esac"
           }
         ]
       }
@@ -28,9 +40,9 @@
     "superpowers@claude-plugins-official": true,
     "code-review@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "claude-code-setup@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": false,
+    "claude-code-setup@claude-plugins-official": false,
+    "skill-creator@claude-plugins-official": false,
     "typescript-lsp@claude-plugins-official": true
   },
   "plansDirectory": "./.claude/plans"
