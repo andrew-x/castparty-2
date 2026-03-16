@@ -77,6 +77,10 @@ export function RoleSubmissions({
     buildColumns(submissions, pipelineStages),
   )
   const previousColumns = useRef(columns)
+  const movedColumns = useRef<ColumnItems | null>(null)
+  const [pendingSubmissionId, setPendingSubmissionId] = useState<string | null>(
+    null,
+  )
   const [selectedSubmission, setSelectedSubmission] =
     useState<SubmissionWithCandidate | null>(() => {
       const submissionId = searchParams.get("submission")
@@ -187,9 +191,11 @@ export function RoleSubmissions({
 
   const { execute: executeStatusChange } = useAction(updateSubmissionStatus, {
     onSuccess() {
-      router.refresh()
+      setPendingSubmissionId(null)
     },
     onError() {
+      setPendingSubmissionId(null)
+      setColumns(previousColumns.current)
       router.refresh()
     },
   })
@@ -267,30 +273,53 @@ export function RoleSubmissions({
           previousColumns.current = columns
         }}
         onDragOver={(event) => {
-          setColumns((current) => move(current, event))
+          setColumns((current) => {
+            const next = move(current, event)
+            movedColumns.current = next
+            return next
+          })
         }}
         onDragEnd={(event) => {
           if (event.canceled) {
             setColumns(previousColumns.current)
+            movedColumns.current = null
             return
           }
 
           const { source } = event.operation
           if (!source) return
 
-          // dnd-kit's Sortable exposes initialGroup/group but the base
-          // Draggable type doesn't include them — cast to access.
-          const sortable = source as unknown as {
-            initialGroup?: string
-            group?: string
-          }
-          const fromGroup = sortable.initialGroup
-          const toGroup = sortable.group
+          const submissionId = String(source.id)
+          const currentColumns = movedColumns.current
+          movedColumns.current = null
+          if (!currentColumns) return
 
-          if (fromGroup && toGroup && fromGroup !== toGroup) {
+          // Compare previous vs current columns to detect cross-stage moves.
+          // We avoid reading source.group/initialGroup because React may not
+          // have re-rendered the sortable with its new group prop yet.
+          let originalStageId: string | null = null
+          for (const [stageId, items] of Object.entries(
+            previousColumns.current,
+          )) {
+            if (items.some((s) => s.id === submissionId)) {
+              originalStageId = stageId
+              break
+            }
+          }
+
+          let newStageId: string | null = null
+          for (const [stageId, items] of Object.entries(currentColumns)) {
+            if (items.some((s) => s.id === submissionId)) {
+              newStageId = stageId
+              break
+            }
+          }
+
+          if (originalStageId && newStageId && originalStageId !== newStageId) {
+            setPendingSubmissionId(submissionId)
             executeStatusChange({
-              submissionId: String(source.id),
-              stageId: toGroup,
+              submissionId,
+              stageId: newStageId,
             })
           }
         }}
@@ -302,6 +331,7 @@ export function RoleSubmissions({
               stage={stage}
               items={columns[stage.id] ?? []}
               selectedIds={selectedIds}
+              pendingSubmissionId={pendingSubmissionId}
               onToggle={toggleSelection}
               onSelectAll={addToSelection}
               onDeselectAll={removeFromSelection}
@@ -339,6 +369,7 @@ function KanbanColumn({
   stage,
   items,
   selectedIds,
+  pendingSubmissionId,
   onToggle,
   onSelectAll,
   onDeselectAll,
@@ -347,6 +378,7 @@ function KanbanColumn({
   stage: PipelineStageData
   items: SubmissionWithCandidate[]
   selectedIds: Set<string>
+  pendingSubmissionId: string | null
   onToggle: (id: string) => void
   onSelectAll: (ids: string[]) => void
   onDeselectAll: (ids: string[]) => void
@@ -409,6 +441,7 @@ function KanbanColumn({
             index={index}
             column={stage.id}
             isChecked={selectedIds.has(submission.id)}
+            isPending={submission.id === pendingSubmissionId}
             onToggle={() => onToggle(submission.id)}
             onSelect={onSelect}
           />
@@ -428,6 +461,7 @@ function KanbanCard({
   index,
   column,
   isChecked,
+  isPending,
   onToggle,
   onSelect,
 }: {
@@ -435,6 +469,7 @@ function KanbanCard({
   index: number
   column: string
   isChecked: boolean
+  isPending: boolean
   onToggle: () => void
   onSelect: (s: SubmissionWithCandidate) => void
 }) {
@@ -452,6 +487,7 @@ function KanbanCard({
       className={cn(
         "cursor-grab rounded-lg border border-border bg-card p-block hover:bg-muted/50 active:cursor-grabbing",
         isDragSource && "opacity-40",
+        isPending && "pointer-events-none animate-pulse",
         isChecked && "border-primary/50 bg-brand-subtle",
       )}
     >
