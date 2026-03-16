@@ -3,6 +3,7 @@
 import { and, eq, not } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
+import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import { Candidate } from "@/lib/db/schema"
 import { updateCandidateActionSchema } from "@/lib/schemas/candidate"
@@ -44,7 +45,7 @@ export const updateCandidate = secureActionClient
           email,
           phone: phone ?? "",
           location: location ?? "",
-          updatedAt: new Date(),
+          updatedAt: day().toDate(),
         })
         .where(eq(Candidate.id, candidateId))
 

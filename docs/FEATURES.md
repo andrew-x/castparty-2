@@ -12,8 +12,8 @@
 | Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | Grid of production cards for the active org; each card shows submission count; empty state with create CTA |
 | Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | Production overview with roles list and submission counts per role; inline role creation |
 | Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | 5-step wizard to create a new production: Details → Casting Pipeline → Submission Form → Feedback Form → Roles |
-| Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | Edit production details (name, slug, description, location, open/closed), configure pipeline template stages, and manage the production-level custom application form |
-| Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/settings/page.tsx` | Edit role details (name, slug, description, open/closed), configure role-level pipeline stages, and manage the role-level custom application form |
+| Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | General settings (name, slug, location, open/closed); sub-routes for pipeline template (`settings/pipeline/`), submission form (`settings/submission-form/`), and feedback form (`settings/feedback-form/`) |
+| Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/settings/page.tsx` | General settings (name, slug, description, open/closed); sub-routes for pipeline (`settings/pipeline/`), submission form, and feedback form — mirrors production settings structure |
 | Admin Panel | `shipped` | `src/app/admin/page.tsx` | Internal user management (list, create, change password, delete); bypasses org scope |
 | Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | Searchable, sortable, paginated table of all candidates in the active organization |
 | Candidate Detail | `shipped` | `src/app/(app)/candidates/[candidateId]/page.tsx` | Individual candidate profile showing personal details and all submissions across roles |
@@ -21,13 +21,18 @@
 | Public Submission Flow | `shipped` | `src/app/s/[orgSlug]/page.tsx` | Public-facing casting call pages where candidates discover orgs, productions, and roles via URL slugs and submit auditions |
 | URL Slugs | `shipped` | `src/lib/slug.ts` | Auto-generated URL-friendly identifiers for orgs, productions, and roles; used in public submission URLs |
 | Pipeline Stages | `shipped` | `src/lib/pipeline.ts` | Configurable casting pipeline per role with system stages (Applied, Selected, Rejected) and custom user-defined stages; production-level template pipeline inherited by new roles |
-| Custom Form Fields | `shipped` | `src/lib/types.ts` | Per-production and per-role custom application form fields (5 types: TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE); configured in settings, rendered in public submission form |
-| Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop moves candidates between pipeline stages |
+| Custom Form Fields | `shipped` | `src/lib/types.ts` | Custom form fields in 4 contexts: production/role × submission/feedback (5 types: TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE); configured in settings, rendered in public submission form and feedback panel |
+| Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop moves candidates between pipeline stages; bulk selection with move-to action |
+| Stage Browse | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/stages/[stageId]/page.tsx` | Grid view of all submissions in one pipeline stage with sortable cards (newest, oldest, name A–Z, name Z–A); bulk selection supported |
+| Submission Detail Sheet | `shipped` | `src/components/productions/submission-detail-sheet.tsx` | Right-side sheet showing full submission details (headshots, resume, links, custom field answers) and the feedback panel; prev/next navigation between submissions in the same column |
+| Headshot Lightbox | `shipped` | `src/components/productions/headshot-lightbox.tsx` | Full-screen headshot viewer with zoom; uses `yet-another-react-lightbox`; dynamically imported (no SSR) from SubmissionDetailSheet |
+| Bulk Submission Status | `shipped` | `src/actions/submissions/bulk-update-submission-status.ts` | Move up to 100 selected submissions to a target pipeline stage in one action; optimistic UI via BulkActionBar; full PipelineUpdate audit trail |
 | Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | Multi-org switching in sidebar footer; lets users switch between organizations they belong to |
 | R2 File Storage | `shipped` | `src/lib/r2.ts` | Cloudflare R2 utility for uploading, deleting, and moving files; uses AWS SDK S3-compatible API; used by headshot and resume upload |
 | Resume Upload | `shipped` | `src/components/submissions/resume-uploader.tsx` | Candidates upload a PDF resume when submitting for a role; text is extracted server-side and stored for future search/AI use |
 | Feedback Panel | `shipped` | `src/components/productions/feedback-panel.tsx` | Production team members rate submissions (4-point numeric scale) and add notes + custom field answers per pipeline stage; history shown as comment cards |
 | AutocompleteInput | `shipped` | `src/components/common/autocomplete-input.tsx` | Free-form combobox input with keyboard navigation and a filtered dropdown; not constrained to options — users can type any value |
+| Drawer | `shipped` | `src/components/common/drawer.tsx` | `vaul`-based drawer primitive supporting all four directions (top/bottom/left/right); includes handle indicator for bottom drawers; shadcn-compatible API |
 | useCityOptions | `shipped` | `src/hooks/use-city-options.ts` | Hook that lazy-loads and caches US + Canadian city names for use with AutocompleteInput |
 | Location Fields | `shipped` | `src/lib/schemas/production.ts`, `src/lib/schemas/submission.ts` | Free-text location on productions (create + settings) and submissions (form + detail view); city autocomplete via useCityOptions |
 | Landing Page | `shipped` | `src/app/page.tsx` | Single-screen hero with Castparty branding, tagline, and CTA link to /auth |
@@ -438,11 +443,14 @@ Custom stages are inserted at orders between 1 and 999. The `order` integer colu
 
 **Architecture decisions:** Per-role pipelines (rather than per-production) allow different roles in the same production to have different evaluation criteria — a lead role might have three callback stages while an ensemble role goes straight from Applied to Selected. Terminal stage orders (1000/1001) leave a large range (1–999) for custom stages without requiring renumbering. See `docs/DECISIONS.md` ADR-007 for full rationale.
 
-**Integration points:** New submissions from the Public Submission Flow always land in the Applied stage. The Production Settings page (`src/app/(app)/productions/[id]/(production)/settings/page.tsx`) is the UI entry point for managing both role and production-template stages. Role settings (name, description, slug, open/closed) are updated via `src/actions/productions/update-role.ts`.
+**Integration points:** New submissions from the Public Submission Flow always land in the Applied stage. The production pipeline template settings live at `src/app/(app)/productions/[id]/(production)/settings/pipeline/page.tsx`; role pipeline settings at the equivalent `(role)/settings/pipeline/` sub-route. Role general settings (name, description, slug, open/closed) are updated via `src/actions/productions/update-role.ts`.
+
+**Known issue — `Feedback.stageId` restrict constraint:** `Feedback.stageId` is a FK to `PipelineStage` with `onDelete: "restrict"` (schema line 468). The `removePipelineStage` action (`src/actions/productions/remove-pipeline-stage.ts`) moves all submissions on the stage to the APPLIED stage before deleting the `PipelineStage` row — but it does not delete or reassign `Feedback` records that reference the stage. If any `Feedback` row exists for that stage, the `db.delete(PipelineStage)` call will fail with a PostgreSQL foreign key constraint error. The fix requires either deleting associated `Feedback` rows before the stage delete or setting `Feedback.stageId` to `onDelete: "cascade"` or `"set null"`. Until fixed, removing a custom stage that has been used for feedback will surface an uncaught server error.
 
 *Updated: 2026-03-01 — Initial pipeline stages documentation*
 *Updated: 2026-03-04 — Note consolidated role action (update-role handles all role mutations including slug)*
 *Updated: 2026-03-04 — Corrected stage names (Applied/Selected/Rejected), replaced isSystem/isTerminal with type enum, added production-template pipeline tier, fixed StatusChange → PipelineUpdate, updated entry point paths*
+*Updated: 2026-03-16 — Fixed settings entry point paths to sub-routes; documented Feedback.stageId restrict constraint bug*
 
 ---
 
@@ -454,7 +462,7 @@ Custom stages are inserted at orders between 1 and 999. The `order` integer colu
 
 | File | Role |
 |------|------|
-| `src/app/(app)/productions/[id]/roles/[roleId]/page.tsx` | Server component; fetches role + submissions via `getRoleWithSubmissions`, renders `RoleSubmissions` |
+| `src/app/(app)/productions/[id]/roles/[roleId]/(role)/page.tsx` | Server component; fetches role + submissions via `getRoleWithSubmissions`, renders `RoleSubmissions` |
 | `src/components/productions/role-submissions.tsx` | Client component; owns Kanban state, `DragDropProvider`, column layout, and `SubmissionDetailSheet` trigger |
 | `src/actions/submissions/update-submission-status.ts` | Mutation: moves a submission to a new pipeline stage; writes a `PipelineUpdate` audit record |
 | `src/lib/submission-helpers.ts` | Shared types (`PipelineStageData`, `SubmissionWithCandidate`) and badge/label helpers |
@@ -496,10 +504,13 @@ RolePage (server)
 
 - **Headshot thumbnail on Kanban cards.** Each `KanbanCard` renders an `Avatar` (size `sm`) using `submission.headshots[0].url` with `object-cover` cropping. If no headshot exists, the Avatar shows the candidate's initials derived from `firstName[0] + lastName[0]`. This makes scanning a packed column faster than name-only cards.
 
-**Integration points:** Depends on Pipeline Stages for column structure — stages come from `getRoleWithSubmissions` alongside the submissions. `SubmissionDetailSheet` (existing component, unchanged) is reused for the card detail view. The `updateSubmissionStatus` action writes to the same `PipelineUpdate` table used by all other stage transitions. See the Pipeline Stages section above for stage type definitions and audit trail details.
+**Bulk selection:** Cards have a checkbox (visible on hover). Selecting one or more cards shows `BulkActionBar` (`src/components/productions/bulk-action-bar.tsx`) — a fixed bottom bar with a "Move to" popover. On confirm, the `bulkUpdateSubmissionStatus` action moves all selected submissions at once and writes a `PipelineUpdate` row for each. The same optimistic pattern applies: column state is updated immediately, with rollback on error. Selection is capped at 100 submissions and auto-pruned when server data changes.
+
+**Integration points:** Depends on Pipeline Stages for column structure — stages come from `getRoleWithSubmissions` alongside the submissions. `SubmissionDetailSheet` is rendered as a portal controlled by `selectedSubmission` state. The `updateSubmissionStatus` and `bulkUpdateSubmissionStatus` actions both write to the `PipelineUpdate` table. See the Pipeline Stages section above for stage type definitions and audit trail details.
 
 *Updated: 2026-03-04 — Documented Kanban board replacing tabbed submission list; terminal stage unlock; optimistic drag-and-drop with @dnd-kit/react v0.3*
 *Updated: 2026-03-10 — Added candidate photo thumbnail (Avatar with headshot/initials fallback) on KanbanCard*
+*Updated: 2026-03-16 — Fixed entry point path to (role) route group; documented bulk selection and BulkActionBar*
 
 ---
 
@@ -507,12 +518,18 @@ RolePage (server)
 
 **Overview:** Productions and roles can each define a custom application form that candidates fill out when submitting an audition. This supplements the standard submission fields (name, email) with production-specific questions — e.g., "What experience do you have with Shakespeare?" or "Can you attend a Saturday rehearsal?" Configured in production or role settings; rendered dynamically in the public submission form.
 
-**How it works:** Form fields are stored as JSONB in the `Production.submissionFormFields`, `Production.feedbackFormFields`, `Role.submissionFormFields`, and `Role.feedbackFormFields` columns. The `CustomForm` type in `src/lib/types.ts` defines the field shape: `id`, `type`, `label`, `description`, `required`, and `options` (for SELECT/CHECKBOX_GROUP). Responses are stored as JSONB in `Submission.answers` using the `CustomFormResponse` type: `{ fieldId, textValue, booleanValue, optionValues }`.
+**How it works:** Form fields are stored as JSONB in four columns across two tables:
 
-There are two distinct form field contexts:
+| Column | Table | Rendered in |
+|--------|-------|------------|
+| `submissionFormFields` | `Production` | Public submission form (default for new roles) |
+| `feedbackFormFields` | `Production` | Feedback panel (default for new roles) |
+| `submissionFormFields` | `Role` | Public submission form (role-specific override) |
+| `feedbackFormFields` | `Role` | Feedback panel (role-specific override) |
 
-- **Submission form fields** — questions candidates answer when submitting (rendered in the public `SubmissionForm`).
-- **Feedback form fields** — structured scoring/notes for the production team to fill in when reviewing a candidate (rendered in `SubmissionDetailSheet`).
+This creates **four contexts**: production-submission, production-feedback, role-submission, role-feedback. Each context has its own set of server actions (`add-*`, `update-*`, `remove-*`, `reorder-*`), its own editor component, and its own Zod schema group. See the technical debt note below.
+
+The `CustomForm` type in `src/lib/types.ts` defines the field shape: `id`, `type`, `label`, `description`, `required`, and `options` (for SELECT/CHECKBOX_GROUP). Responses are stored as JSONB in `Submission.answers` and `Feedback.answers` using the `CustomFormResponse` type: `{ fieldId, textValue, booleanValue, optionValues }`.
 
 **Supported field types** (`CustomFormFieldType` in `src/lib/types.ts`):
 
@@ -529,15 +546,20 @@ There are two distinct form field contexts:
 | File | Role |
 |------|------|
 | `src/lib/types.ts` | `CustomForm`, `CustomFormFieldType`, `CustomFormResponse` types |
-| `src/lib/schemas/form-fields.ts` | `customFormItemSchema` (shared field shape) + Zod schemas for all CRUD actions |
-| `src/components/productions/form-fields-editor.tsx` | Generic editor UI used in both the creation wizard and production/role settings |
-| `src/actions/productions/` | Actions for add/remove/reorder form fields on productions and roles |
+| `src/lib/schemas/form-fields.ts` | `customFormItemSchema` (shared field shape) + 16 CRUD schemas (4 per context) + `systemFieldConfigSchema` + update schemas for system field visibility |
+| `src/components/productions/form-fields-editor.tsx` | `DefaultFormFieldsEditor` — production submission form editor (also exports the generic `FormFieldsEditor` sub-component) |
+| `src/components/productions/role-form-fields-editor.tsx` | `RoleFormFieldsEditor` — role submission form editor |
+| `src/components/productions/default-feedback-form-fields-editor.tsx` | `DefaultFeedbackFormFieldsEditor` — production feedback form editor |
+| `src/components/productions/role-feedback-form-fields-editor.tsx` | `RoleFeedbackFormFieldsEditor` — role feedback form editor |
+| `src/components/productions/form-builder.tsx` | `FormBuilder` — layout shell used by submission editors (system field toggles + custom field editor side-by-side with a preview) |
+| `src/components/productions/feedback-form-builder.tsx` | `FeedbackFormBuilder` — layout shell used by feedback editors (custom field editor + feedback preview) |
+| `src/actions/productions/` | 16 action files: `add/update/remove/reorder` × 4 contexts |
 
 **Where form fields are configured:**
 
 1. **During production creation** — the 5-step wizard (`src/components/productions/create-production-form.tsx`) includes a Submission Form step and a Feedback Form step. Fields set here are stored on the `Production` record and copied (with regenerated IDs) to every role created in the same wizard run.
-2. **In production settings** — after creation, fields can be added/edited/removed/reordered via the settings page (`src/app/(app)/productions/[id]/(production)/settings/page.tsx`). Changes here do not retroactively update existing roles.
-3. **In role settings** — each role can independently override its inherited fields via `src/app/(app)/productions/[id]/roles/[roleId]/settings/page.tsx`.
+2. **In production settings** — after creation, fields are managed via dedicated sub-routes: `settings/submission-form/` and `settings/feedback-form/`. Changes here do not retroactively update existing roles.
+3. **In role settings** — each role can independently override its inherited fields via `(role)/settings/submission-form/` and `(role)/settings/feedback-form/`.
 
 **Role field inheritance:** When a role is created (via the wizard or inline on the Production Detail page), its `submissionFormFields` and `feedbackFormFields` are copied from the parent production with freshly generated IDs. This keeps role fields decoupled — editing a role's fields later doesn't affect other roles or the production template, and vice versa.
 
@@ -547,11 +569,20 @@ There are two distinct form field contexts:
 
 **defaultValues for `answers`:** Both forms initialize `defaultValues.answers` by iterating the field list — text-type fields get `""`, TOGGLE fields get `"false"`. This ensures `form.reset(defaultValues)` properly clears custom fields after a successful submission (an empty `{}` left stale values in place).
 
+**Technical debt — 4× duplication:** The four contexts produce near-identical code at every layer:
+
+- **16 action files** in `src/actions/productions/` for the custom field CRUD — each is structurally identical; only the table name (Production vs. Role), column name (submissionFormFields vs. feedbackFormFields), and schema import differ. Plus 2 more for `update-production-system-field-config` and `update-role-system-field-config` (system field visibility).
+- **4 editor components** (`form-fields-editor.tsx`, `role-form-fields-editor.tsx`, `default-feedback-form-fields-editor.tsx`, `role-feedback-form-fields-editor.tsx`) — all share the same local state pattern (`useState(fields)`, `useEffect` sync from props, `useAction` for each CRUD operation) with only action imports and ID props changing.
+- **4 schema groups** in `src/lib/schemas/form-fields.ts` — each group (add/update/remove/reorder) is a copy of the others with a different ID field (`productionId` vs. `roleId`).
+
+These could be consolidated using factory functions: a `createFormFieldActions(context)` factory, a single generic editor component parameterized by action callbacks, and a single schema builder. This hasn't been done because the duplication is mechanical and currently low-risk — the tradeoff is that any behavior change must be applied in four places.
+
 **Integration points:** The `SubmissionForm` in `src/components/submissions/submission-form.tsx` reads `submissionFormFields` from the role and renders the appropriate input for each field type. Responses are submitted alongside standard fields via the `create-submission` action. The feedback form is rendered via `FeedbackPanel` in `src/components/productions/feedback-panel.tsx` — see the Feedback Panel section.
 
 *Updated: 2026-03-06 — Initial custom form fields documentation*
 *Updated: 2026-03-10 — Split submission vs. feedback field contexts; documented creation wizard integration and role field inheritance; noted customFormItemSchema as shared schema; updated key files table*
 *Updated: 2026-03-10 — Documented client-side required-field validation and defaultValues.answers initialization (both SubmissionForm and FeedbackPanel)*
+*Updated: 2026-03-16 — Documented all 4 contexts explicitly; expanded key files table; added technical debt note (24 action files, 4 editor components, 4 schema groups); fixed settings entry point paths to sub-routes*
 
 ---
 

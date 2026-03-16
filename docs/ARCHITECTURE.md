@@ -17,20 +17,30 @@
 ```
 src/
 ├── actions/             # Backend business logic, organized by feature area
-│   └── [feature]/       # productions/, submissions/, organizations/, candidates/, admin/
+│   └── [feature]/       # productions/, submissions/, organizations/, candidates/, admin/, feedback/
 ├── app/
 │   ├── (app)/           # Authenticated route group — guarded by (app)/layout.tsx
 │   │   ├── layout.tsx   # Auth guard + SidebarProvider shell
 │   │   ├── home/        # Post-login landing
 │   │   └── productions/
 │   │       └── [id]/
-│   │           ├── (production)/  # Route group: shared production layout
-│   │           │   ├── page.tsx   # Production detail
-│   │           │   └── settings/  # Production settings
+│   │           ├── (production)/  # Route group: shared production layout + tab nav
+│   │           │   ├── page.tsx   # Production detail (roles list)
+│   │           │   └── settings/
+│   │           │       ├── page.tsx              # General settings (name, slug, open/closed)
+│   │           │       ├── pipeline/page.tsx      # Production template pipeline editor
+│   │           │       ├── submission-form/       # Submission form builder
+│   │           │       └── feedback-form/         # Feedback form builder
 │   │           └── roles/
 │   │               └── [roleId]/
-│   │                   ├── page.tsx   # Role Kanban board
-│   │                   └── settings/  # Role settings
+│   │                   ├── (role)/  # Route group: shared role layout + tab nav
+│   │                   │   ├── page.tsx           # Role Kanban board
+│   │                   │   └── settings/
+│   │                   │       ├── page.tsx             # General settings
+│   │                   │       ├── pipeline/page.tsx     # Role pipeline editor
+│   │                   │       ├── submission-form/      # Role submission form builder
+│   │                   │       └── feedback-form/        # Role feedback form builder
+│   │                   └── stages/[stageId]/page.tsx  # Stage browse (grid + sort)
 │   ├── api/             # API route handlers
 │   ├── auth/            # Login / signup / forgot-password pages
 │   ├── onboarding/      # First-time setup (create org or accept invite)
@@ -97,10 +107,10 @@ Browser
 **Form / action schema split:** Every feature in `src/lib/schemas/` exports two Zod schemas — a form schema (user-input fields only, used by `zodResolver`) and an action schema (extends with IDs and server refinements, used by `next-safe-action`). The adapter hook `useHookFormAction` bridges the two without manual wiring. See `docs/CONVENTIONS.md#form-patterns` for the full pattern.
 
 - `src/actions/` — Backend business logic organized by feature area; the boundary between UI and data
-- `src/lib/schemas/` — Centralized Zod schemas: `slug.ts`, `organization.ts`, `production.ts`, `role.ts`, `submission.ts`, `candidate.ts`, `form-fields.ts`; barrel at `index.ts`
+- `src/lib/schemas/` — Centralized Zod schemas: `slug.ts`, `organization.ts`, `production.ts`, `role.ts`, `submission.ts`, `candidate.ts`, `form-fields.ts`, `feedback.ts`; barrel at `index.ts`
 - `src/lib/action.ts` — next-safe-action client setup (`publicActionClient`, `secureActionClient`)
 - `src/lib/auth.ts` — Better Auth server instance; `getCurrentUser()` reads the session from request headers
-- `src/lib/types.ts` — Shared domain types: `CustomForm`, `CustomFormFieldType` (TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE), `CustomFormResponse`
+- `src/lib/types.ts` — Shared domain types: `CustomForm`, `CustomFormFieldType` (TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE), `CustomFormResponse`, `SystemFieldConfig`, `SystemFieldVisibility`, `DEFAULT_SYSTEM_FIELD_CONFIG`, `SYSTEM_FIELD_LABELS`
 - `src/lib/constants.ts` — `DEFAULT_PIPELINE_STAGES`, `MAX_PIPELINE_STAGES`
 - `src/lib/r2.ts` — Cloudflare R2 file storage: `uploadFile`, `deleteFile`, `moveFile`, `getKeyFromUrl`; uses AWS SDK S3-compatible API
 - `src/lib/auth/auth-util.ts` — Auth utility: `checkAuth()` reads the session and throws if unauthenticated; used by all server-side read functions
@@ -152,19 +162,26 @@ Schema lives in `src/lib/db/schema.ts`. Drizzle relational API (`db.query`) is t
 |-------|-----------|--------------------------|
 | `UserProfile` | User | `id` (FK → user, PK) — extended user metadata; currently empty (reserved for future fields) |
 | `OrganizationProfile` | Organization | `id` (FK → organization, PK), `websiteUrl`, `description`, `isOrganizationProfileOpen` — public-facing org info |
-| `Production` | Organization | `organizationId`, `name`, `slug` (unique per org), `isOpen`, `formFields` (JSONB custom form) |
-| `Role` | Production | `productionId`, `name`, `slug` (unique per production), `isOpen`, `formFields` (JSONB custom form) |
+| `Production` | Organization | `organizationId`, `name`, `slug` (unique per org), `isOpen`, `location`, `submissionFormFields` (JSONB), `feedbackFormFields` (JSONB), `systemFieldConfig` (JSONB — visibility of system fields: phone, location, headshots, resume, links) |
+| `Role` | Production | `productionId`, `name`, `slug` (unique per production), `isOpen`, `location`, `submissionFormFields` (JSONB), `feedbackFormFields` (JSONB), `systemFieldConfig` (JSONB) |
 | `PipelineStage` | Production + Role | `organizationId`, `productionId`, `roleId` (nullable — null = production template stage), `name`, `order`, `type` enum (`APPLIED`/`SELECTED`/`REJECTED`/`CUSTOM`) |
-| `Candidate` | Organization | `organizationId`, `firstName`, `lastName`, `email` (unique per org) |
-| `Submission` | Role + Candidate | `roleId`, `candidateId`, `stageId` — links a candidate to a role at a pipeline stage |
+| `Candidate` | Organization | `organizationId`, `firstName`, `lastName`, `email` (unique per org), `phone`, `location` |
+| `Submission` | Role + Candidate | `roleId`, `candidateId`, `stageId` (FK → PipelineStage, `onDelete: "restrict"`), `answers` (JSONB), `links` (text[]), `resumeText` (nullable) |
 | `PipelineUpdate` | Submission | `submissionId`, `fromStage`, `toStage`, `changeByUserId` — full audit trail of stage transitions |
+| `File` | Submission or Candidate | `submissionId` (nullable), `candidateId` (nullable), `type` enum (`HEADSHOT`/`RESUME`/`VIDEO`), `url`, `key`, `path`, `filename`, `order` |
+| `Feedback` | Submission + Stage | `submissionId`, `submittedByUserId`, `stageId` (FK → PipelineStage, `onDelete: "restrict"`), `rating` enum (`STRONG_NO`/`NO`/`YES`/`STRONG_YES`), `notes`, `formFields` (JSONB snapshot), `answers` (JSONB) |
 
 Candidate records are deduplicated by `(organizationId, email)` — the same person applying to multiple roles in the same org shares one Candidate row.
 
 `PipelineStage` rows with `roleId = null` are production-template stages — they define the default pipeline that new roles in that production inherit. Role-scoped stages have a non-null `roleId`.
+
+`SystemFieldConfig` controls whether each system submission field (phone, location, headshots, resume, links) is `"hidden"`, `"optional"`, or `"required"`. Stored as JSONB on both `Production` and `Role`; defaults to all `"optional"`.
+
+**Known constraint issue:** Both `Submission.stageId` and `Feedback.stageId` use `onDelete: "restrict"`. The `removePipelineStage` action moves submissions to the APPLIED stage before deletion, but does not delete or reassign `Feedback` rows. Deleting a pipeline stage that has associated feedback records will fail with a DB constraint error. See the Pipeline Stages section in `docs/FEATURES.md` for details.
 
 *Updated: 2026-02-28 — Replaced stale placeholders with actual data flow and external services*
 *Updated: 2026-03-01 — Added Better Auth plugins, expanded directory layout, fixed component directories, added Data Model section*
 *Updated: 2026-03-04 — Added useHookFormAction adapter layer to data flow; added src/lib/schemas/ to directory layout and key files*
 *Updated: 2026-03-04 — Fixed submit/ → s/ route, added (production) route group, corrected PipelineStage columns (order/type enum, no slug/isSystem/isTerminal), StatusChange → PipelineUpdate with correct column names, added UserProfile and OrganizationProfile tables, noted production-template stages (roleId = null)*
 *Updated: 2026-03-06 — Added Cloudflare R2 to External Services; added src/lib/types.ts, src/lib/constants.ts, src/lib/r2.ts to key files; added candidate.ts and form-fields.ts to schemas list; added role settings route and admin/onboarding to directory layout*
+*Updated: 2026-03-16 — Fixed route tree: (role) route group, settings sub-routes, stages/[stageId] route; added feedback/ to actions; added feedback.ts to schemas; expanded types.ts entry (SystemFieldConfig); updated Production/Role/Submission/Candidate data model columns; added File, Feedback tables; added SystemFieldConfig note; added Feedback.stageId restrict constraint warning*

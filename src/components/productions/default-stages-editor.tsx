@@ -31,16 +31,20 @@ function SortableStage({
   index,
   onRemove,
   isRemoving,
+  submissionCount,
 }: {
   stage: StageData
   index: number
   onRemove: (id: string) => void
   isRemoving?: boolean
+  submissionCount?: number
 }) {
   const { ref, handleRef, isDragSource } = useSortable({
     id: stage.id,
     index,
   })
+
+  const hasSubmissions = submissionCount != null && submissionCount > 0
 
   return (
     <div
@@ -57,13 +61,23 @@ function SortableStage({
         <GripVerticalIcon className="size-4" />
       </button>
       <span className="flex-1 text-foreground text-label">{stage.name}</span>
+      {hasSubmissions && (
+        <span className="text-caption text-muted-foreground">
+          {submissionCount}{" "}
+          {submissionCount === 1 ? "submission" : "submissions"}
+        </span>
+      )}
       <Button
         variant="ghost"
         size="icon"
         className="size-6"
         onClick={() => onRemove(stage.id)}
-        disabled={isRemoving}
-        tooltip="Remove stage"
+        disabled={isRemoving || hasSubmissions}
+        tooltip={
+          hasSubmissions
+            ? "Move all submissions out of this stage first"
+            : "Remove stage"
+        }
       >
         <XIcon className="size-3" />
       </Button>
@@ -99,6 +113,7 @@ interface StagesEditorProps {
   isAdding?: boolean
   removingStageId?: string | null
   description?: string
+  submissionCounts?: Record<string, number>
 }
 
 export function StagesEditor({
@@ -109,6 +124,7 @@ export function StagesEditor({
   isAdding,
   removingStageId,
   description,
+  submissionCounts,
 }: StagesEditorProps) {
   const [newStageName, setNewStageName] = useState("")
 
@@ -165,6 +181,7 @@ export function StagesEditor({
                 index={index}
                 onRemove={onRemove}
                 isRemoving={removingStageId === stage.id}
+                submissionCount={submissionCounts?.[stage.id]}
               />
             ))}
           </DragDropProvider>

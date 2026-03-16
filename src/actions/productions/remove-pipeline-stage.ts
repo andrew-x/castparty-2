@@ -1,10 +1,9 @@
 "use server"
 
-import { and, eq } from "drizzle-orm"
+import { count, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
-import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import { PipelineStage, Submission } from "@/lib/db/schema"
 
@@ -45,23 +44,17 @@ export const removePipelineStage = secureActionClient
       throw new Error("System stages cannot be removed.")
     }
 
-    const { role } = stage
-
-    // Find the APPLIED stage for this role to reassign submissions
-    const appliedStage = await db.query.PipelineStage.findFirst({
-      where: (s) => and(eq(s.roleId, role.id), eq(s.type, "APPLIED")),
-      columns: { id: true },
-    })
-
-    if (!appliedStage) {
-      throw new Error("Applied stage not found for this role.")
-    }
-
-    // Move submissions on this stage to the applied stage
-    await db
-      .update(Submission)
-      .set({ stageId: appliedStage.id, updatedAt: day().toDate() })
+    // Block deletion if submissions still exist on this stage
+    const [{ value: submissionCount }] = await db
+      .select({ value: count() })
+      .from(Submission)
       .where(eq(Submission.stageId, stageId))
+
+    if (submissionCount > 0) {
+      throw new Error(
+        "Move all submissions out of this stage before deleting it.",
+      )
+    }
 
     await db.delete(PipelineStage).where(eq(PipelineStage.id, stageId))
 

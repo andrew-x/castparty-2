@@ -3,6 +3,7 @@
 import { and, eq, not } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
+import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import { member, OrganizationProfile, organization } from "@/lib/db/schema"
 import { updateOrgActionSchema } from "@/lib/schemas/organization"
@@ -68,7 +69,7 @@ export const updateOrganization = secureActionClient
               description,
               websiteUrl,
               isOrganizationProfileOpen,
-              updatedAt: new Date(),
+              updatedAt: day().toDate(),
             },
           }),
       ])

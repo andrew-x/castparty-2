@@ -1,6 +1,7 @@
 // Development-only in-memory store for previewing emails without sending them.
 // Stored on globalThis so the array survives HMR reloads.
 
+import day from "@/lib/dayjs"
 import { generateId, IS_DEV } from "@/lib/util"
 
 export interface StoredEmail {
@@ -30,7 +31,7 @@ export function addEmail(email: Omit<StoredEmail, "id" | "sentAt">): void {
   store.unshift({
     ...email,
     id: generateId("email"),
-    sentAt: new Date(),
+    sentAt: day().toDate(),
   })
   if (store.length > MAX_EMAILS) {
     store.length = MAX_EMAILS

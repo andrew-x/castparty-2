@@ -15,6 +15,7 @@ import {
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
 import { StageSubmissionCard } from "@/components/productions/stage-submission-card"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
+import day from "@/lib/dayjs"
 import type {
   PipelineStageData,
   SubmissionWithCandidate,
@@ -33,14 +34,12 @@ function sortSubmissions(
   switch (sortBy) {
     case "newest":
       sorted.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        (a, b) => day(b.createdAt).valueOf() - day(a.createdAt).valueOf(),
       )
       break
     case "oldest":
       sorted.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        (a, b) => day(a.createdAt).valueOf() - day(b.createdAt).valueOf(),
       )
       break
     case "name-asc":

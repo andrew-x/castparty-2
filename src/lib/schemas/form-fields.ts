@@ -12,7 +12,7 @@ export const customFormItemSchema = z.object({
   id: z.string().min(1),
   type: customFormFieldTypeSchema,
   label: z.string().trim().min(1).max(200),
-  description: z.string().max(500),
+  description: z.string().trim().max(500),
   required: z.boolean(),
   options: z.array(z.string().max(200)),
 })

@@ -14,7 +14,5 @@ dayjs.extend(isSameOrBefore)
 dayjs.extend(isBetween)
 dayjs.extend(relativeTime)
 
-export const DATE_FORMAT = "YYYY-MM-DD"
-
 const day = dayjs
 export default day

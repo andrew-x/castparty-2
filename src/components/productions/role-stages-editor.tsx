@@ -14,9 +14,10 @@ import {
 interface Props {
   roleId: string
   stages: StageData[]
+  submissionCounts?: Record<string, number>
 }
 
-export function RoleStagesEditor({ roleId, stages }: Props) {
+export function RoleStagesEditor({ roleId, stages, submissionCounts }: Props) {
   const router = useRouter()
   const [localStages, setLocalStages] = useState(stages)
 
@@ -79,6 +80,7 @@ export function RoleStagesEditor({ roleId, stages }: Props) {
       onReorder={handleReorder}
       isAdding={isAdding}
       removingStageId={removingStageId}
+      submissionCounts={submissionCounts}
     />
   )
 }

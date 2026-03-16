@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
+import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import { member, OrganizationProfile } from "@/lib/db/schema"
 
@@ -58,7 +59,7 @@ export const updateOrganizationProfile = secureActionClient
             websiteUrl,
             description,
             isOrganizationProfileOpen,
-            updatedAt: new Date(),
+            updatedAt: day().toDate(),
           },
         })
 
