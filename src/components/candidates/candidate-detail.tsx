@@ -197,7 +197,7 @@ export function CandidateDetail({ candidate, submissions }: Props) {
                     </Badge>
                   </div>
                   <Link
-                    href={`/productions/${selected.productionId}/roles/${selected.roleId}`}
+                    href={`/productions/${selected.productionId}/roles/${selected.roleId}?submission=${submission.id}`}
                     className="flex shrink-0 items-center gap-1 text-caption text-muted-foreground transition-colors hover:text-foreground"
                   >
                     View in role

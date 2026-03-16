@@ -10,9 +10,9 @@ import {
   UsersIcon,
   XIcon,
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
-import { useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-submission-status"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/common/avatar"
@@ -72,13 +72,32 @@ export function RoleSubmissions({
   feedbackFormFields,
 }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [columns, setColumns] = useState(() =>
     buildColumns(submissions, pipelineStages),
   )
   const previousColumns = useRef(columns)
   const [selectedSubmission, setSelectedSubmission] =
-    useState<SubmissionWithCandidate | null>(null)
+    useState<SubmissionWithCandidate | null>(() => {
+      const submissionId = searchParams.get("submission")
+      if (!submissionId) return null
+      return submissions.find((s) => s.id === submissionId) ?? null
+    })
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  const selectSubmission = useCallback(
+    (submission: SubmissionWithCandidate | null) => {
+      setSelectedSubmission(submission)
+      const params = new URLSearchParams(searchParams.toString())
+      if (submission) {
+        params.set("submission", submission.id)
+      } else {
+        params.delete("submission")
+      }
+      router.replace(`?${params.toString()}`, { scroll: false })
+    },
+    [router, searchParams],
+  )
 
   const selectedColumn = selectedSubmission
     ? (columns[selectedSubmission.stageId] ?? [])
@@ -93,14 +112,14 @@ export function RoleSubmissions({
     ? () => {
         const prevIndex =
           selectedIndex <= 0 ? selectedColumn.length - 1 : selectedIndex - 1
-        setSelectedSubmission(selectedColumn[prevIndex])
+        selectSubmission(selectedColumn[prevIndex])
       }
     : null
   const handleNext = canNavigate
     ? () => {
         const nextIndex =
           selectedIndex >= selectedColumn.length - 1 ? 0 : selectedIndex + 1
-        setSelectedSubmission(selectedColumn[nextIndex])
+        selectSubmission(selectedColumn[nextIndex])
       }
     : null
 
@@ -286,7 +305,7 @@ export function RoleSubmissions({
               onToggle={toggleSelection}
               onSelectAll={addToSelection}
               onDeselectAll={removeFromSelection}
-              onSelect={setSelectedSubmission}
+              onSelect={selectSubmission}
             />
           ))}
         </div>
@@ -307,8 +326,8 @@ export function RoleSubmissions({
         pipelineStages={pipelineStages}
         submissionFormFields={submissionFormFields}
         feedbackFormFields={feedbackFormFields}
-        onClose={() => setSelectedSubmission(null)}
-        onStageChange={setSelectedSubmission}
+        onClose={() => selectSubmission(null)}
+        onStageChange={selectSubmission}
         onPrev={handlePrev}
         onNext={handleNext}
       />
