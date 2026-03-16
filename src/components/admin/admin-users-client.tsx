@@ -1,6 +1,6 @@
 "use client"
 
-import { KeyIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { KeyIcon, LogInIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Badge } from "@/components/common/badge"
@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/common/table"
+import { authClient } from "@/lib/auth/auth-client"
 import day from "@/lib/dayjs"
 import { AddUserDialog } from "./add-user-dialog"
 import { ChangePasswordDialog } from "./change-password-dialog"
@@ -28,16 +29,28 @@ export interface AdminUser {
 
 interface Props {
   users: AdminUser[]
+  currentUserId: string | null
 }
 
-export function AdminUsersClient({ users }: Props) {
+export function AdminUsersClient({ users, currentUserId }: Props) {
   const router = useRouter()
   const [addOpen, setAddOpen] = useState(false)
   const [passwordTarget, setPasswordTarget] = useState<AdminUser | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null)
 
   function refresh() {
     router.refresh()
+  }
+
+  async function handleImpersonate(userId: string) {
+    setImpersonatingId(userId)
+    const { error } = await authClient.admin.impersonateUser({ userId })
+    if (error) {
+      setImpersonatingId(null)
+      return
+    }
+    router.push("/")
   }
 
   return (
@@ -80,6 +93,18 @@ export function AdminUsersClient({ users }: Props) {
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-element">
+                  {u.id !== currentUserId && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={impersonatingId === u.id}
+                      onClick={() => handleImpersonate(u.id)}
+                      tooltip="Impersonate user"
+                    >
+                      <LogInIcon />
+                      <span className="sr-only">Impersonate</span>
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon-sm"
