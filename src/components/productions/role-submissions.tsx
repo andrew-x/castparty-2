@@ -4,14 +4,13 @@ import { CollisionPriority } from "@dnd-kit/abstract"
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider, useDroppable } from "@dnd-kit/react"
 import { useSortable } from "@dnd-kit/react/sortable"
-import { ExternalLinkIcon, UsersIcon } from "lucide-react"
+import { UsersIcon } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useCallback, useRef, useState } from "react"
 import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-submission-status"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/common/avatar"
 import { Badge } from "@/components/common/badge"
 import { Checkbox } from "@/components/common/checkbox"
 import {
@@ -482,61 +481,72 @@ function KanbanCard({
     group: column,
   })
 
+  const headshotUrl = submission.headshots[0]?.url
+
   return (
     <div
       ref={ref}
       className={cn(
-        "cursor-grab rounded-lg border border-border bg-card p-block hover:bg-muted/50 active:cursor-grabbing",
+        "group relative cursor-grab overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-muted/50 active:cursor-grabbing",
         isDragSource && "opacity-40",
         isPending && "pointer-events-none animate-pulse",
         isChecked && "border-primary/50 bg-brand-subtle",
       )}
     >
-      <div className="flex gap-element">
-        {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
-        <div
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          className="flex h-6 items-center"
-        >
-          <Checkbox
-            checked={isChecked}
-            onCheckedChange={onToggle}
-            aria-label={`Select ${submission.firstName} ${submission.lastName}`}
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onSelect(submission)
-            }}
-            className="group flex items-center gap-element font-medium text-foreground text-label hover:text-brand-text"
-          >
-            <Avatar size="sm">
-              {submission.headshots[0]?.url ? (
-                <AvatarImage
-                  src={submission.headshots[0].url}
-                  alt={`${submission.firstName} ${submission.lastName}`}
-                  className="object-cover"
-                />
-              ) : null}
-              <AvatarFallback>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelect(submission)
+        }}
+        className="w-full text-left"
+      >
+        {/* Headshot */}
+        <div className="relative aspect-[4/3] w-full bg-muted">
+          {headshotUrl ? (
+            // biome-ignore lint/performance/noImgElement: external R2 URLs
+            <img
+              src={headshotUrl}
+              alt={`${submission.firstName} ${submission.lastName}`}
+              className="size-full object-cover"
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center">
+              <span className="font-medium text-heading text-muted-foreground">
                 {submission.firstName[0]}
                 {submission.lastName[0]}
-              </AvatarFallback>
-            </Avatar>
-            <span className="flex items-center gap-1">
-              {submission.firstName} {submission.lastName}
-              <ExternalLinkIcon className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
-            </span>
-          </button>
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Name + date */}
+        <div className="flex flex-col gap-0.5 p-2">
+          <p className="truncate font-medium text-foreground text-label">
+            {submission.firstName} {submission.lastName}
+          </p>
           <p className="text-caption text-muted-foreground">
             {day(submission.createdAt).format("LL")}
           </p>
         </div>
+      </button>
+
+      {/* Checkbox overlay */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
+      <div
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "absolute top-2 left-2 flex items-center justify-center rounded-sm bg-background/80 p-0.5 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100",
+          isChecked && "opacity-100",
+        )}
+      >
+        <Checkbox
+          checked={isChecked}
+          onCheckedChange={onToggle}
+          aria-label={`Select ${submission.firstName} ${submission.lastName}`}
+        />
       </div>
     </div>
   )
