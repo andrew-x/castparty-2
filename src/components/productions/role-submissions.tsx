@@ -4,12 +4,8 @@ import { CollisionPriority } from "@dnd-kit/abstract"
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider, useDroppable } from "@dnd-kit/react"
 import { useSortable } from "@dnd-kit/react/sortable"
-import {
-  ChevronDownIcon,
-  ExternalLinkIcon,
-  UsersIcon,
-  XIcon,
-} from "lucide-react"
+import { ExternalLinkIcon, UsersIcon } from "lucide-react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useCallback, useRef, useState } from "react"
@@ -17,7 +13,6 @@ import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-su
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/common/avatar"
 import { Badge } from "@/components/common/badge"
-import { Button } from "@/components/common/button"
 import { Checkbox } from "@/components/common/checkbox"
 import {
   Empty,
@@ -26,11 +21,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/common/empty"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/common/popover"
+import { BulkActionBar } from "@/components/productions/bulk-action-bar"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
 import type {
@@ -59,6 +50,8 @@ function buildColumns(
 }
 
 interface Props {
+  productionId: string
+  roleId: string
   submissions: SubmissionWithCandidate[]
   pipelineStages: PipelineStageData[]
   submissionFormFields: CustomForm[]
@@ -66,6 +59,8 @@ interface Props {
 }
 
 export function RoleSubmissions({
+  productionId,
+  roleId,
   submissions,
   pipelineStages,
   submissionFormFields,
@@ -332,6 +327,7 @@ export function RoleSubmissions({
               items={columns[stage.id] ?? []}
               selectedIds={selectedIds}
               pendingSubmissionId={pendingSubmissionId}
+              stageHref={`/productions/${productionId}/roles/${roleId}/stages/${stage.id}`}
               onToggle={toggleSelection}
               onSelectAll={addToSelection}
               onDeselectAll={removeFromSelection}
@@ -370,6 +366,7 @@ function KanbanColumn({
   items,
   selectedIds,
   pendingSubmissionId,
+  stageHref,
   onToggle,
   onSelectAll,
   onDeselectAll,
@@ -379,6 +376,7 @@ function KanbanColumn({
   items: SubmissionWithCandidate[]
   selectedIds: Set<string>
   pendingSubmissionId: string | null
+  stageHref: string
   onToggle: (id: string) => void
   onSelectAll: (ids: string[]) => void
   onDeselectAll: (ids: string[]) => void
@@ -428,9 +426,12 @@ function KanbanColumn({
           onCheckedChange={handleHeaderCheckboxChange}
           aria-label={`Select all in ${stage.name}`}
         />
-        <span className="flex-1 font-medium text-foreground text-label">
+        <Link
+          href={stageHref}
+          className="flex-1 font-medium text-foreground text-label hover:text-brand-text hover:underline"
+        >
           {stage.name}
-        </span>
+        </Link>
         <Badge variant="secondary">{items.length}</Badge>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-block overflow-y-auto">
@@ -537,70 +538,6 @@ function KanbanCard({
           </p>
         </div>
       </div>
-    </div>
-  )
-}
-
-function BulkActionBar({
-  selectedCount,
-  pipelineStages,
-  isBulkMovePending,
-  onMove,
-  onClear,
-}: {
-  selectedCount: number
-  pipelineStages: PipelineStageData[]
-  isBulkMovePending: boolean
-  onMove: (stageId: string) => void
-  onClear: () => void
-}) {
-  const [popoverOpen, setPopoverOpen] = useState(false)
-
-  return (
-    <div className="fade-in slide-in-from-bottom-2 fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 animate-in items-center gap-block rounded-lg border border-border bg-card px-block py-element shadow-lg">
-      <span className="text-label text-muted-foreground">
-        {selectedCount} selected
-      </span>
-
-      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            loading={isBulkMovePending}
-            rightSection={<ChevronDownIcon />}
-          >
-            Move to
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent side="top" className="w-48 p-1">
-          <div className="flex flex-col">
-            {pipelineStages.map((stage) => (
-              <Button
-                key={stage.id}
-                variant="ghost"
-                size="sm"
-                className="justify-start"
-                onClick={() => {
-                  setPopoverOpen(false)
-                  onMove(stage.id)
-                }}
-              >
-                {stage.name}
-              </Button>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        tooltip="Clear selection"
-        onClick={onClear}
-      >
-        <XIcon />
-      </Button>
     </div>
   )
 }

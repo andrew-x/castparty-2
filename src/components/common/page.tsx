@@ -36,7 +36,7 @@ function PageHeader({
   breadcrumbs,
   tabs,
 }: {
-  title: string
+  title: React.ReactNode
   description?: React.ReactNode
   actions?: React.ReactNode
   breadcrumbs?: PageBreadcrumb[]

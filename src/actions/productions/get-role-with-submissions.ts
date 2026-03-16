@@ -20,7 +20,12 @@ export async function getRoleWithSubmissions(roleId: string) {
     where: (r) => eq(r.id, roleId),
     with: {
       production: {
-        columns: { id: true, organizationId: true, feedbackFormFields: true },
+        columns: {
+          id: true,
+          name: true,
+          organizationId: true,
+          feedbackFormFields: true,
+        },
       },
       pipelineStages: {
         orderBy: (s, { asc }) => [asc(s.order)],

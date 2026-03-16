@@ -28,6 +28,8 @@ export default async function RolePage({
 
   return (
     <RoleSubmissions
+      productionId={id}
+      roleId={roleId}
       submissions={role.submissions}
       pipelineStages={role.pipelineStages}
       submissionFormFields={role.submissionFormFields}
