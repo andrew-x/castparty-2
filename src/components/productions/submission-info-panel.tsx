@@ -1,13 +1,17 @@
 "use client"
 
-import { FileTextIcon } from "lucide-react"
+import { FileTextIcon, LayersIcon } from "lucide-react"
+import Link from "next/link"
 import dynamic from "next/dynamic"
 import { useState } from "react"
 import { Separator } from "@/components/common/separator"
 import { SocialIcon } from "@/components/common/social-icons"
 import day from "@/lib/dayjs"
 import { prettifyUrl } from "@/lib/social-links"
-import type { SubmissionWithCandidate } from "@/lib/submission-helpers"
+import type {
+  OtherRoleSubmission,
+  SubmissionWithCandidate,
+} from "@/lib/submission-helpers"
 import type { CustomForm } from "@/lib/types"
 
 const HeadshotLightbox = dynamic(
@@ -21,12 +25,16 @@ const HeadshotLightbox = dynamic(
 interface SubmissionInfoPanelProps {
   submission: SubmissionWithCandidate
   submissionFormFields: CustomForm[]
+  productionId: string
+  otherRoles: OtherRoleSubmission[]
   onLightboxOpenChange?: (open: boolean) => void
 }
 
 export function SubmissionInfoPanel({
   submission,
   submissionFormFields,
+  productionId,
+  otherRoles,
   onLightboxOpenChange,
 }: SubmissionInfoPanelProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -38,6 +46,27 @@ export function SubmissionInfoPanel({
 
   return (
     <div className="flex flex-col gap-group">
+      {otherRoles.length > 0 && (
+        <div className="flex items-start gap-element rounded-lg bg-muted/50 p-block">
+          <LayersIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <p className="text-label text-muted-foreground">
+            Also submitted for{" "}
+            {otherRoles.map((role, i) => (
+              <span key={role.roleId}>
+                {i > 0 && (i === otherRoles.length - 1 ? " and " : ", ")}
+                <Link
+                  href={`/productions/${productionId}/roles/${role.roleId}`}
+                  target="_blank"
+                  className="font-medium text-foreground underline decoration-border underline-offset-2 hover:decoration-foreground"
+                >
+                  {role.roleName}
+                </Link>
+              </span>
+            ))}
+          </p>
+        </div>
+      )}
+
       {submission.headshots.length > 0 && (
         <div className="flex flex-col gap-block">
           <h3 className="font-medium text-foreground text-label">Headshots</h3>

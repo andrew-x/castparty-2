@@ -1,11 +1,13 @@
 "use server"
 
-import { eq } from "drizzle-orm"
+import { and, eq, inArray, ne } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
+import { Role, Submission } from "@/lib/db/schema"
 import type {
   FeedbackData,
   HeadshotData,
+  OtherRoleSubmission,
   ResumeData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
@@ -108,5 +110,42 @@ export async function getRoleWithSubmissions(roleId: string) {
       ? role.feedbackFormFields
       : role.production.feedbackFormFields
 
-  return { ...role, submissions, feedbackFormFields }
+  // Find candidates who also submitted for other roles in this production
+  const candidateIds = [...new Set(role.submissions.map((s) => s.candidateId))]
+  const otherRoleSubmissions: Record<string, OtherRoleSubmission[]> = {}
+
+  if (candidateIds.length > 0) {
+    const crossRoleRows = await db
+      .select({
+        candidateId: Submission.candidateId,
+        roleId: Role.id,
+        roleName: Role.name,
+      })
+      .from(Submission)
+      .innerJoin(Role, eq(Submission.roleId, Role.id))
+      .where(
+        and(
+          inArray(Submission.candidateId, candidateIds),
+          eq(Submission.productionId, role.production.id),
+          eq(Role.productionId, role.production.id),
+          ne(Submission.roleId, roleId),
+        ),
+      )
+
+    for (const row of crossRoleRows) {
+      const list = otherRoleSubmissions[row.candidateId]
+      if (list) {
+        // A candidate can have multiple submissions to the same role — deduplicate
+        if (!list.some((r) => r.roleId === row.roleId)) {
+          list.push({ roleId: row.roleId, roleName: row.roleName })
+        }
+      } else {
+        otherRoleSubmissions[row.candidateId] = [
+          { roleId: row.roleId, roleName: row.roleName },
+        ]
+      }
+    }
+  }
+
+  return { ...role, submissions, feedbackFormFields, otherRoleSubmissions }
 }

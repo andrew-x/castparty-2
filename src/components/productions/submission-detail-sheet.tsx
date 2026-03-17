@@ -27,6 +27,7 @@ import { RejectReasonDialog } from "@/components/productions/reject-reason-dialo
 import { StageControls } from "@/components/productions/stage-controls"
 import { SubmissionInfoPanel } from "@/components/productions/submission-info-panel"
 import type {
+  OtherRoleSubmission,
   PipelineStageData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
@@ -39,6 +40,8 @@ interface Props {
   feedbackFormFields: CustomForm[]
   roleId: string
   rejectReasons: string[]
+  productionId: string
+  otherRoleSubmissions: Record<string, OtherRoleSubmission[]>
   onClose: () => void
   onStageChange?: (submission: SubmissionWithCandidate) => void
   onPrev: (() => void) | null
@@ -52,6 +55,8 @@ export function SubmissionDetailSheet({
   feedbackFormFields,
   roleId,
   rejectReasons,
+  productionId,
+  otherRoleSubmissions,
   onClose,
   onStageChange,
   onPrev,
@@ -210,6 +215,10 @@ export function SubmissionDetailSheet({
                 <SubmissionInfoPanel
                   submission={submission}
                   submissionFormFields={submissionFormFields}
+                  productionId={productionId}
+                  otherRoles={
+                    otherRoleSubmissions[submission.candidate.id] ?? []
+                  }
                   onLightboxOpenChange={(open) => {
                     lightboxOpen.current = open
                   }}

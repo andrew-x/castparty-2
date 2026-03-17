@@ -26,6 +26,7 @@ import { RejectReasonDialog } from "@/components/productions/reject-reason-dialo
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
 import type {
+  OtherRoleSubmission,
   PipelineStageData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
@@ -58,6 +59,7 @@ interface Props {
   submissionFormFields: CustomForm[]
   feedbackFormFields: CustomForm[]
   rejectReasons: string[]
+  otherRoleSubmissions: Record<string, OtherRoleSubmission[]>
 }
 
 export function RoleSubmissions({
@@ -68,6 +70,7 @@ export function RoleSubmissions({
   submissionFormFields,
   feedbackFormFields,
   rejectReasons,
+  otherRoleSubmissions,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -470,6 +473,8 @@ export function RoleSubmissions({
         feedbackFormFields={feedbackFormFields}
         roleId={roleId}
         rejectReasons={rejectReasons}
+        productionId={productionId}
+        otherRoleSubmissions={otherRoleSubmissions}
         onClose={() => selectSubmission(null)}
         onStageChange={selectSubmission}
         onPrev={handlePrev}

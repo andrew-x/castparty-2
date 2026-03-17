@@ -35,6 +35,7 @@ export default async function RolePage({
       submissionFormFields={role.submissionFormFields}
       feedbackFormFields={role.feedbackFormFields}
       rejectReasons={role.rejectReasons}
+      otherRoleSubmissions={role.otherRoleSubmissions}
     />
   )
 }

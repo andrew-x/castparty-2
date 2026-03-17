@@ -55,6 +55,11 @@ export interface SubmissionWithCandidate {
   }
 }
 
+export interface OtherRoleSubmission {
+  roleId: string
+  roleName: string
+}
+
 export function getStageBadgeProps(stage: PipelineStageData | null): {
   variant: "secondary" | "destructive" | "outline"
   className?: string

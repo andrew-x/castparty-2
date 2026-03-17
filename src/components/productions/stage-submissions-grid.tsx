@@ -19,6 +19,7 @@ import { StageSubmissionCard } from "@/components/productions/stage-submission-c
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
 import type {
+  OtherRoleSubmission,
   PipelineStageData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
@@ -70,6 +71,8 @@ interface Props {
   feedbackFormFields: CustomForm[]
   roleId: string
   rejectReasons: string[]
+  productionId: string
+  otherRoleSubmissions: Record<string, OtherRoleSubmission[]>
 }
 
 export function StageSubmissionsGrid({
@@ -80,6 +83,8 @@ export function StageSubmissionsGrid({
   feedbackFormFields,
   roleId,
   rejectReasons,
+  productionId,
+  otherRoleSubmissions,
 }: Props) {
   const router = useRouter()
   const [selectedSubmission, setSelectedSubmission] =
@@ -276,6 +281,8 @@ export function StageSubmissionsGrid({
         feedbackFormFields={feedbackFormFields}
         roleId={roleId}
         rejectReasons={rejectReasons}
+        productionId={productionId}
+        otherRoleSubmissions={otherRoleSubmissions}
         onClose={() => setSelectedSubmission(null)}
         onStageChange={setSelectedSubmission}
         onPrev={handlePrev}
