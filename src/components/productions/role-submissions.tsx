@@ -370,6 +370,7 @@ export function RoleSubmissions({
         pipelineStages={pipelineStages}
         submissionFormFields={submissionFormFields}
         feedbackFormFields={feedbackFormFields}
+        roleId={roleId}
         onClose={() => selectSubmission(null)}
         onStageChange={selectSubmission}
         onPrev={handlePrev}

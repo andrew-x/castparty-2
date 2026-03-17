@@ -52,3 +52,11 @@ export const bulkUpdateSubmissionStatusSchema = z.object({
   submissionIds: z.array(z.string().min(1)).min(1).max(100),
   stageId: z.string().min(1),
 })
+
+export const copySubmissionFormSchema = z.object({
+  targetRoleId: z.string().min(1, "Select a role."),
+})
+
+export const copySubmissionActionSchema = copySubmissionFormSchema.extend({
+  submissionId: z.string().min(1),
+})

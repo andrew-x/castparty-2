@@ -67,6 +67,7 @@ interface Props {
   pipelineStages: PipelineStageData[]
   submissionFormFields: CustomForm[]
   feedbackFormFields: CustomForm[]
+  roleId: string
 }
 
 export function StageSubmissionsGrid({
@@ -75,6 +76,7 @@ export function StageSubmissionsGrid({
   pipelineStages,
   submissionFormFields,
   feedbackFormFields,
+  roleId,
 }: Props) {
   const router = useRouter()
   const [selectedSubmission, setSelectedSubmission] =
@@ -232,6 +234,7 @@ export function StageSubmissionsGrid({
         pipelineStages={pipelineStages}
         submissionFormFields={submissionFormFields}
         feedbackFormFields={feedbackFormFields}
+        roleId={roleId}
         onClose={() => setSelectedSubmission(null)}
         onStageChange={setSelectedSubmission}
         onPrev={handlePrev}

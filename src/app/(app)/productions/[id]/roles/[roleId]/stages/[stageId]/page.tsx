@@ -74,6 +74,7 @@ export default async function StageBrowsePage({
           pipelineStages={role.pipelineStages}
           submissionFormFields={role.submissionFormFields}
           feedbackFormFields={role.feedbackFormFields}
+          roleId={roleId}
         />
       </PageContent>
     </Page>

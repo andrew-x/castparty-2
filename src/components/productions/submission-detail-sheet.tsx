@@ -6,11 +6,12 @@ import {
   MailIcon,
   MapPinIcon,
   PhoneIcon,
+  UserRoundPlusIcon,
   XIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Button } from "@/components/common/button"
 import {
@@ -20,6 +21,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/common/sheet"
+import { ConsiderForRoleDialog } from "@/components/productions/consider-for-role-dialog"
 import { FeedbackPanel } from "@/components/productions/feedback-panel"
 import { StageControls } from "@/components/productions/stage-controls"
 import { SubmissionInfoPanel } from "@/components/productions/submission-info-panel"
@@ -34,6 +36,7 @@ interface Props {
   pipelineStages: PipelineStageData[]
   submissionFormFields: CustomForm[]
   feedbackFormFields: CustomForm[]
+  roleId: string
   onClose: () => void
   onStageChange?: (submission: SubmissionWithCandidate) => void
   onPrev: (() => void) | null
@@ -45,6 +48,7 @@ export function SubmissionDetailSheet({
   pipelineStages,
   submissionFormFields,
   feedbackFormFields,
+  roleId,
   onClose,
   onStageChange,
   onPrev,
@@ -58,6 +62,8 @@ export function SubmissionDetailSheet({
       router.refresh()
     },
   })
+
+  const [considerDialogOpen, setConsiderDialogOpen] = useState(false)
 
   function handleStatusChange(stageId: string) {
     if (!submission) return
@@ -137,11 +143,27 @@ export function SubmissionDetailSheet({
                     )}
                   </div>
                 </div>
-                <StageControls
-                  submission={submission}
-                  pipelineStages={pipelineStages}
-                  onStageChange={handleStatusChange}
-                />
+                <div className="flex shrink-0 items-center gap-element">
+                  <StageControls
+                    submission={submission}
+                    pipelineStages={pipelineStages}
+                    onStageChange={handleStatusChange}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftSection={<UserRoundPlusIcon />}
+                    onClick={() => setConsiderDialogOpen(true)}
+                  >
+                    Consider for role
+                  </Button>
+                  <ConsiderForRoleDialog
+                    submissionId={submission.id}
+                    currentRoleId={roleId}
+                    open={considerDialogOpen}
+                    onOpenChange={setConsiderDialogOpen}
+                  />
+                </div>
               </div>
             </SheetHeader>
 
