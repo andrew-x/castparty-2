@@ -4,7 +4,7 @@ import { CollisionPriority } from "@dnd-kit/abstract"
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider, useDroppable } from "@dnd-kit/react"
 import { useSortable } from "@dnd-kit/react/sortable"
-import { UsersIcon } from "lucide-react"
+import { GripVerticalIcon, UsersIcon } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
@@ -601,7 +601,7 @@ function KanbanCard({
   onToggle: () => void
   onSelect: (s: SubmissionWithCandidate) => void
 }) {
-  const { ref, isDragSource } = useSortable({
+  const { ref, handleRef, isDragSource } = useSortable({
     id: submission.id,
     index,
     type: "item",
@@ -615,7 +615,7 @@ function KanbanCard({
     <div
       ref={ref}
       className={cn(
-        "group relative cursor-grab overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-muted/50 active:cursor-grabbing",
+        "group relative overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-muted/50",
         isDragSource && "opacity-40",
         isPending && "pointer-events-none animate-pulse",
         isChecked && "border-primary/50 bg-brand-subtle",
@@ -623,11 +623,8 @@ function KanbanCard({
     >
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          onSelect(submission)
-        }}
-        className="w-full text-left"
+        onClick={() => onSelect(submission)}
+        className="w-full cursor-pointer text-left"
       >
         {/* Headshot */}
         <div className="relative aspect-[4/3] w-full bg-muted">
@@ -658,6 +655,15 @@ function KanbanCard({
           </p>
         </div>
       </button>
+
+      {/* Drag handle */}
+      <div
+        ref={handleRef}
+        className="absolute top-2 right-2 flex cursor-grab items-center justify-center rounded-sm bg-background/80 p-0.5 opacity-0 backdrop-blur-sm transition-opacity active:cursor-grabbing group-hover:opacity-100"
+        aria-label="Drag to reorder"
+      >
+        <GripVerticalIcon className="size-3.5 text-muted-foreground" />
+      </div>
 
       {/* Checkbox overlay */}
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
