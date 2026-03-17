@@ -13,7 +13,10 @@ export const bulkUpdateSubmissionStatus = secureActionClient
   .metadata({ action: "bulk-update-submission-status" })
   .inputSchema(bulkUpdateSubmissionStatusSchema)
   .action(
-    async ({ parsedInput: { submissionIds, stageId }, ctx: { user } }) => {
+    async ({
+      parsedInput: { submissionIds, stageId, rejectionReason },
+      ctx: { user },
+    }) => {
       const orgId = user.activeOrganizationId
       if (!orgId) throw new Error("No active organization.")
 
@@ -55,7 +58,7 @@ export const bulkUpdateSubmissionStatus = secureActionClient
       // Verify the target stage belongs to the same role
       const targetStage = await db.query.PipelineStage.findFirst({
         where: (s) => and(eq(s.id, stageId), eq(s.roleId, roleId)),
-        columns: { id: true },
+        columns: { id: true, type: true },
       })
 
       if (!targetStage) {
@@ -71,9 +74,13 @@ export const bulkUpdateSubmissionStatus = secureActionClient
 
       const toMoveIds = toMove.map((s) => s.id)
 
+      // Store rejection reason when moving to REJECTED, clear when moving away
+      const reason =
+        targetStage.type === "REJECTED" ? (rejectionReason ?? null) : null
+
       await db
         .update(Submission)
-        .set({ stageId, updatedAt: day().toDate() })
+        .set({ stageId, rejectionReason: reason, updatedAt: day().toDate() })
         .where(inArray(Submission.id, toMoveIds))
 
       await db.insert(PipelineUpdate).values(

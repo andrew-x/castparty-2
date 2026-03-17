@@ -3,7 +3,7 @@
 import { UsersIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-submission-status"
 import {
   Empty,
@@ -14,6 +14,7 @@ import {
 } from "@/components/common/empty"
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
 import { ComparisonView } from "@/components/productions/comparison-view"
+import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { StageSubmissionCard } from "@/components/productions/stage-submission-card"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
@@ -68,6 +69,7 @@ interface Props {
   submissionFormFields: CustomForm[]
   feedbackFormFields: CustomForm[]
   roleId: string
+  rejectReasons: string[]
 }
 
 export function StageSubmissionsGrid({
@@ -77,6 +79,7 @@ export function StageSubmissionsGrid({
   submissionFormFields,
   feedbackFormFields,
   roleId,
+  rejectReasons,
 }: Props) {
   const router = useRouter()
   const [selectedSubmission, setSelectedSubmission] =
@@ -144,11 +147,48 @@ export function StageSubmissionsGrid({
     },
   )
 
-  function handleBulkMove(targetStageId: string) {
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const pendingBulkRejectRef = useRef<{
+    submissionIds: string[]
+    stageId: string
+  } | null>(null)
+
+  const rejectedStage = pipelineStages.find((s) => s.type === "REJECTED")
+
+  function handleBulkMove(targetStageId: string, rejectionReason?: string) {
     const submissionIds = Array.from(selectedIds)
     if (submissionIds.length === 0) return
+
+    if (
+      rejectedStage &&
+      targetStageId === rejectedStage.id &&
+      !rejectionReason
+    ) {
+      pendingBulkRejectRef.current = { submissionIds, stageId: targetStageId }
+      setRejectDialogOpen(true)
+      return
+    }
+
     clearSelection()
-    executeBulkMove({ submissionIds, stageId: targetStageId })
+    executeBulkMove({
+      submissionIds,
+      stageId: targetStageId,
+      rejectionReason,
+    })
+  }
+
+  function handleRejectConfirm(reason: string) {
+    setRejectDialogOpen(false)
+    const pending = pendingBulkRejectRef.current
+    pendingBulkRejectRef.current = null
+    if (!pending) return
+    // Use the captured submissionIds, not the current selectedIds
+    clearSelection()
+    executeBulkMove({
+      submissionIds: pending.submissionIds,
+      stageId: pending.stageId,
+      rejectionReason: reason,
+    })
   }
 
   // --- Sync from server on refresh ---
@@ -235,10 +275,21 @@ export function StageSubmissionsGrid({
         submissionFormFields={submissionFormFields}
         feedbackFormFields={feedbackFormFields}
         roleId={roleId}
+        rejectReasons={rejectReasons}
         onClose={() => setSelectedSubmission(null)}
         onStageChange={setSelectedSubmission}
         onPrev={handlePrev}
         onNext={handleNext}
+      />
+
+      <RejectReasonDialog
+        open={rejectDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) pendingBulkRejectRef.current = null
+          setRejectDialogOpen(open)
+        }}
+        reasons={rejectReasons}
+        onConfirm={handleRejectConfirm}
       />
     </>
   )

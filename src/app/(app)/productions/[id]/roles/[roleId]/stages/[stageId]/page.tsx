@@ -75,6 +75,7 @@ export default async function StageBrowsePage({
           submissionFormFields={role.submissionFormFields}
           feedbackFormFields={role.feedbackFormFields}
           roleId={roleId}
+          rejectReasons={role.rejectReasons}
         />
       </PageContent>
     </Page>

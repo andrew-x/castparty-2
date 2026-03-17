@@ -35,6 +35,7 @@ export const createRole = secureActionClient
           submissionFormFields: true,
           systemFieldConfig: true,
           feedbackFormFields: true,
+          rejectReasons: true,
         },
       })
       if (!production) throw new Error("Production not found.")
@@ -63,6 +64,7 @@ export const createRole = secureActionClient
           ...f,
           id: generateId("fbf"),
         })),
+        rejectReasons: production.rejectReasons,
       })
 
       // Try to copy stages from the production template

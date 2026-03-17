@@ -90,6 +90,7 @@ export async function getRoleWithSubmissions(roleId: string) {
       location: sub.location,
       createdAt: sub.createdAt,
       stageId: sub.stageId,
+      rejectionReason: sub.rejectionReason,
       stage: sub.stage,
       answers: sub.answers,
       links: sub.links,

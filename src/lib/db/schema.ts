@@ -269,6 +269,7 @@ export const Production = pgTable(
       links: "optional",
     }),
     feedbackFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    rejectReasons: jsonb().$type<string[]>().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
@@ -304,6 +305,7 @@ export const Role = pgTable(
       links: "optional",
     }),
     feedbackFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
+    rejectReasons: jsonb().$type<string[]>().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
@@ -401,6 +403,7 @@ export const Submission = pgTable("submission", {
   stageId: text()
     .notNull()
     .references(() => PipelineStage.id, { onDelete: "restrict" }),
+  rejectionReason: text(),
 
   firstName: text().notNull(),
   lastName: text().notNull(),

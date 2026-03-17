@@ -34,6 +34,7 @@ export default async function RolePage({
       pipelineStages={role.pipelineStages}
       submissionFormFields={role.submissionFormFields}
       feedbackFormFields={role.feedbackFormFields}
+      rejectReasons={role.rejectReasons}
     />
   )
 }

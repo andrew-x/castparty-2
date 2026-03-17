@@ -6,6 +6,14 @@ export const SYSTEM_STAGES = [
   { name: "Rejected", order: 1001, type: "REJECTED" as const },
 ]
 
+export const DEFAULT_REJECT_REASONS = [
+  "Not the right fit for this role",
+  "Scheduling conflict",
+  "Insufficient experience",
+  "Role already filled",
+  "Did not meet audition requirements",
+]
+
 export const DEFAULT_PRODUCTION_STAGES = [
   { name: "Applied", order: 0, type: "APPLIED" as const },
   { name: "Screening", order: 1, type: "CUSTOM" as const },

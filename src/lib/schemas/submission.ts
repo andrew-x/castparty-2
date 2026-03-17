@@ -48,9 +48,16 @@ export const submissionActionSchema = submissionFormSchema.extend({
   resume: resumeFileSchema.optional(),
 })
 
+export const updateSubmissionStatusSchema = z.object({
+  submissionId: z.string().min(1),
+  stageId: z.string().min(1),
+  rejectionReason: z.string().trim().min(1).max(500).optional(),
+})
+
 export const bulkUpdateSubmissionStatusSchema = z.object({
   submissionIds: z.array(z.string().min(1)).min(1).max(100),
   stageId: z.string().min(1),
+  rejectionReason: z.string().trim().min(1).max(500).optional(),
 })
 
 export const copySubmissionFormSchema = z.object({

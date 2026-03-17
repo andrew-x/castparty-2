@@ -89,6 +89,7 @@ export async function getCandidate(candidateId: string) {
         location: submission.location,
         createdAt: submission.createdAt,
         stageId: submission.stageId,
+        rejectionReason: submission.rejectionReason,
         stage: submission.stage
           ? {
               id: submission.stage.id,

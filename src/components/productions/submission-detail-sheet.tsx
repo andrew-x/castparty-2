@@ -23,6 +23,7 @@ import {
 } from "@/components/common/sheet"
 import { ConsiderForRoleDialog } from "@/components/productions/consider-for-role-dialog"
 import { FeedbackPanel } from "@/components/productions/feedback-panel"
+import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { StageControls } from "@/components/productions/stage-controls"
 import { SubmissionInfoPanel } from "@/components/productions/submission-info-panel"
 import type {
@@ -37,6 +38,7 @@ interface Props {
   submissionFormFields: CustomForm[]
   feedbackFormFields: CustomForm[]
   roleId: string
+  rejectReasons: string[]
   onClose: () => void
   onStageChange?: (submission: SubmissionWithCandidate) => void
   onPrev: (() => void) | null
@@ -49,6 +51,7 @@ export function SubmissionDetailSheet({
   submissionFormFields,
   feedbackFormFields,
   roleId,
+  rejectReasons,
   onClose,
   onStageChange,
   onPrev,
@@ -64,12 +67,37 @@ export function SubmissionDetailSheet({
   })
 
   const [considerDialogOpen, setConsiderDialogOpen] = useState(false)
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
 
-  function handleStatusChange(stageId: string) {
+  const rejectedStage = pipelineStages.find((s) => s.type === "REJECTED")
+
+  function handleStatusChange(stageId: string, rejectionReason?: string) {
     if (!submission) return
-    executeStatusChange({ submissionId: submission.id, stageId })
+
+    // Intercept moves to REJECTED stage — show dialog first
+    if (rejectedStage && stageId === rejectedStage.id && !rejectionReason) {
+      setRejectDialogOpen(true)
+      return
+    }
+
+    executeStatusChange({
+      submissionId: submission.id,
+      stageId,
+      rejectionReason,
+    })
     const newStage = pipelineStages.find((s) => s.id === stageId) ?? null
-    onStageChange?.({ ...submission, stageId, stage: newStage })
+    onStageChange?.({
+      ...submission,
+      stageId,
+      rejectionReason: rejectionReason ?? null,
+      stage: newStage,
+    })
+  }
+
+  function handleRejectConfirm(reason: string) {
+    if (!rejectedStage) return
+    setRejectDialogOpen(false)
+    handleStatusChange(rejectedStage.id, reason)
   }
 
   return (
@@ -167,6 +195,15 @@ export function SubmissionDetailSheet({
               </div>
             </SheetHeader>
 
+            {submission.rejectionReason && (
+              <div className="border-b bg-destructive/5 px-block py-element">
+                <p className="text-destructive text-label">
+                  <span className="font-medium">Reject reason:</span>{" "}
+                  {submission.rejectionReason}
+                </p>
+              </div>
+            )}
+
             <div className="flex min-h-0 flex-1">
               {/* Left pane: submission data */}
               <div className="flex-1 overflow-y-auto p-block">
@@ -190,6 +227,13 @@ export function SubmissionDetailSheet({
           </>
         )}
       </SheetContent>
+
+      <RejectReasonDialog
+        open={rejectDialogOpen}
+        onOpenChange={setRejectDialogOpen}
+        reasons={rejectReasons}
+        onConfirm={handleRejectConfirm}
+      />
     </Sheet>
   )
 }

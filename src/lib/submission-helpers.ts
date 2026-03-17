@@ -38,6 +38,7 @@ export interface SubmissionWithCandidate {
   location: string
   createdAt: Date | string
   stageId: string
+  rejectionReason: string | null
   stage: PipelineStageData | null
   answers: CustomFormResponse[]
   links: string[]

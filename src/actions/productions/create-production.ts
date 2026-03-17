@@ -9,6 +9,7 @@ import {
   buildCustomProductionStages,
   buildProductionStages,
   buildStagesFromTemplate,
+  DEFAULT_REJECT_REASONS,
 } from "@/lib/pipeline"
 import { createProductionActionSchema } from "@/lib/schemas/production"
 import { generateUniqueSlug, nameToSlug, validateSlug } from "@/lib/slug"
@@ -84,6 +85,7 @@ export const createProduction = secureActionClient
         isOpen: true,
         submissionFormFields: submissionFormFields ?? [],
         feedbackFormFields: feedbackFormFields ?? [],
+        rejectReasons: DEFAULT_REJECT_REASONS,
       })
 
       // Build production-level template stages
@@ -122,6 +124,7 @@ export const createProduction = secureActionClient
               ...f,
               id: generateId("fbf"),
             })),
+            rejectReasons: DEFAULT_REJECT_REASONS,
           }
         })
 

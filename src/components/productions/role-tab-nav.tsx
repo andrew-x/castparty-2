@@ -16,6 +16,7 @@ const tabs = [
   { label: "Pipeline", segment: "/settings/pipeline" },
   { label: "Submission form", segment: "/settings/submission-form" },
   { label: "Feedback form", segment: "/settings/feedback-form" },
+  { label: "Reject reasons", segment: "/settings/reject-reasons" },
 ] as const
 
 export function RoleTabNav({ productionId, roleId }: Props) {

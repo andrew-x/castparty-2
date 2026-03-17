@@ -22,6 +22,7 @@ import {
 } from "@/components/common/empty"
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
 import { ComparisonView } from "@/components/productions/comparison-view"
+import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
 import type {
@@ -56,6 +57,7 @@ interface Props {
   pipelineStages: PipelineStageData[]
   submissionFormFields: CustomForm[]
   feedbackFormFields: CustomForm[]
+  rejectReasons: string[]
 }
 
 export function RoleSubmissions({
@@ -65,6 +67,7 @@ export function RoleSubmissions({
   pipelineStages,
   submissionFormFields,
   feedbackFormFields,
+  rejectReasons,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -84,6 +87,15 @@ export function RoleSubmissions({
     })
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [comparisonOpen, setComparisonOpen] = useState(false)
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  // Stores pending reject info: either a single drag submission or bulk IDs
+  const pendingRejectRef = useRef<
+    | { type: "drag"; submissionId: string; stageId: string }
+    | { type: "bulk"; submissionIds: string[]; stageId: string }
+    | null
+  >(null)
+
+  const rejectedStage = pipelineStages.find((s) => s.type === "REJECTED")
 
   const selectSubmission = useCallback(
     (submission: SubmissionWithCandidate | null) => {
@@ -209,9 +221,24 @@ export function RoleSubmissions({
     },
   )
 
-  function handleBulkMove(targetStageId: string) {
+  function handleBulkMove(targetStageId: string, rejectionReason?: string) {
     const submissionIds = Array.from(selectedIds)
     if (submissionIds.length === 0) return
+
+    // If moving to REJECTED and no reason yet, show the dialog
+    if (
+      rejectedStage &&
+      targetStageId === rejectedStage.id &&
+      !rejectionReason
+    ) {
+      pendingRejectRef.current = {
+        type: "bulk",
+        submissionIds,
+        stageId: targetStageId,
+      }
+      setRejectDialogOpen(true)
+      return
+    }
 
     // Save for rollback
     previousColumns.current = columns
@@ -242,7 +269,67 @@ export function RoleSubmissions({
     })
 
     clearSelection()
-    executeBulkMove({ submissionIds, stageId: targetStageId })
+    executeBulkMove({
+      submissionIds,
+      stageId: targetStageId,
+      rejectionReason,
+    })
+  }
+
+  function handleRejectConfirm(reason: string) {
+    setRejectDialogOpen(false)
+    const pending = pendingRejectRef.current
+    pendingRejectRef.current = null
+    if (!pending) return
+
+    if (pending.type === "drag") {
+      setPendingSubmissionId(pending.submissionId)
+      executeStatusChange({
+        submissionId: pending.submissionId,
+        stageId: pending.stageId,
+        rejectionReason: reason,
+      })
+    } else {
+      // Use captured submissionIds, not current selectedIds
+      previousColumns.current = columns
+      const idsToMove = new Set(pending.submissionIds)
+      setColumns((current) => {
+        const next: ColumnItems = {}
+        const movedItems: SubmissionWithCandidate[] = []
+        for (const [stageId, items] of Object.entries(current)) {
+          const kept: SubmissionWithCandidate[] = []
+          for (const item of items) {
+            if (idsToMove.has(item.id)) {
+              movedItems.push({ ...item, stageId: pending.stageId })
+            } else {
+              kept.push(item)
+            }
+          }
+          next[stageId] = kept
+        }
+        next[pending.stageId] = [
+          ...(next[pending.stageId] ?? []),
+          ...movedItems,
+        ]
+        return next
+      })
+      clearSelection()
+      executeBulkMove({
+        submissionIds: pending.submissionIds,
+        stageId: pending.stageId,
+        rejectionReason: reason,
+      })
+    }
+  }
+
+  function handleRejectCancel() {
+    setRejectDialogOpen(false)
+    const pending = pendingRejectRef.current
+    pendingRejectRef.current = null
+    // If drag was pending, revert the optimistic column move
+    if (pending?.type === "drag") {
+      setColumns(previousColumns.current)
+    }
   }
 
   if (submissions.length === 0) {
@@ -312,6 +399,17 @@ export function RoleSubmissions({
           }
 
           if (originalStageId && newStageId && originalStageId !== newStageId) {
+            // If dragging to REJECTED, show the reason dialog
+            if (rejectedStage && newStageId === rejectedStage.id) {
+              pendingRejectRef.current = {
+                type: "drag",
+                submissionId,
+                stageId: newStageId,
+              }
+              setRejectDialogOpen(true)
+              return
+            }
+
             setPendingSubmissionId(submissionId)
             executeStatusChange({
               submissionId,
@@ -371,10 +469,20 @@ export function RoleSubmissions({
         submissionFormFields={submissionFormFields}
         feedbackFormFields={feedbackFormFields}
         roleId={roleId}
+        rejectReasons={rejectReasons}
         onClose={() => selectSubmission(null)}
         onStageChange={selectSubmission}
         onPrev={handlePrev}
         onNext={handleNext}
+      />
+
+      <RejectReasonDialog
+        open={rejectDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) handleRejectCancel()
+        }}
+        reasons={rejectReasons}
+        onConfirm={handleRejectConfirm}
       />
     </>
   )
