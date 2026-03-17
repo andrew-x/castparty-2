@@ -21,6 +21,7 @@ import {
   EmptyTitle,
 } from "@/components/common/empty"
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
+import { ComparisonView } from "@/components/productions/comparison-view"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
 import type {
@@ -82,6 +83,7 @@ export function RoleSubmissions({
       return submissions.find((s) => s.id === submissionId) ?? null
     })
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [comparisonOpen, setComparisonOpen] = useState(false)
 
   const selectSubmission = useCallback(
     (submission: SubmissionWithCandidate | null) => {
@@ -342,9 +344,26 @@ export function RoleSubmissions({
           pipelineStages={pipelineStages}
           isBulkMovePending={isBulkMovePending}
           onMove={handleBulkMove}
+          onCompare={() => setComparisonOpen(true)}
           onClear={clearSelection}
         />
       )}
+
+      <ComparisonView
+        open={comparisonOpen}
+        onOpenChange={setComparisonOpen}
+        submissions={submissions.filter((s) => selectedIds.has(s.id))}
+        pipelineStages={pipelineStages}
+        submissionFormFields={submissionFormFields}
+        onRemove={(id) => {
+          setSelectedIds((prev) => {
+            const next = new Set(prev)
+            next.delete(id)
+            if (next.size < 2) setComparisonOpen(false)
+            return next
+          })
+        }}
+      />
 
       <SubmissionDetailSheet
         submission={selectedSubmission}

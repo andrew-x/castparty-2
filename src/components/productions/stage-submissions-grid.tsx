@@ -13,6 +13,7 @@ import {
   EmptyTitle,
 } from "@/components/common/empty"
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
+import { ComparisonView } from "@/components/productions/comparison-view"
 import { StageSubmissionCard } from "@/components/productions/stage-submission-card"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import day from "@/lib/dayjs"
@@ -79,6 +80,7 @@ export function StageSubmissionsGrid({
   const [selectedSubmission, setSelectedSubmission] =
     useState<SubmissionWithCandidate | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [comparisonOpen, setComparisonOpen] = useState(false)
 
   const sortedSubmissions = sortSubmissions(
     submissions,
@@ -204,9 +206,26 @@ export function StageSubmissionsGrid({
           pipelineStages={pipelineStages}
           isBulkMovePending={isBulkMovePending}
           onMove={handleBulkMove}
+          onCompare={() => setComparisonOpen(true)}
           onClear={clearSelection}
         />
       )}
+
+      <ComparisonView
+        open={comparisonOpen}
+        onOpenChange={setComparisonOpen}
+        submissions={submissions.filter((s) => selectedIds.has(s.id))}
+        pipelineStages={pipelineStages}
+        submissionFormFields={submissionFormFields}
+        onRemove={(id) => {
+          setSelectedIds((prev) => {
+            const next = new Set(prev)
+            next.delete(id)
+            if (next.size < 2) setComparisonOpen(false)
+            return next
+          })
+        }}
+      />
 
       <SubmissionDetailSheet
         submission={selectedSubmission}

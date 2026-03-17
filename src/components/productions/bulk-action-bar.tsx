@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDownIcon, XIcon } from "lucide-react"
+import { ChevronDownIcon, ScaleIcon, XIcon } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/common/button"
 import {
@@ -15,6 +15,7 @@ interface Props {
   pipelineStages: PipelineStageData[]
   isBulkMovePending: boolean
   onMove: (stageId: string) => void
+  onCompare: () => void
   onClear: () => void
 }
 
@@ -23,6 +24,7 @@ export function BulkActionBar({
   pipelineStages,
   isBulkMovePending,
   onMove,
+  onCompare,
   onClear,
 }: Props) {
   const [popoverOpen, setPopoverOpen] = useState(false)
@@ -63,6 +65,21 @@ export function BulkActionBar({
           </div>
         </PopoverContent>
       </Popover>
+
+      <Button
+        variant="outline"
+        size="sm"
+        leftSection={<ScaleIcon />}
+        disabled={selectedCount < 2}
+        tooltip={
+          selectedCount < 2
+            ? "Select at least 2 to compare"
+            : "Compare candidates"
+        }
+        onClick={onCompare}
+      >
+        Compare
+      </Button>
 
       <Button
         variant="ghost"
