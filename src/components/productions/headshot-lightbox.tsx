@@ -19,6 +19,7 @@ export function HeadshotLightbox({ slides, open, index, onClose }: Props) {
       index={index}
       slides={slides}
       plugins={[Zoom]}
+      controller={{ closeOnBackdropClick: true }}
       animation={{ fade: 0, swipe: 0, navigation: 0 }}
     />
   )

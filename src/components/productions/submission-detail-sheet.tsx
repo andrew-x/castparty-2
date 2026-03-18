@@ -115,6 +115,9 @@ export function SubmissionDetailSheet({
       <SheetContent
         className="overflow-visible p-0 sm:max-w-[75vw]"
         showCloseButton={false}
+        onInteractOutside={(e) => {
+          if (lightboxOpen.current) e.preventDefault()
+        }}
       >
         {submission && (
           <>
