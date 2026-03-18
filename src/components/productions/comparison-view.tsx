@@ -1,6 +1,8 @@
 "use client"
 
 import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
   FileTextIcon,
   MailIcon,
   MapPinIcon,
@@ -99,6 +101,12 @@ export function ComparisonView({
     ? localSubmissions.find((s) => s.id === lightbox.submissionId)
     : null
 
+  // Track which headshot is shown in the hero per submission
+  const [heroIndex, setHeroIndex] = useState<Record<string, number>>({})
+  const getHeroIndex = (id: string) => heroIndex[id] ?? 0
+  const setHeroFor = (id: string, index: number) =>
+    setHeroIndex((prev) => ({ ...prev, [id]: index }))
+
   const count = localSubmissions.length
   const hasAnyHeadshots = localSubmissions.some((s) => s.headshots.length > 0)
   const hasAnyResume = localSubmissions.some((s) => s.resume)
@@ -143,18 +151,20 @@ export function ComparisonView({
           >
             {/* Row: Hero headshot */}
             {localSubmissions.map((s) => {
-              const url = s.headshots[0]?.url
+              const idx = getHeroIndex(s.id)
+              const url = s.headshots[idx]?.url
+              const hasMultiple = s.headshots.length > 1
               return (
                 <div
                   key={s.id}
-                  className="relative aspect-[4/3] overflow-hidden rounded-t-lg bg-muted"
+                  className="group/hero relative aspect-[4/3] overflow-hidden rounded-t-lg bg-black"
                 >
                   {url ? (
                     // biome-ignore lint/performance/noImgElement: external R2 URLs
                     <img
                       src={url}
                       alt={`${s.firstName} ${s.lastName}`}
-                      className="size-full object-cover"
+                      className="size-full object-contain"
                     />
                   ) : (
                     <div className="flex size-full items-center justify-center">
@@ -163,6 +173,28 @@ export function ComparisonView({
                         {s.lastName[0]}
                       </span>
                     </div>
+                  )}
+                  {hasMultiple && idx > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      tooltip="Previous photo"
+                      onClick={() => setHeroFor(s.id, idx - 1)}
+                      className="absolute top-1/2 left-2 -translate-y-1/2 bg-background/80 opacity-0 backdrop-blur-sm transition-opacity group-hover/hero:opacity-100"
+                    >
+                      <ChevronLeftIcon />
+                    </Button>
+                  )}
+                  {hasMultiple && idx < s.headshots.length - 1 && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      tooltip="Next photo"
+                      onClick={() => setHeroFor(s.id, idx + 1)}
+                      className="absolute top-1/2 right-2 -translate-y-1/2 bg-background/80 opacity-0 backdrop-blur-sm transition-opacity group-hover/hero:opacity-100"
+                    >
+                      <ChevronRightIcon />
+                    </Button>
                   )}
                   {count > 2 && (
                     <Button
@@ -243,7 +275,7 @@ export function ComparisonView({
                             onClick={() =>
                               setLightbox({ submissionId: s.id, index: i })
                             }
-                            className="aspect-square overflow-hidden rounded-lg border border-border"
+                            className={`aspect-square overflow-hidden rounded-lg ${i === getHeroIndex(s.id) ? "ring-2 ring-primary ring-offset-1" : "border border-border"}`}
                           >
                             {/* biome-ignore lint/performance/noImgElement: external R2 URLs */}
                             <img
