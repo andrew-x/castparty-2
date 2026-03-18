@@ -4,7 +4,13 @@ import { CollisionPriority } from "@dnd-kit/abstract"
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider, useDroppable } from "@dnd-kit/react"
 import { useSortable } from "@dnd-kit/react/sortable"
-import { GripVerticalIcon, UsersIcon } from "lucide-react"
+import {
+  GripVerticalIcon,
+  LayoutGridIcon,
+  Rows3Icon,
+  SearchIcon,
+  UsersIcon,
+} from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
@@ -20,6 +26,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/common/empty"
+import { Input } from "@/components/common/input"
+import { ToggleGroup, ToggleGroupItem } from "@/components/common/toggle-group"
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
 import { ComparisonView } from "@/components/productions/comparison-view"
 import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
@@ -91,6 +99,8 @@ export function RoleSubmissions({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [comparisonOpen, setComparisonOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [compact, setCompact] = useState(false)
   // Stores pending reject info: either a single drag submission or bulk IDs
   const pendingRejectRef = useRef<
     | { type: "drag"; submissionId: string; stageId: string }
@@ -335,6 +345,17 @@ export function RoleSubmissions({
     }
   }
 
+  // Derive filtered columns for display (search doesn't mutate drag state)
+  const filteredColumns: ColumnItems = {}
+  const query = searchQuery.toLowerCase()
+  for (const [stageId, items] of Object.entries(columns)) {
+    filteredColumns[stageId] = query
+      ? items.filter((s) =>
+          `${s.firstName} ${s.lastName}`.toLowerCase().includes(query),
+        )
+      : items
+  }
+
   if (submissions.length === 0) {
     return (
       <Empty>
@@ -354,6 +375,35 @@ export function RoleSubmissions({
 
   return (
     <>
+      {/* Toolbar: search + view toggle */}
+      <div className="flex items-center justify-between gap-block px-block pb-block">
+        <div className="relative w-full max-w-sm">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by name"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={compact ? "compact" : "default"}
+          onValueChange={(v) => {
+            if (v) setCompact(v === "compact")
+          }}
+        >
+          <ToggleGroupItem value="default" aria-label="Default view">
+            <LayoutGridIcon className="size-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="compact" aria-label="Compact view">
+            <Rows3Icon className="size-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
       <DragDropProvider
         onDragStart={() => {
           previousColumns.current = columns
@@ -426,7 +476,9 @@ export function RoleSubmissions({
             <KanbanColumn
               key={stage.id}
               stage={stage}
-              items={columns[stage.id] ?? []}
+              items={filteredColumns[stage.id] ?? []}
+              compact={compact}
+              searchActive={query !== ""}
               selectedIds={selectedIds}
               pendingSubmissionId={pendingSubmissionId}
               stageHref={`/productions/${productionId}/roles/${roleId}/stages/${stage.id}`}
@@ -496,6 +548,8 @@ export function RoleSubmissions({
 function KanbanColumn({
   stage,
   items,
+  compact,
+  searchActive,
   selectedIds,
   pendingSubmissionId,
   stageHref,
@@ -506,6 +560,8 @@ function KanbanColumn({
 }: {
   stage: PipelineStageData
   items: SubmissionWithCandidate[]
+  compact: boolean
+  searchActive: boolean
   selectedIds: Set<string>
   pendingSubmissionId: string | null
   stageHref: string
@@ -573,6 +629,7 @@ function KanbanColumn({
             submission={submission}
             index={index}
             column={stage.id}
+            compact={compact}
             isChecked={selectedIds.has(submission.id)}
             isPending={submission.id === pendingSubmissionId}
             onToggle={() => onToggle(submission.id)}
@@ -581,7 +638,7 @@ function KanbanColumn({
         ))}
         {items.length === 0 && (
           <p className="py-4 text-center text-caption text-muted-foreground">
-            No candidates
+            {searchActive ? "No matches" : "No candidates"}
           </p>
         )}
       </div>
@@ -593,6 +650,7 @@ function KanbanCard({
   submission,
   index,
   column,
+  compact,
   isChecked,
   isPending,
   onToggle,
@@ -601,6 +659,7 @@ function KanbanCard({
   submission: SubmissionWithCandidate
   index: number
   column: string
+  compact: boolean
   isChecked: boolean
   isPending: boolean
   onToggle: () => void
@@ -615,6 +674,74 @@ function KanbanCard({
   })
 
   const headshotUrl = submission.headshots[0]?.url
+
+  if (compact) {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "group flex items-center gap-2 overflow-hidden rounded-md border border-border bg-card p-1.5 transition-colors hover:bg-muted/50",
+          isDragSource && "opacity-40",
+          isPending && "pointer-events-none animate-pulse",
+          isChecked && "border-primary/50 bg-brand-subtle",
+        )}
+      >
+        {/* Inline checkbox */}
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            "shrink-0 opacity-0 transition-opacity group-hover:opacity-100",
+            isChecked && "opacity-100",
+          )}
+        >
+          <Checkbox
+            checked={isChecked}
+            onCheckedChange={onToggle}
+            aria-label={`Select ${submission.firstName} ${submission.lastName}`}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onSelect(submission)}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+        >
+          {/* Circular thumbnail */}
+          <div className="size-8 shrink-0 overflow-hidden rounded-full bg-muted">
+            {headshotUrl ? (
+              // biome-ignore lint/performance/noImgElement: external R2 URLs
+              <img
+                src={headshotUrl}
+                alt={`${submission.firstName} ${submission.lastName}`}
+                className="size-full object-cover"
+              />
+            ) : (
+              <div className="flex size-full items-center justify-center">
+                <span className="font-medium text-caption text-muted-foreground">
+                  {submission.firstName[0]}
+                  {submission.lastName[0]}
+                </span>
+              </div>
+            )}
+          </div>
+          <p className="min-w-0 truncate font-medium text-foreground text-label">
+            {submission.firstName} {submission.lastName}
+          </p>
+        </button>
+
+        {/* Inline drag handle */}
+        <div
+          ref={handleRef}
+          className="shrink-0 cursor-grab rounded-sm p-0.5 opacity-0 transition-opacity active:cursor-grabbing group-hover:opacity-100"
+        >
+          <GripVerticalIcon className="size-3.5 text-muted-foreground" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
