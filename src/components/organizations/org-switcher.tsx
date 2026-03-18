@@ -18,7 +18,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/common/popover"
-import { SidebarMenuButton } from "@/components/common/sidebar"
 import { authClient } from "@/lib/auth/auth-client"
 import { CreateOrgDialog } from "./create-org-dialog"
 
@@ -83,28 +82,27 @@ export function OrgSwitcher({ user, organizations, activeOrgId }: Props) {
     <>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
-          <SidebarMenuButton
-            size="lg"
-            className="w-full"
-            tooltip={user.name}
+          <Button
+            variant="ghost"
+            className="h-auto gap-2.5 rounded-lg px-2 py-1"
             disabled={isSwitching}
           >
-            <Avatar size="sm">
+            <Avatar>
               {user.image && <AvatarImage src={user.image} alt={user.name} />}
               <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left leading-tight">
-              <span className="truncate font-medium text-label">
+            <div className="hidden text-left leading-tight md:grid">
+              <span className="truncate font-medium text-[13px]">
                 {user.name}
               </span>
-              <span className="truncate font-normal text-caption text-muted-foreground">
+              <span className="truncate text-[11px] text-muted-foreground">
                 {activeOrg?.name ?? user.email}
               </span>
             </div>
-            <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
-          </SidebarMenuButton>
+            <ChevronsUpDownIcon className="hidden size-3.5 shrink-0 text-muted-foreground md:block" />
+          </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-1" align="start" side="right">
+        <PopoverContent className="w-64 p-1" align="end" side="bottom">
           <div className="flex flex-col">
             <div className="px-2 py-1.5">
               <p className="truncate font-medium text-label">{user.name}</p>

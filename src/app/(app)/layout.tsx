@@ -1,14 +1,8 @@
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getUserInvitations } from "@/actions/organizations/get-user-invitations"
 import { hasAnyOrganization } from "@/actions/organizations/get-user-memberships"
 import { getUserOrganizations } from "@/actions/organizations/get-user-organizations"
-import { AppSidebar } from "@/components/app/app-sidebar"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/common/sidebar"
+import { TopNav } from "@/components/app/top-nav"
 import { getCurrentUser, getSession } from "@/lib/auth"
 
 export default async function AppLayout({
@@ -22,21 +16,18 @@ export default async function AppLayout({
   const hasOrg = await hasAnyOrganization(user.id)
   if (!hasOrg) redirect("/onboarding")
 
-  const [session, organizations, pendingInvitations, cookieStore] =
-    await Promise.all([
-      getSession(),
-      getUserOrganizations(),
-      getUserInvitations().catch(() => []),
-      cookies(),
-    ])
+  const [session, organizations, pendingInvitations] = await Promise.all([
+    getSession(),
+    getUserOrganizations(),
+    getUserInvitations().catch(() => []),
+  ])
 
   const activeOrgId = session?.session?.activeOrganizationId ?? null
   const activeOrg = organizations.find((o) => o.id === activeOrgId)
-  const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false"
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar
+    <>
+      <TopNav
         user={{
           name: user.name,
           email: user.email,
@@ -47,12 +38,9 @@ export default async function AppLayout({
         activeOrgRole={activeOrg?.role ?? null}
         pendingInvitations={pendingInvitations}
       />
-      <SidebarInset>
-        <div className="sticky top-0 z-10 flex h-12 items-center px-4 md:hidden">
-          <SidebarTrigger />
-        </div>
+      <main className="flex min-h-[calc(100dvh-3.5rem)] flex-1 flex-col">
         {children}
-      </SidebarInset>
-    </SidebarProvider>
+      </main>
+    </>
   )
 }

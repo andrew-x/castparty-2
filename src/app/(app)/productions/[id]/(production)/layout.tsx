@@ -1,8 +1,13 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
-import { Page, PageContent, PageHeader } from "@/components/common/page"
+import {
+  Page,
+  PageBody,
+  PageContent,
+  PageHeader,
+} from "@/components/common/page"
 import { PreviewLinkButtons } from "@/components/common/preview-link-buttons"
-import { ProductionTabNav } from "@/components/productions/production-tab-nav"
+import { ProductionSubNav } from "@/components/productions/production-sub-nav"
 import { getAppUrl } from "@/lib/url"
 
 export default async function ProductionLayout({
@@ -36,9 +41,10 @@ export default async function ProductionLayout({
             href={`/s/${production.organization.slug}/${production.slug}`}
           />
         }
-        tabs={<ProductionTabNav productionId={production.id} />}
       />
-      <PageContent>{children}</PageContent>
+      <PageBody nav={<ProductionSubNav productionId={production.id} />}>
+        <PageContent>{children}</PageContent>
+      </PageBody>
     </Page>
   )
 }

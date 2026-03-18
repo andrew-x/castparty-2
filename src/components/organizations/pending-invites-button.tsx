@@ -3,11 +3,8 @@
 import { MailIcon } from "lucide-react"
 import { useState } from "react"
 import type { UserInvitation } from "@/actions/organizations/get-user-invitations"
-import {
-  SidebarMenuBadge,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/common/sidebar"
+import { Badge } from "@/components/common/badge"
+import { Button } from "@/components/common/button"
 import { PendingInvitesDialog } from "./pending-invites-dialog"
 
 interface Props {
@@ -20,21 +17,25 @@ export function PendingInvitesButton({ invitations }: Props) {
   if (invitations.length === 0) return null
 
   return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        tooltip="Invitations"
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={() => setDialogOpen(true)}
+        tooltip="Invitations"
+        className="relative"
       >
         <MailIcon />
-        <span>Invitations</span>
-      </SidebarMenuButton>
-      <SidebarMenuBadge>{invitations.length}</SidebarMenuBadge>
+        <Badge className="absolute -top-1 -right-1 size-4 p-0 text-[10px]">
+          {invitations.length}
+        </Badge>
+      </Button>
 
       <PendingInvitesDialog
         invitations={invitations}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />
-    </SidebarMenuItem>
+    </>
   )
 }

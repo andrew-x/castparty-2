@@ -122,5 +122,27 @@ function PageContent({
   )
 }
 
-export { Page, PageHeader, PageContent }
+function PageBody({
+  children,
+  nav,
+  className,
+}: {
+  children: React.ReactNode
+  nav?: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={cn("-mx-page flex min-h-0 flex-1", className)}
+      data-slot="page-body"
+    >
+      {nav}
+      <div className="flex flex-1 flex-col overflow-auto px-page">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export { Page, PageHeader, PageContent, PageBody }
 export type { PageBreadcrumb }

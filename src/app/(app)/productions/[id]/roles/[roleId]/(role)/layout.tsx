@@ -1,8 +1,13 @@
 import { notFound } from "next/navigation"
 import { getRole } from "@/actions/productions/get-role"
-import { Page, PageContent, PageHeader } from "@/components/common/page"
+import {
+  Page,
+  PageBody,
+  PageContent,
+  PageHeader,
+} from "@/components/common/page"
 import { PreviewLinkButtons } from "@/components/common/preview-link-buttons"
-import { RoleTabNav } from "@/components/productions/role-tab-nav"
+import { RoleSubNav } from "@/components/productions/role-sub-nav"
 import { getAppUrl } from "@/lib/url"
 
 export default async function RoleLayout({
@@ -40,9 +45,12 @@ export default async function RoleLayout({
             href={`/s/${role.production.organization.slug}/${role.production.slug}/${role.slug}`}
           />
         }
-        tabs={<RoleTabNav productionId={id} roleId={roleId} />}
       />
-      <PageContent className="min-h-0 overflow-hidden">{children}</PageContent>
+      <PageBody nav={<RoleSubNav productionId={id} roleId={roleId} />}>
+        <PageContent className="min-h-0 overflow-hidden">
+          {children}
+        </PageContent>
+      </PageBody>
     </Page>
   )
 }
