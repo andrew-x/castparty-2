@@ -29,6 +29,15 @@ CREATE TABLE "candidate" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "comment" (
+	"id" text PRIMARY KEY NOT NULL,
+	"submission_id" text NOT NULL,
+	"submitted_by_user_id" text NOT NULL,
+	"content" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "feedback" (
 	"id" text PRIMARY KEY NOT NULL,
 	"submission_id" text NOT NULL,
@@ -128,7 +137,9 @@ CREATE TABLE "production" (
 	"is_open" boolean DEFAULT false NOT NULL,
 	"location" text DEFAULT '' NOT NULL,
 	"submission_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional"}'::jsonb NOT NULL,
 	"feedback_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"reject_reasons" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -142,7 +153,9 @@ CREATE TABLE "role" (
 	"is_open" boolean DEFAULT false NOT NULL,
 	"location" text DEFAULT '' NOT NULL,
 	"submission_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional"}'::jsonb NOT NULL,
 	"feedback_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"reject_reasons" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -167,12 +180,14 @@ CREATE TABLE "submission" (
 	"role_id" text NOT NULL,
 	"candidate_id" text NOT NULL,
 	"stage_id" text NOT NULL,
+	"rejection_reason" text,
 	"first_name" text NOT NULL,
 	"last_name" text NOT NULL,
 	"email" text NOT NULL,
 	"phone" text DEFAULT '' NOT NULL,
 	"location" text DEFAULT '' NOT NULL,
 	"answers" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"links" text[] DEFAULT '{}' NOT NULL,
 	"resume_text" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -210,6 +225,8 @@ CREATE TABLE "verification" (
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "candidate" ADD CONSTRAINT "candidate_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "comment" ADD CONSTRAINT "comment_submission_id_submission_id_fk" FOREIGN KEY ("submission_id") REFERENCES "public"."submission"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "comment" ADD CONSTRAINT "comment_submitted_by_user_id_user_id_fk" FOREIGN KEY ("submitted_by_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "feedback" ADD CONSTRAINT "feedback_submission_id_submission_id_fk" FOREIGN KEY ("submission_id") REFERENCES "public"."submission"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "feedback" ADD CONSTRAINT "feedback_submitted_by_user_id_user_id_fk" FOREIGN KEY ("submitted_by_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "feedback" ADD CONSTRAINT "feedback_stage_id_pipeline_stage_id_fk" FOREIGN KEY ("stage_id") REFERENCES "public"."pipeline_stage"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -240,6 +257,8 @@ ALTER TABLE "submission" ADD CONSTRAINT "submission_stage_id_pipeline_stage_id_f
 ALTER TABLE "user_profile" ADD CONSTRAINT "user_profile_id_user_id_fk" FOREIGN KEY ("id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "candidate_org_email_uidx" ON "candidate" USING btree ("organization_id","email");--> statement-breakpoint
+CREATE INDEX "comment_submissionId_idx" ON "comment" USING btree ("submission_id");--> statement-breakpoint
+CREATE INDEX "comment_submittedByUserId_idx" ON "comment" USING btree ("submitted_by_user_id");--> statement-breakpoint
 CREATE INDEX "feedback_submissionId_idx" ON "feedback" USING btree ("submission_id");--> statement-breakpoint
 CREATE INDEX "feedback_submittedByUserId_idx" ON "feedback" USING btree ("submitted_by_user_id");--> statement-breakpoint
 CREATE INDEX "file_submissionId_idx" ON "file" USING btree ("submission_id");--> statement-breakpoint

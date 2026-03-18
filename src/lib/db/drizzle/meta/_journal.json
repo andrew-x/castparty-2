@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1773135058441,
-      "tag": "0000_bizarre_bloodstorm",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1773137709142,
-      "tag": "0001_new_cardiac",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1773393763551,
-      "tag": "0002_fantastic_stepford_cuckoos",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1773744354051,
-      "tag": "0003_bumpy_invisible_woman",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1773830737147,
-      "tag": "0004_white_jack_flag",
+      "when": 1773832156617,
+      "tag": "0000_fearless_chimera",
       "breakpoints": true
     }
   ]
