@@ -484,6 +484,31 @@ export const Feedback = pgTable(
   ],
 )
 
+export const Comment = pgTable(
+  "comment",
+  {
+    id: text().primaryKey(),
+    submissionId: text()
+      .notNull()
+      .references(() => Submission.id, { onDelete: "cascade" }),
+    submittedByUserId: text()
+      .notNull()
+      .references(() => User.id, { onDelete: "cascade" }),
+
+    content: text().notNull(),
+
+    createdAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp()
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("comment_submissionId_idx").on(table.submissionId),
+    index("comment_submittedByUserId_idx").on(table.submittedByUserId),
+  ],
+)
+
 // --- DATA RELATIONS ---
 export const userProfileRelations = relations(UserProfile, ({ one }) => ({
   user: one(User, {
@@ -552,6 +577,7 @@ export const submissionRelations = relations(Submission, ({ one, many }) => ({
   pipelineUpdates: many(PipelineUpdate),
   files: many(File),
   feedback: many(Feedback),
+  comments: many(Comment),
 }))
 
 export const fileRelations = relations(File, ({ one }) => ({
@@ -632,5 +658,16 @@ export const feedbackRelations = relations(Feedback, ({ one }) => ({
   stage: one(PipelineStage, {
     fields: [Feedback.stageId],
     references: [PipelineStage.id],
+  }),
+}))
+
+export const commentRelations = relations(Comment, ({ one }) => ({
+  submission: one(Submission, {
+    fields: [Comment.submissionId],
+    references: [Submission.id],
+  }),
+  submittedBy: one(User, {
+    fields: [Comment.submittedByUserId],
+    references: [User.id],
   }),
 }))

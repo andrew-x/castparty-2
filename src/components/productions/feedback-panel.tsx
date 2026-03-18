@@ -1,8 +1,14 @@
 "use client"
 
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
-import { MessageSquareIcon } from "lucide-react"
+import {
+  ArrowRightIcon,
+  InboxIcon,
+  MessageCircleIcon,
+  MessageSquareIcon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
+import { createComment } from "@/actions/comments/create-comment"
 import { createFeedback } from "@/actions/feedback/create-feedback"
 import {
   Accordion,
@@ -26,13 +32,22 @@ import {
 } from "@/components/common/select"
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/common/tooltip"
 import day from "@/lib/dayjs"
+import { createCommentFormSchema } from "@/lib/schemas/comment"
 import { createFeedbackFormSchema } from "@/lib/schemas/feedback"
 import { formResolver } from "@/lib/schemas/resolve"
 import type {
+  CommentData,
   FeedbackData,
+  StageChangeData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
+import { buildActivityList } from "@/lib/submission-helpers"
 import type { CustomForm } from "@/lib/types"
 
 interface Props {
@@ -97,15 +112,128 @@ function formatAnswerValue(
   }
 }
 
+function FeedbackItem({ feedback: fb }: { feedback: FeedbackData }) {
+  return (
+    <div className="flex flex-col gap-block rounded-md border border-l-4 border-l-primary/40 bg-muted/30 p-block">
+      <div className="flex items-center gap-element">
+        <Avatar size="sm">
+          {fb.submittedBy.image && (
+            <AvatarImage src={fb.submittedBy.image} alt={fb.submittedBy.name} />
+          )}
+          <AvatarFallback>{getInitials(fb.submittedBy.name)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-caption text-foreground">
+            {fb.submittedBy.name}
+          </p>
+          <p className="text-caption text-muted-foreground">
+            {day(fb.createdAt).format("LLL")}
+          </p>
+        </div>
+        <div className="flex items-center gap-element">
+          <Badge {...getRatingBadgeProps(fb.rating)}>
+            {RATING_LABELS[fb.rating]}
+          </Badge>
+          <Badge variant="outline">{fb.stage.name}</Badge>
+        </div>
+      </div>
+      {fb.notes && <p className="text-foreground text-label">{fb.notes}</p>}
+      {fb.answers.length > 0 && (
+        <div className="flex flex-col gap-element">
+          {fb.answers.map((answer) => {
+            const field = fb.formFields.find((f) => f.id === answer.fieldId)
+            if (!field) return null
+            const displayValue = formatAnswerValue(field, answer)
+            if (!displayValue) return null
+            return (
+              <div key={answer.fieldId}>
+                <p className="font-medium text-caption text-muted-foreground">
+                  {field.label}
+                </p>
+                <p className="text-foreground text-label">{displayValue}</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CommentItem({ comment }: { comment: CommentData }) {
+  return (
+    <div className="flex flex-col gap-element rounded-md border p-block">
+      <div className="flex items-center gap-element">
+        <Avatar size="sm">
+          {comment.submittedBy.image && (
+            <AvatarImage
+              src={comment.submittedBy.image}
+              alt={comment.submittedBy.name}
+            />
+          )}
+          <AvatarFallback>
+            {getInitials(comment.submittedBy.name)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-caption text-foreground">
+            {comment.submittedBy.name}
+          </p>
+          <p className="text-caption text-muted-foreground">
+            {day(comment.createdAt).format("LLL")}
+          </p>
+        </div>
+        <MessageCircleIcon className="size-3.5 text-muted-foreground" />
+      </div>
+      <p className="text-foreground text-label">{comment.content}</p>
+    </div>
+  )
+}
+
+function StageChangeItem({ stageChange }: { stageChange: StageChangeData }) {
+  const label = stageChange.fromStageName
+    ? `${stageChange.fromStageName} → ${stageChange.toStageName ?? "Unknown"}`
+    : `Moved to ${stageChange.toStageName ?? "Unknown"}`
+  const fullText = stageChange.changedBy
+    ? `${label} by ${stageChange.changedBy.name}`
+    : label
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-element py-1 text-caption text-muted-foreground">
+          <ArrowRightIcon className="size-3 shrink-0" />
+          <span className="min-w-0 flex-1 truncate">{fullText}</span>
+          <span className="shrink-0">
+            {day(stageChange.createdAt).format("LLL")}
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top">{fullText}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+function SubmittedItem({ createdAt }: { createdAt: Date | string }) {
+  return (
+    <div className="flex items-center gap-element py-1 text-caption text-muted-foreground">
+      <InboxIcon className="size-3 shrink-0" />
+      <span className="min-w-0 flex-1">Submission created</span>
+      <span className="shrink-0">{day(createdAt).format("LLL")}</span>
+    </div>
+  )
+}
+
 export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
   const router = useRouter()
 
+  // Feedback form setup
   const defaultAnswers: Record<string, string> = {}
   for (const field of feedbackFormFields) {
     defaultAnswers[field.id] = field.type === "TOGGLE" ? "false" : ""
   }
 
-  const defaultValues = {
+  const feedbackDefaultValues = {
     rating: undefined as FeedbackData["rating"] | undefined,
     notes: "",
     answers: defaultAnswers,
@@ -115,10 +243,10 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
     createFeedback,
     formResolver(createFeedbackFormSchema),
     {
-      formProps: { defaultValues },
+      formProps: { defaultValues: feedbackDefaultValues },
       actionProps: {
         onSuccess() {
-          form.reset(defaultValues)
+          form.reset(feedbackDefaultValues)
           router.refresh()
         },
         onError({ error }) {
@@ -130,84 +258,113 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
     },
   )
 
+  // Comment form setup
+  const commentDefaultValues = { content: "" }
+
+  const { form: commentForm, action: commentAction } = useHookFormAction(
+    createComment,
+    formResolver(createCommentFormSchema),
+    {
+      formProps: { defaultValues: commentDefaultValues },
+      actionProps: {
+        onSuccess() {
+          commentForm.reset(commentDefaultValues)
+          router.refresh()
+        },
+        onError({ error }) {
+          commentForm.setError("root", {
+            message: error.serverError ?? "Something went wrong. Try again.",
+          })
+        },
+      },
+    },
+  )
+
+  const activityItems = buildActivityList(submission)
+
   return (
     <div className="flex h-full flex-col">
-      {/* Feedback list */}
+      {/* Activity list */}
       <div className="flex-1 overflow-y-auto p-block">
-        <h3 className="font-medium text-foreground text-label">Feedback</h3>
-        {submission.feedback.length === 0 ? (
+        <h3 className="font-medium text-foreground text-label">Activity</h3>
+        {activityItems.length === 0 ? (
           <p className="py-4 text-center text-caption text-muted-foreground">
-            No feedback yet.
+            No activity yet.
           </p>
         ) : (
           <div className="mt-block flex flex-col gap-block">
-            {submission.feedback.map((fb) => (
-              <div
-                key={fb.id}
-                className="flex flex-col gap-block rounded-md border bg-muted/30 p-block"
-              >
-                <div className="flex items-center gap-element">
-                  <Avatar size="sm">
-                    {fb.submittedBy.image && (
-                      <AvatarImage
-                        src={fb.submittedBy.image}
-                        alt={fb.submittedBy.name}
-                      />
-                    )}
-                    <AvatarFallback>
-                      {getInitials(fb.submittedBy.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-caption text-foreground">
-                      {fb.submittedBy.name}
-                    </p>
-                    <p className="text-caption text-muted-foreground">
-                      {day(fb.createdAt).format("LLL")}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-element">
-                    <Badge {...getRatingBadgeProps(fb.rating)}>
-                      {RATING_LABELS[fb.rating]}
-                    </Badge>
-                    <Badge variant="outline">{fb.stage.name}</Badge>
-                  </div>
-                </div>
-                {fb.notes && (
-                  <p className="text-foreground text-label">{fb.notes}</p>
-                )}
-                {fb.answers.length > 0 && (
-                  <div className="flex flex-col gap-element">
-                    {fb.answers.map((answer) => {
-                      const field = fb.formFields.find(
-                        (f) => f.id === answer.fieldId,
-                      )
-                      if (!field) return null
-                      const displayValue = formatAnswerValue(field, answer)
-                      if (!displayValue) return null
-                      return (
-                        <div key={answer.fieldId}>
-                          <p className="font-medium text-caption text-muted-foreground">
-                            {field.label}
-                          </p>
-                          <p className="text-foreground text-label">
-                            {displayValue}
-                          </p>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
+            {activityItems.map((item) => {
+              switch (item.type) {
+                case "feedback":
+                  return (
+                    <FeedbackItem key={item.data.id} feedback={item.data} />
+                  )
+                case "comment":
+                  return <CommentItem key={item.data.id} comment={item.data} />
+                case "stage_change":
+                  return (
+                    <StageChangeItem
+                      key={item.data.id}
+                      stageChange={item.data}
+                    />
+                  )
+                case "submitted":
+                  return (
+                    <SubmittedItem
+                      key="submitted"
+                      createdAt={item.data.createdAt}
+                    />
+                  )
+              }
+            })}
           </div>
         )}
       </div>
 
-      {/* Feedback form in accordion */}
-      <Accordion type="single" collapsible className="border-t">
-        <AccordionItem value="add-feedback" className="border-b-0">
-          <AccordionTrigger className="px-block py-block text-label">
+      {/* Comment + Feedback form accordions (mutually exclusive) */}
+      <Accordion type="single" collapsible className="border-t-2">
+        <AccordionItem value="add-comment" className="border-b-0">
+          <AccordionTrigger className="px-block py-block text-label [&>svg]:rotate-180 [&[data-state=open]>svg]:rotate-0">
+            <span className="flex items-center gap-element">
+              <MessageCircleIcon className="size-4" />
+              Add comment
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <form
+              onSubmit={commentForm.handleSubmit((values) => {
+                commentForm.clearErrors("root")
+                commentAction.execute({
+                  ...values,
+                  submissionId: submission.id,
+                })
+              })}
+              className="flex flex-col gap-block px-block pb-block"
+            >
+              <Textarea
+                placeholder="Write a comment..."
+                rows={3}
+                {...commentForm.register("content")}
+              />
+              {commentForm.formState.errors.content && (
+                <p className="text-caption text-destructive">
+                  {commentForm.formState.errors.content.message}
+                </p>
+              )}
+              {commentForm.formState.errors.root && (
+                <p className="text-caption text-destructive">
+                  {commentForm.formState.errors.root.message}
+                </p>
+              )}
+              <Button type="submit" loading={commentAction.isPending}>
+                Post comment
+              </Button>
+            </form>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="add-feedback" className="border-b-0 border-t">
+          <AccordionTrigger className="px-block py-block text-label [&>svg]:rotate-180 [&[data-state=open]>svg]:rotate-0">
             <span className="flex items-center gap-element">
               <MessageSquareIcon className="size-4" />
               Add feedback

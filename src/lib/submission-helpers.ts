@@ -1,4 +1,5 @@
-import type { Feedback } from "@/lib/db/schema"
+import day from "@/lib/dayjs"
+import type { Comment, Feedback } from "@/lib/db/schema"
 import type { CustomFormResponse } from "@/lib/types"
 
 export type FeedbackData = Pick<
@@ -8,6 +9,27 @@ export type FeedbackData = Pick<
   submittedBy: { id: string; name: string; image: string | null }
   stage: { id: string; name: string }
 }
+
+export type CommentData = Pick<
+  typeof Comment.$inferSelect,
+  "id" | "content" | "createdAt"
+> & {
+  submittedBy: { id: string; name: string; image: string | null }
+}
+
+export interface StageChangeData {
+  id: string
+  fromStageName: string | null
+  toStageName: string | null
+  changedBy: { name: string } | null
+  createdAt: Date | string
+}
+
+export type ActivityItem =
+  | { type: "feedback"; data: FeedbackData }
+  | { type: "comment"; data: CommentData }
+  | { type: "stage_change"; data: StageChangeData }
+  | { type: "submitted"; data: { createdAt: Date | string } }
 
 export interface PipelineStageData {
   id: string
@@ -46,6 +68,8 @@ export interface SubmissionWithCandidate {
   resume: ResumeData | null
   resumeText: string | null
   feedback: FeedbackData[]
+  comments: CommentData[]
+  stageChanges: StageChangeData[]
   candidate: {
     id: string
     firstName: string
@@ -76,4 +100,27 @@ export function getStageBadgeProps(stage: PipelineStageData | null): {
 
 export function getStageLabel(submission: SubmissionWithCandidate): string {
   return submission.stage?.name ?? "Inbound"
+}
+
+export function buildActivityList(
+  submission: SubmissionWithCandidate,
+): ActivityItem[] {
+  const items: ActivityItem[] = [
+    ...submission.feedback.map((fb) => ({
+      type: "feedback" as const,
+      data: fb,
+    })),
+    ...submission.comments.map((c) => ({
+      type: "comment" as const,
+      data: c,
+    })),
+    ...submission.stageChanges.map((sc) => ({
+      type: "stage_change" as const,
+      data: sc,
+    })),
+    { type: "submitted" as const, data: { createdAt: submission.createdAt } },
+  ]
+  return items.sort(
+    (a, b) => day(b.data.createdAt).valueOf() - day(a.data.createdAt).valueOf(),
+  )
 }

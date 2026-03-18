@@ -5,10 +5,12 @@ import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
 import { Role, Submission } from "@/lib/db/schema"
 import type {
+  CommentData,
   FeedbackData,
   HeadshotData,
   OtherRoleSubmission,
   ResumeData,
+  StageChangeData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
 import type { CustomForm } from "@/lib/types"
@@ -45,6 +47,20 @@ export async function getRoleWithSubmissions(roleId: string) {
               stage: { columns: { id: true, name: true } },
             },
             orderBy: (f, { desc }) => [desc(f.createdAt)],
+          },
+          comments: {
+            with: {
+              submittedBy: { columns: { id: true, name: true, image: true } },
+            },
+            orderBy: (c, { desc }) => [desc(c.createdAt)],
+          },
+          pipelineUpdates: {
+            with: {
+              fromStage: { columns: { name: true } },
+              toStage: { columns: { name: true } },
+              changedBy: { columns: { name: true } },
+            },
+            orderBy: (pu, { desc }) => [desc(pu.createdAt)],
           },
         },
       },
@@ -83,6 +99,21 @@ export async function getRoleWithSubmissions(roleId: string) {
       stage: fb.stage,
     }))
 
+    const comments: CommentData[] = sub.comments.map((c) => ({
+      id: c.id,
+      content: c.content,
+      createdAt: c.createdAt,
+      submittedBy: c.submittedBy,
+    }))
+
+    const stageChanges: StageChangeData[] = sub.pipelineUpdates.map((pu) => ({
+      id: pu.id,
+      fromStageName: pu.fromStage?.name ?? null,
+      toStageName: pu.toStage?.name ?? null,
+      changedBy: pu.changedBy,
+      createdAt: pu.createdAt,
+    }))
+
     return {
       id: sub.id,
       firstName: sub.firstName,
@@ -100,6 +131,8 @@ export async function getRoleWithSubmissions(roleId: string) {
       resume,
       resumeText: sub.resumeText,
       feedback,
+      comments,
+      stageChanges,
       candidate: sub.candidate,
     }
   })

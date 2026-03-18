@@ -4,7 +4,12 @@ import { eq } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
 import { Candidate } from "@/lib/db/schema"
-import type { FeedbackData, PipelineStageData } from "@/lib/submission-helpers"
+import type {
+  CommentData,
+  FeedbackData,
+  PipelineStageData,
+  StageChangeData,
+} from "@/lib/submission-helpers"
 import type { CustomForm } from "@/lib/types"
 
 export async function getCandidate(candidateId: string) {
@@ -33,6 +38,20 @@ export async function getCandidate(candidateId: string) {
               stage: { columns: { id: true, name: true } },
             },
             orderBy: (f, { desc }) => [desc(f.createdAt)],
+          },
+          comments: {
+            with: {
+              submittedBy: { columns: { id: true, name: true, image: true } },
+            },
+            orderBy: (c, { desc }) => [desc(c.createdAt)],
+          },
+          pipelineUpdates: {
+            with: {
+              fromStage: { columns: { name: true } },
+              toStage: { columns: { name: true } },
+              changedBy: { columns: { name: true } },
+            },
+            orderBy: (pu, { desc }) => [desc(pu.createdAt)],
           },
         },
       },
@@ -66,6 +85,23 @@ export async function getCandidate(candidateId: string) {
       createdAt: fb.createdAt,
       submittedBy: fb.submittedBy,
       stage: fb.stage,
+    }))
+
+    const comments: CommentData[] = (submission.comments ?? []).map((c) => ({
+      id: c.id,
+      content: c.content,
+      createdAt: c.createdAt,
+      submittedBy: c.submittedBy,
+    }))
+
+    const stageChanges: StageChangeData[] = (
+      submission.pipelineUpdates ?? []
+    ).map((pu) => ({
+      id: pu.id,
+      fromStageName: pu.fromStage?.name ?? null,
+      toStageName: pu.toStage?.name ?? null,
+      changedBy: pu.changedBy,
+      createdAt: pu.createdAt,
     }))
 
     const pipelineStages: PipelineStageData[] = (
@@ -114,6 +150,8 @@ export async function getCandidate(candidateId: string) {
         links: submission.links,
         resumeText: submission.resumeText ?? null,
         feedback,
+        comments,
+        stageChanges,
         candidate: {
           id: candidate.id,
           firstName: candidate.firstName,
