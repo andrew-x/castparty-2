@@ -1,6 +1,5 @@
 import Image from "next/image"
 import { redirect } from "next/navigation"
-import { hasAnyOrganization } from "@/actions/organizations/get-user-memberships"
 import { getCurrentUser } from "@/lib/auth"
 
 export default async function OnboardingLayout({
@@ -10,9 +9,6 @@ export default async function OnboardingLayout({
 }) {
   const user = await getCurrentUser()
   if (!user) redirect("/auth")
-
-  const hasOrg = await hasAnyOrganization(user.id)
-  if (hasOrg) redirect("/home")
 
   return (
     <main

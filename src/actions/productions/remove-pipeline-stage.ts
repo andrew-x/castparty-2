@@ -66,11 +66,13 @@ export const removePipelineStage = secureActionClient
       return { confirmRequired: true, feedbackCount }
     }
 
-    if (feedbackCount > 0) {
-      await db.delete(Feedback).where(eq(Feedback.stageId, stageId))
-    }
+    await db.transaction(async (tx) => {
+      if (feedbackCount > 0) {
+        await tx.delete(Feedback).where(eq(Feedback.stageId, stageId))
+      }
 
-    await db.delete(PipelineStage).where(eq(PipelineStage.id, stageId))
+      await tx.delete(PipelineStage).where(eq(PipelineStage.id, stageId))
+    })
 
     revalidatePath("/", "layout")
     return { success: true }

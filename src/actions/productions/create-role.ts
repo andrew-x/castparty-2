@@ -48,38 +48,40 @@ export const createRole = secureActionClient
         eq(Role.productionId, productionId),
       )
 
-      await db.insert(Role).values({
-        id,
-        productionId,
-        name,
-        slug,
-        description: description || "",
-        isOpen: true,
-        submissionFormFields: production.submissionFormFields.map((f) => ({
-          ...f,
-          id: generateId("ff"),
-        })),
-        systemFieldConfig: production.systemFieldConfig,
-        feedbackFormFields: production.feedbackFormFields.map((f) => ({
-          ...f,
-          id: generateId("fbf"),
-        })),
-        rejectReasons: production.rejectReasons,
+      await db.transaction(async (tx) => {
+        await tx.insert(Role).values({
+          id,
+          productionId,
+          name,
+          slug,
+          description: description || "",
+          isOpen: true,
+          submissionFormFields: production.submissionFormFields.map((f) => ({
+            ...f,
+            id: generateId("ff"),
+          })),
+          systemFieldConfig: production.systemFieldConfig,
+          feedbackFormFields: production.feedbackFormFields.map((f) => ({
+            ...f,
+            id: generateId("fbf"),
+          })),
+          rejectReasons: production.rejectReasons,
+        })
+
+        // Try to copy stages from the production template
+        const templateStages = await tx.query.PipelineStage.findMany({
+          where: (s) => and(eq(s.productionId, productionId), isNull(s.roleId)),
+          columns: { name: true, order: true, type: true },
+          orderBy: (s) => s.order,
+        })
+
+        const stages =
+          templateStages.length > 0
+            ? buildStagesFromTemplate(templateStages, id, productionId, orgId)
+            : buildSystemStages(id, productionId, orgId)
+
+        await tx.insert(PipelineStage).values(stages)
       })
-
-      // Try to copy stages from the production template
-      const templateStages = await db.query.PipelineStage.findMany({
-        where: (s) => and(eq(s.productionId, productionId), isNull(s.roleId)),
-        columns: { name: true, order: true, type: true },
-        orderBy: (s) => s.order,
-      })
-
-      const stages =
-        templateStages.length > 0
-          ? buildStagesFromTemplate(templateStages, id, productionId, orgId)
-          : buildSystemStages(id, productionId, orgId)
-
-      await db.insert(PipelineStage).values(stages)
 
       revalidatePath("/", "layout")
       return { id }

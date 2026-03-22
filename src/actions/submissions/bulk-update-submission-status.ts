@@ -78,23 +78,25 @@ export const bulkUpdateSubmissionStatus = secureActionClient
       const reason =
         targetStage.type === "REJECTED" ? (rejectionReason ?? null) : null
 
-      await db
-        .update(Submission)
-        .set({ stageId, rejectionReason: reason, updatedAt: day().toDate() })
-        .where(inArray(Submission.id, toMoveIds))
+      await db.transaction(async (tx) => {
+        await tx
+          .update(Submission)
+          .set({ stageId, rejectionReason: reason, updatedAt: day().toDate() })
+          .where(inArray(Submission.id, toMoveIds))
 
-      await db.insert(PipelineUpdate).values(
-        toMove.map((s) => ({
-          id: generateId("pu"),
-          organizationId: orgId,
-          productionId: s.productionId,
-          roleId: s.roleId,
-          submissionId: s.id,
-          fromStage: s.stageId,
-          toStage: stageId,
-          changeByUserId: user.id,
-        })),
-      )
+        await tx.insert(PipelineUpdate).values(
+          toMove.map((s) => ({
+            id: generateId("pu"),
+            organizationId: orgId,
+            productionId: s.productionId,
+            roleId: s.roleId,
+            submissionId: s.id,
+            fromStage: s.stageId,
+            toStage: stageId,
+            changeByUserId: user.id,
+          })),
+        )
+      })
 
       revalidatePath("/", "layout")
       return { movedCount: toMove.length }

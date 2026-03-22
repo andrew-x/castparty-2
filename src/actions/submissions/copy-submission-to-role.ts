@@ -76,42 +76,43 @@ export const copySubmissionToRole = secureActionClient
         throw new Error("Target role's pipeline is not configured.")
       }
 
-      // Create new submission
+      // Create new submission + copy file records atomically
       const newSubmissionId = generateId("sub")
 
-      await db.insert(Submission).values({
-        id: newSubmissionId,
-        productionId: targetRole.productionId,
-        roleId: targetRoleId,
-        candidateId: source.candidateId,
-        stageId: appliedStage.id,
-        firstName: source.firstName,
-        lastName: source.lastName,
-        email: source.email,
-        phone: source.phone,
-        location: source.location,
-        answers: source.answers,
-        links: source.links,
-        resumeText: source.resumeText,
-      })
+      await db.transaction(async (tx) => {
+        await tx.insert(Submission).values({
+          id: newSubmissionId,
+          productionId: targetRole.productionId,
+          roleId: targetRoleId,
+          candidateId: source.candidateId,
+          stageId: appliedStage.id,
+          firstName: source.firstName,
+          lastName: source.lastName,
+          email: source.email,
+          phone: source.phone,
+          location: source.location,
+          answers: source.answers,
+          links: source.links,
+          resumeText: source.resumeText,
+        })
 
-      // Copy file records (same R2 URLs, no physical copy)
-      if (source.files.length > 0) {
-        await db.insert(File).values(
-          source.files.map((f) => ({
-            id: generateId("file"),
-            submissionId: newSubmissionId,
-            type: f.type,
-            url: f.url,
-            key: f.key,
-            path: f.path,
-            filename: f.filename,
-            contentType: f.contentType,
-            size: f.size,
-            order: f.order,
-          })),
-        )
-      }
+        if (source.files.length > 0) {
+          await tx.insert(File).values(
+            source.files.map((f) => ({
+              id: generateId("file"),
+              submissionId: newSubmissionId,
+              type: f.type,
+              url: f.url,
+              key: f.key,
+              path: f.path,
+              filename: f.filename,
+              contentType: f.contentType,
+              size: f.size,
+              order: f.order,
+            })),
+          )
+        }
+      })
 
       revalidatePath("/", "layout")
 

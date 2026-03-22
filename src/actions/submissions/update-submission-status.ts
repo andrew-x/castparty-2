@@ -54,20 +54,22 @@ export const updateSubmissionStatus = secureActionClient
       const reason =
         targetStage.type === "REJECTED" ? (rejectionReason ?? null) : null
 
-      await db
-        .update(Submission)
-        .set({ stageId, rejectionReason: reason, updatedAt: day().toDate() })
-        .where(eq(Submission.id, submissionId))
+      await db.transaction(async (tx) => {
+        await tx
+          .update(Submission)
+          .set({ stageId, rejectionReason: reason, updatedAt: day().toDate() })
+          .where(eq(Submission.id, submissionId))
 
-      await db.insert(PipelineUpdate).values({
-        id: generateId("pu"),
-        organizationId: orgId,
-        productionId: submission.productionId,
-        roleId: submission.roleId,
-        submissionId,
-        fromStage: submission.stageId,
-        toStage: stageId,
-        changeByUserId: user.id,
+        await tx.insert(PipelineUpdate).values({
+          id: generateId("pu"),
+          organizationId: orgId,
+          productionId: submission.productionId,
+          roleId: submission.roleId,
+          submissionId,
+          fromStage: submission.stageId,
+          toStage: stageId,
+          changeByUserId: user.id,
+        })
       })
 
       revalidatePath("/", "layout")

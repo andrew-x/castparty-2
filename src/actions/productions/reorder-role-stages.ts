@@ -47,16 +47,17 @@ export const reorderRoleStages = secureActionClient
       throw new Error("Some stages were not found.")
     }
 
-    // Update order values sequentially (1, 2, 3...)
-    // TODO: Wrap in db.transaction() once we switch from neon-http to neon-serverless driver
-    await Promise.all(
-      stageIds.map((id, index) =>
-        db
-          .update(PipelineStage)
-          .set({ order: index + 1 })
-          .where(eq(PipelineStage.id, id)),
-      ),
-    )
+    // Update order values sequentially (1, 2, 3...) — atomic
+    await db.transaction(async (tx) => {
+      await Promise.all(
+        stageIds.map((id, index) =>
+          tx
+            .update(PipelineStage)
+            .set({ order: index + 1 })
+            .where(eq(PipelineStage.id, id)),
+        ),
+      )
+    })
 
     revalidatePath("/", "layout")
     return { success: true }

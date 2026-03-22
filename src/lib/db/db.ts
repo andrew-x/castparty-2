@@ -1,5 +1,5 @@
-import { neon } from "@neondatabase/serverless"
-import { drizzle } from "drizzle-orm/neon-http"
+import { Pool } from "@neondatabase/serverless"
+import { drizzle } from "drizzle-orm/neon-serverless"
 
 import * as schema from "@/lib/db/schema"
 
@@ -9,10 +9,10 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL is not set")
 }
 
-const sql = neon(databaseUrl)
+const pool = new Pool({ connectionString: databaseUrl })
 const db = drizzle({
   schema,
-  client: sql,
+  client: pool,
   casing: "snake_case",
 })
 

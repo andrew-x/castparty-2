@@ -151,48 +151,46 @@ export const createSubmission = publicActionClient
           }
         })
 
-      // Upsert candidate — atomic insert-or-update by org + email
-      const [candidate] = await db
-        .insert(Candidate)
-        .values({
-          id: generateId("cand"),
-          organizationId: orgId,
+      const submissionId = generateId("sub")
+
+      // Candidate upsert + submission insert — atomic
+      await db.transaction(async (tx) => {
+        const [candidate] = await tx
+          .insert(Candidate)
+          .values({
+            id: generateId("cand"),
+            organizationId: orgId,
+            firstName,
+            lastName,
+            email,
+            phone: phone ?? "",
+            location: location ?? "",
+          })
+          .onConflictDoUpdate({
+            target: [Candidate.organizationId, Candidate.email],
+            set: {
+              firstName,
+              lastName,
+              phone: phone ?? "",
+              location: location ?? "",
+            },
+          })
+          .returning({ id: Candidate.id })
+
+        await tx.insert(Submission).values({
+          id: submissionId,
+          productionId,
+          roleId,
+          candidateId: candidate.id,
+          stageId: appliedStage.id,
           firstName,
           lastName,
           email,
           phone: phone ?? "",
-          location: location ?? "",
+          location: location || "",
+          answers: formResponses,
+          links,
         })
-        .onConflictDoUpdate({
-          target: [Candidate.organizationId, Candidate.email],
-          set: {
-            firstName,
-            lastName,
-            phone: phone ?? "",
-            location: location ?? "",
-          },
-        })
-        .returning({ id: Candidate.id })
-
-      const candidateId = candidate.id
-
-      const submissionId = generateId("sub")
-
-      // TODO: Wrap candidate upsert + submission insert in db.transaction() once
-      // we switch from neon-http to neon-serverless driver
-      await db.insert(Submission).values({
-        id: submissionId,
-        productionId,
-        roleId,
-        candidateId,
-        stageId: appliedStage.id,
-        firstName,
-        lastName,
-        email,
-        phone: phone ?? "",
-        location: location || "",
-        answers: formResponses,
-        links,
       })
 
       // Move headshots from temp/ to permanent prefix and create File records
