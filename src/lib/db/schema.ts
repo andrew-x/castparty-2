@@ -229,7 +229,10 @@ export const UserProfile = pgTable("user_profile", {
     .references(() => User.id, { onDelete: "cascade" }),
 
   createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 })
 
 export const OrganizationProfile = pgTable("organization_profile", {
@@ -243,7 +246,10 @@ export const OrganizationProfile = pgTable("organization_profile", {
   isOrganizationProfileOpen: boolean().default(false).notNull(),
 
   createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 })
 
 export const Production = pgTable(
@@ -272,7 +278,10 @@ export const Production = pgTable(
     rejectReasons: jsonb().$type<string[]>().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
-    updatedAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp()
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
   },
   (table) => [
     uniqueIndex("production_org_slug_uidx").on(
@@ -308,7 +317,10 @@ export const Role = pgTable(
     rejectReasons: jsonb().$type<string[]>().notNull().default([]),
 
     createdAt: timestamp().defaultNow().notNull(),
-    updatedAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp()
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
   },
   (table) => [
     uniqueIndex("role_production_slug_uidx").on(table.productionId, table.slug),
@@ -337,7 +349,10 @@ export const PipelineStage = pgTable("pipeline_stage", {
   type: pipelineStageTypeEnum().notNull().default("CUSTOM"),
 
   createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 })
 
 export const PipelineUpdate = pgTable("pipeline_update", {
@@ -379,7 +394,10 @@ export const Candidate = pgTable(
     location: text().notNull().default(""),
 
     createdAt: timestamp().defaultNow().notNull(),
-    updatedAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp()
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
   },
   (table) => [
     uniqueIndex("candidate_org_email_uidx").on(
@@ -416,7 +434,10 @@ export const Submission = pgTable("submission", {
   resumeText: text(),
 
   createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 })
 
 export const feedbackRatingEnum = pgEnum("feedback_rating", [
@@ -476,7 +497,10 @@ export const Feedback = pgTable(
     notes: text().notNull().default(""),
 
     createdAt: timestamp().defaultNow().notNull(),
-    updatedAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp()
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
   },
   (table) => [
     index("feedback_submissionId_idx").on(table.submissionId),

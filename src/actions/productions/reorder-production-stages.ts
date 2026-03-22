@@ -44,6 +44,7 @@ export const reorderProductionStages = secureActionClient
       }
 
       // Update order values sequentially (1, 2, 3...)
+      // TODO: Wrap in db.transaction() once we switch from neon-http to neon-serverless driver
       await Promise.all(
         stageIds.map((id, index) =>
           db

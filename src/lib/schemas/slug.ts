@@ -1,19 +1,5 @@
 import { z } from "zod/v4"
-
-/** Slugs that collide with application routes. Duplicated from `@/lib/slug`
- *  to keep this schema module free of server-only (DB) imports. */
-const RESERVED_SLUGS = new Set([
-  "new",
-  "create",
-  "edit",
-  "delete",
-  "settings",
-  "admin",
-  "api",
-  "submit",
-  "auth",
-  "home",
-])
+import { RESERVED_SLUGS } from "@/lib/constants/reserved-slugs"
 
 export const slugSchema = z
   .string()

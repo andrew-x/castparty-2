@@ -14,7 +14,7 @@ import {
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
-import { useCallback, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-submission-status"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Badge } from "@/components/common/badge"
@@ -110,19 +110,16 @@ export function RoleSubmissions({
 
   const rejectedStage = pipelineStages.find((s) => s.type === "REJECTED")
 
-  const selectSubmission = useCallback(
-    (submission: SubmissionWithCandidate | null) => {
-      setSelectedSubmission(submission)
-      const params = new URLSearchParams(searchParams.toString())
-      if (submission) {
-        params.set("submission", submission.id)
-      } else {
-        params.delete("submission")
-      }
-      router.replace(`?${params.toString()}`, { scroll: false })
-    },
-    [router, searchParams],
-  )
+  function selectSubmission(submission: SubmissionWithCandidate | null) {
+    setSelectedSubmission(submission)
+    const params = new URLSearchParams(searchParams.toString())
+    if (submission) {
+      params.set("submission", submission.id)
+    } else {
+      params.delete("submission")
+    }
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
 
   const selectedColumn = selectedSubmission
     ? (columns[selectedSubmission.stageId] ?? [])
@@ -789,6 +786,7 @@ function KanbanCard({
       </button>
 
       {/* Drag handle */}
+      {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: drag handle needs accessible label for screen readers */}
       <div
         ref={handleRef}
         className="absolute top-2 right-2 flex cursor-grab items-center justify-center rounded-sm bg-background/80 p-0.5 opacity-0 backdrop-blur-sm transition-opacity active:cursor-grabbing group-hover:opacity-100"

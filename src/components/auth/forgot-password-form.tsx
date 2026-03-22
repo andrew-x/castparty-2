@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
-import { z } from "zod"
+import type { z } from "zod"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
 import {
@@ -14,10 +14,7 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { authClient } from "@/lib/auth/auth-client"
-
-const forgotPasswordSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address."),
-})
+import { forgotPasswordSchema } from "@/lib/schemas/auth"
 
 export function ForgotPasswordForm() {
   const [submitted, setSubmitted] = useState(false)

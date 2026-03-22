@@ -6,31 +6,35 @@
 |---------|--------|-------------|-------------|
 | Design System | `shipped` | `src/styles/globals.scss` | Violet+Stone semantic token system powering all UI color, surface, and status styling |
 | Auth Flow | `shipped` | `src/app/auth/(guest)/page.tsx` | Email/password login, signup, email verification, and password reset with layout-level route guards |
-| App Shell (Sidebar Layout) | `shipped` | `src/app/(app)/layout.tsx` | Persistent collapsible sidebar with nav and user footer; wraps all authenticated routes |
-| Onboarding | `shipped` | `src/app/onboarding/page.tsx` | Multi-step flow for new users: create an organization then optionally invite team members; shown when user has no active organization |
+| App Shell (Top Nav) | `shipped` | `src/app/(app)/layout.tsx` | Sticky top navigation bar with org switcher, pending-invite badge, and mobile hamburger drawer; wraps all authenticated routes |
+| Onboarding | `shipped` | `src/app/onboarding/page.tsx` | Multi-step flow for new users: check pending invites → create org → invite team; shown when user has no active organization |
 | Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | Org settings (name, slug, description, website, visibility), members table, invite/remove/role-change, ownership transfer; owner/admin only |
+| Accept Invitation | `shipped` | `src/app/accept-invitation/[id]/page.tsx` | Accept an org invitation by link (token-based); works when not logged in — redirects to auth with return URL |
 | Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | Grid of production cards for the active org; each card shows submission count; empty state with create CTA |
 | Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | Production overview with roles list and submission counts per role; inline role creation |
 | Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | 5-step wizard to create a new production: Details → Casting Pipeline → Submission Form → Feedback Form → Roles |
-| Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | General settings (name, slug, location, open/closed); sub-routes for pipeline template (`settings/pipeline/`), submission form (`settings/submission-form/`), and feedback form (`settings/feedback-form/`) |
-| Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/settings/page.tsx` | General settings (name, slug, description, open/closed); sub-routes for pipeline (`settings/pipeline/`), submission form, and feedback form — mirrors production settings structure |
+| Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | General settings (name, slug, location, open/closed); sub-routes for pipeline template, submission form, feedback form, and reject reasons |
+| Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/settings/page.tsx` | General settings (name, slug, description, open/closed); sub-routes for pipeline, submission form, feedback form, and reject reasons — mirrors production settings |
+| Reject Reasons | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/reject-reasons/page.tsx` | Configurable list of rejection reason labels at production and role level; shown when moving a submission to Rejected stage |
 | Admin Panel | `shipped` | `src/app/admin/page.tsx` | Internal user management (list, create, change password, delete); bypasses org scope |
-| Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | Searchable, sortable, paginated table of all candidates in the active organization |
+| Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | Paginated grid of candidates with search and filters (production, role); each card shows a headshot thumbnail |
 | Candidate Detail | `shipped` | `src/app/(app)/candidates/[candidateId]/page.tsx` | Individual candidate profile showing personal details and all submissions across roles |
 | Home Dashboard | `shipped` | `src/app/(app)/home/page.tsx` | Post-login dashboard showing the user's productions with submission counts; empty state CTA when no productions exist |
 | Public Submission Flow | `shipped` | `src/app/s/[orgSlug]/page.tsx` | Public-facing casting call pages where candidates discover orgs, productions, and roles via URL slugs and submit auditions |
 | URL Slugs | `shipped` | `src/lib/slug.ts` | Auto-generated URL-friendly identifiers for orgs, productions, and roles; used in public submission URLs |
 | Pipeline Stages | `shipped` | `src/lib/pipeline.ts` | Configurable casting pipeline per role with system stages (Applied, Selected, Rejected) and custom user-defined stages; production-level template pipeline inherited by new roles |
 | Custom Form Fields | `shipped` | `src/lib/types.ts` | Custom form fields in 4 contexts: production/role × submission/feedback (5 types: TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE); configured in settings, rendered in public submission form and feedback panel |
-| Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop moves candidates between pipeline stages; bulk selection with move-to action |
-| Stage Browse | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/stages/[stageId]/page.tsx` | Grid view of all submissions in one pipeline stage with sortable cards (newest, oldest, name A–Z, name Z–A); bulk selection supported |
-| Submission Detail Sheet | `shipped` | `src/components/productions/submission-detail-sheet.tsx` | Right-side sheet showing full submission details (headshots, resume, links, custom field answers) and the feedback panel; prev/next navigation between submissions in the same column |
+| Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop, bulk selection, comparison view, search, and compact/default view toggle |
+| Stage Browse | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/stages/[stageId]/page.tsx` | Grid view of all submissions in one pipeline stage with sortable cards; bulk selection supported |
+| Submission Detail Sheet | `shipped` | `src/components/productions/submission-detail-sheet.tsx` | Right-side sheet showing full submission details (headshots, resume, links, custom field answers), feedback panel, and comments; prev/next navigation |
 | Headshot Lightbox | `shipped` | `src/components/productions/headshot-lightbox.tsx` | Full-screen headshot viewer with zoom; uses `yet-another-react-lightbox`; dynamically imported (no SSR) from SubmissionDetailSheet |
 | Bulk Submission Status | `shipped` | `src/actions/submissions/bulk-update-submission-status.ts` | Move up to 100 selected submissions to a target pipeline stage in one action; optimistic UI via BulkActionBar; full PipelineUpdate audit trail |
-| Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | Multi-org switching in sidebar footer; lets users switch between organizations they belong to |
+| Comparison View | `shipped` | `src/components/productions/comparison-view.tsx` | Side-by-side headshot comparison for multiple submissions within the same Kanban column; toggle from the stage controls |
+| Comments | `shipped` | `src/actions/comments/create-comment.ts` | Freetext comments on submissions (not stage-specific); shown in submission detail sheet alongside feedback history |
+| Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | Multi-org switching in the top nav; lets users switch between organizations they belong to |
 | R2 File Storage | `shipped` | `src/lib/r2.ts` | Cloudflare R2 utility for uploading, deleting, and moving files; uses AWS SDK S3-compatible API; used by headshot and resume upload |
 | Resume Upload | `shipped` | `src/components/submissions/resume-uploader.tsx` | Candidates upload a PDF resume when submitting for a role; text is extracted server-side and stored for future search/AI use |
-| Feedback Panel | `shipped` | `src/components/productions/feedback-panel.tsx` | Production team members rate submissions (4-point numeric scale) and add notes + custom field answers per pipeline stage; history shown as comment cards |
+| Feedback Panel | `shipped` | `src/components/productions/feedback-panel.tsx` | Production team members rate submissions (4-point scale: Strong No/No/Yes/Strong Yes) and add notes + custom field answers per pipeline stage; history shown as cards |
 | AutocompleteInput | `shipped` | `src/components/common/autocomplete-input.tsx` | Free-form combobox input with keyboard navigation and a filtered dropdown; not constrained to options — users can type any value |
 | Drawer | `shipped` | `src/components/common/drawer.tsx` | `vaul`-based drawer primitive supporting all four directions (top/bottom/left/right); includes handle indicator for bottom drawers; shadcn-compatible API |
 | useCityOptions | `shipped` | `src/hooks/use-city-options.ts` | Hook that lazy-loads and caches US + Canadian city names for use with AutocompleteInput |
@@ -38,7 +42,6 @@
 | Landing Page | `shipped` | `src/app/page.tsx` | Single-screen hero with Castparty branding, tagline, and CTA link to /auth |
 | Email Verification | `shipped` | `src/app/auth/verify-email/page.tsx` | Post-signup email verification flow |
 | Password Reset | `shipped` | `src/app/auth/reset-password/page.tsx` | Token-based password reset via email link |
-| Accept Invitation | `shipped` | `src/app/accept-invitation/[id]/page.tsx` | Token-based invitation acceptance that adds users to an organization |
 | Admin Organizations | `shipped` | `src/app/admin/organizations/page.tsx` | Admin-level organization management (list, delete) |
 | Email Emulator | `dev-only` | `src/app/admin/emails/page.tsx` | Dev-only inbox that captures outbound emails in memory and renders them as they'd appear in a real email client; replaces console HTML dumps |
 | 404 Page | `shipped` | `src/app/not-found.tsx` | Theatrical "didn't make the callback list" copy with decorative 404 display |
@@ -112,7 +115,7 @@ Each group follows a consistent suffix pattern:
 | `src/components/auth/auth-tabs.tsx` | Client component; wraps `LoginForm` and `SignUpForm` in shadcn `Tabs` |
 | `src/components/auth/login-form.tsx` | Client component; calls `authClient.signIn.email`, pushes to `/home` on success |
 | `src/components/auth/signup-form.tsx` | Client component; calls `authClient.signUp.email`, pushes to `/home` on success |
-| `src/components/auth/forgot-password-form.tsx` | Client component; stub only — simulates a 500ms delay and shows a success `Alert`; no email is sent |
+| `src/components/auth/forgot-password-form.tsx` | Client component; calls `authClient.requestPasswordReset({ email, redirectTo: "/auth/reset-password" })`; shows a non-revealing success alert regardless of whether the email exists |
 
 **How it works:**
 
@@ -140,27 +143,29 @@ GET /(app)/*
 
 - **Server components for pages, client components for forms.** Pages (`auth/page.tsx`, `home/page.tsx`) are server components — they handle metadata and any server-side data fetching. Forms are client components because they manage local state (pending, error) and call the Better Auth client SDK directly.
 
-- **Forgot password as a stub.** The form shows a success message unconditionally after a simulated delay. No email is sent yet. The UX is intentionally non-revealing: "If an account exists for that email, we sent a reset link." This prevents account enumeration even in stub form.
+- **Non-revealing forgot-password response.** The form calls `authClient.requestPasswordReset` and shows a success message unconditionally, regardless of whether the email exists in the system. This prevents account enumeration while still sending a real reset link when the address matches an account.
 
 **Integration points:** All routes under `src/app/(app)/` depend on `(app)/layout.tsx` for auth enforcement. The `getCurrentUser()` helper lives in `src/lib/auth` — see `docs/ARCHITECTURE.md` for the Better Auth setup.
 
 *Updated: 2026-02-28 — Initial auth flow documentation*
+*Updated: 2026-03-18 — Forgot-password form is no longer a stub; now calls authClient.requestPasswordReset*
 
 ---
 
 ## Onboarding
 
-**Overview:** A multi-step flow shown to authenticated users who do not yet belong to any organization. Step 1 creates the org; step 2 invites team members (skippable). Exists because a new account is useless without an organization — this flow bridges sign-up and first use.
+**Overview:** A multi-step flow shown to authenticated users who do not yet belong to any organization. If the user has pending invitations, those are shown first; otherwise the flow goes directly to org creation then team invite. Exists because a new account is useless without an organization — this flow bridges sign-up and first use.
 
 **Key files:**
 
 | File | Role |
 |------|------|
 | `src/app/onboarding/layout.tsx` | Server component; calls `getCurrentUser()` (redirect to `/auth` if unauthenticated) and `hasAnyOrganization()` (redirect to `/home` if already in an org); renders the card shell |
-| `src/app/onboarding/page.tsx` | Server component; renders `<OnboardingFlow />` |
-| `src/components/onboarding/onboarding-flow.tsx` | Client component; owns step state (`create-org` → `invite-team`) and passes `handleOrgCreated` as the `onComplete` callback to `CreateOrgForm` |
-| `src/components/onboarding/create-org-form.tsx` | Client component; collects org name and URL slug, auto-derives slug from name; accepts optional `onComplete(organizationId)` callback — when present, calls it instead of navigating to `/home` |
-| `src/components/onboarding/invite-team-form.tsx` | Client component; sends invites via `inviteMember` action one at a time; shows a sent-emails list; "Skip for now" / "Continue" button navigates to `/home` |
+| `src/app/onboarding/page.tsx` | Server component; fetches `getUserInvitations()` and passes them to `<OnboardingFlow />` |
+| `src/components/onboarding/onboarding-flow.tsx` | Client component; owns step state with 4 possible steps: `pending-invites`, `create-org`, `invite-team`, `accept-remaining` |
+| `src/components/onboarding/onboarding-invitation-list.tsx` | Client component; renders pending invitations with accept/ignore per-row actions |
+| `src/components/onboarding/create-org-form.tsx` | Client component; collects org name and URL slug, auto-derives slug from name; `onComplete(organizationId)` callback advances to invite step |
+| `src/components/onboarding/invite-team-form.tsx` | Client component; sends invites via `inviteMember` action one at a time; shows a sent-emails list; continues to home or remaining invites |
 
 **How it works:**
 
@@ -168,47 +173,60 @@ GET /(app)/*
 GET /onboarding
   └── onboarding/layout.tsx    ← getCurrentUser() → /auth if not signed in
                                ← hasAnyOrganization() → /home if already has org
-      └── onboarding/page.tsx  ← renders <OnboardingFlow />
+      └── onboarding/page.tsx  ← getUserInvitations()
+          └── <OnboardingFlow pendingInvitations={...} />
 
 OnboardingFlow (client)
+  if pendingInvitations.length > 0:
+    step = "pending-invites"
+      └── <OnboardingInvitationList> — accept/ignore per invitation
+          → "Continue" (requires ≥1 accepted) → router.refresh() + /home
+          → "Create your own" → step = "create-org"
+
   step = "create-org"
     └── <CreateOrgForm onComplete={handleOrgCreated} />
-          useHookFormAction(createOrganization, zodResolver(createOrgFormSchema))
-          → onComplete(organizationId) → setOrgId; setStep("invite-team")
+          → onComplete(orgId) → step = "invite-team"
 
   step = "invite-team"
     └── <InviteTeamForm organizationId={orgId} />
-          inviteMember action (repeatable, one email at a time)
-          "Skip for now" / "Continue" → router.push("/home")
+          → if unresolved invitations remain: step = "accept-remaining"
+          → else: router.refresh() + /home
+
+  step = "accept-remaining"
+    └── <OnboardingInvitationList> — resolve remaining invitations
+        → "Continue" / "Skip" → router.refresh() + /home
 ```
 
 **Architecture decisions:**
 
 - **Client-side step manager (`OnboardingFlow`) instead of multi-page routes** — step transitions are instant and no intermediate state needs to survive a navigation. A single client component holding `step` and `orgId` in `useState` is simpler than URL-based step routing.
 
-- **`onComplete` callback on `CreateOrgForm`** — the form is also used standalone (e.g. an org-switcher "create new" path). Adding an optional `onComplete` prop lets the onboarding flow intercept the success event without forking the component. When `onComplete` is absent, the form falls back to `router.push("/home")` — the original behavior.
+- **`onComplete` callback on `CreateOrgForm`** — the form is also used standalone (e.g. an org-switcher "create new" path). Adding an optional `onComplete` prop lets the onboarding flow intercept the success event without forking the component. When `onComplete` is absent, the form falls back to `router.push("/home")`.
 
 - **Guard in `layout.tsx`, not `page.tsx`** — the redirect logic (no auth, already has org) lives in the layout so it applies to every child route under `/onboarding/`, not just the index page.
 
 - **`createOrganization` does not call `revalidatePath`** — the action intentionally omits `revalidatePath("/", "layout")` after org creation. Navigation from step 1 to step 2 is handled entirely by the `onComplete` callback in `OnboardingFlow`, which calls `router.refresh()` + `router.push("/home")` at the end. Adding `revalidatePath` here caused the App Router to redirect to `/home` before the invite step could render, skipping step 2.
 
+- **Pending invitations shown before org creation** — if a user was invited to an existing org, offering org creation first creates a confusing branch: they create a new org, then still see the old invite. Showing invitations first lets them join without creating unnecessary orgs.
+
 **Integration points:** Depends on `hasAnyOrganization` from `src/actions/organizations/get-user-memberships.ts`. On completion, the user lands at `/home`, which is guarded by `(app)/layout.tsx` — see the Auth Flow section. Invites use the same `inviteMember` action as the Organizations Management settings page.
 
 *Updated: 2026-03-02 — Documented multi-step onboarding flow (create org + invite team)*
 *Updated: 2026-03-10 — Noted why createOrganization omits revalidatePath (invite step skipping bug)*
+*Updated: 2026-03-18 — Added pending-invites step and accept-remaining step; updated flow diagram and key files*
 
 ---
 
-## App Shell (Sidebar Layout)
+## App Shell (Top Nav)
 
-**Overview:** Persistent collapsible sidebar that wraps every authenticated page. Provides primary navigation (Home, Productions, Candidates), a user identity footer, and a thin top header with a toggle trigger. It exists so that every page inside the app shares a consistent navigation frame without each route needing to manage its own nav.
+**Overview:** A sticky top navigation bar that wraps every authenticated page. Provides primary navigation links (Home, Productions, Candidates, Settings), an org switcher, and a pending-invite badge. On mobile it collapses to a hamburger button that opens a slide-in Sheet drawer. Replaced the previous sidebar layout in March 2026 — the top nav gives more horizontal content space, which matters for the Kanban board and other wide layouts.
 
 **Key files:**
 
 | File | Role |
 |------|------|
-| `src/app/(app)/layout.tsx` | Server component; auth guard + `SidebarProvider` root; reads `sidebar_state` cookie to restore open/closed state; inlines a mobile-only 48px header with `SidebarTrigger` |
-| `src/components/app/app-sidebar.tsx` | Client component; renders the full sidebar — logo header, nav items with active highlighting, org switcher + pending invites footer |
+| `src/app/(app)/layout.tsx` | Server component; auth guard + data fetch; renders `TopNav` + `<main>` wrapper |
+| `src/components/app/top-nav.tsx` | Client component; sticky 56px bar — logo, nav links, org switcher, pending-invite button; mobile hamburger + Sheet drawer |
 
 **How it works:**
 
@@ -216,46 +234,38 @@ OnboardingFlow (client)
 (app)/layout.tsx  (server)
   ├── getCurrentUser() → redirect /auth if unauthenticated
   ├── hasAnyOrganization() → redirect /onboarding if no org
-  ├── reads sidebar_state cookie → defaultOpen
-  └── <SidebarProvider defaultOpen={defaultOpen}>
-        ├── <AppSidebar user={...} />   (client)
-        │     ├── SidebarHeader  — logo (expanded) / icon (collapsed) + toggle buttons
-        │     ├── SidebarContent — nav items (Home / Productions / Candidates / Settings*)
-        │     │     └── isActive() — pathname === href || startsWith(href + "/")
-        │     │     * Settings shown only when activeOrgRole is "owner" or "admin"
-        │     ├── SidebarFooter  — PendingInvitesButton + OrgSwitcher
-        │     └── SidebarRail    — drag-resize handle
-        └── <SidebarInset>
-              ├── mobile-only 48px header (SidebarTrigger, md:hidden)
-              └── {children}
+  ├── getUserOrganizations() + getUserInvitations()
+  └── <TopNav user={...} organizations={...} activeOrgId={...} pendingInvitations={...} />
+        ├── Desktop: horizontal nav links (Home / Productions / Candidates / Settings*)
+        │     └── isActive(href) — pathname === href || startsWith(href + "/")
+        │     * Settings shown only when activeOrgRole is "owner" or "admin"
+        ├── OrgSwitcher (right side)
+        ├── PendingInvitesButton (right side, badge count)
+        └── Mobile: hamburger → Sheet (left side) with same nav items + icons
+      <main> {children} </main>
 ```
 
-**Sidebar behavior:**
+**Nav behavior:**
 
 | Behavior | Detail |
 |----------|--------|
-| Collapsed width | 48px (icon-only mode) |
-| Expanded width | 256px |
-| Collapse mode | `collapsible="icon"` — icons remain visible when collapsed; tooltips show on hover |
-| State persistence | `sidebar_state` cookie; read server-side on initial load, written client-side by shadcn's `SidebarProvider` on toggle |
-| Keyboard shortcut | Cmd+B (Mac) / Ctrl+B (Windows) — built into shadcn `SidebarProvider` |
-| Mobile | Renders as a `Sheet` drawer instead of an inline sidebar |
-| Active state | `isActive(href)` returns true when `pathname === href` or `pathname.startsWith(href + "/")`, so nested routes also highlight the parent nav item |
+| Height | 56px (`h-14`) |
+| Position | `sticky top-0 z-30` |
+| Active state | `isActive(href)` — true when pathname matches exactly or starts with `href/` |
+| Settings visibility | Only rendered when `activeOrgRole` is `"owner"` or `"admin"` |
+| Mobile nav | Sheet drawer (left side) via shadcn `Sheet`; closes automatically on route change |
 
 **Architecture decisions:**
 
-- **`collapsible="icon"` over `collapsible="offcanvas"`** — icon mode keeps nav items discoverable when collapsed (icons remain visible with tooltips), which suits the expected nav depth. Offcanvas would fully hide the sidebar, requiring an explicit open gesture even on desktop.
+- **Top nav over sidebar** — Kanban boards, form builders, and candidate grids are all horizontally wide. A sidebar permanently occupies 256px of width that these layouts need. The top nav sacrifices vertical space (56px) for horizontal freedom, which suits the content better.
 
-- **Cookie read in the server layout, not client-only state** — reading `sidebar_state` on the server means the initial HTML render matches the user's last preference, avoiding a layout shift on load. The shadcn `SidebarProvider` then takes over client-side writes.
+- **All data fetched in the server layout, passed as props to the client component** — `TopNav` is a client component (it needs `usePathname` for active link detection), but its data (orgs, invitations) comes from the server layout via props. This avoids a redundant client-side fetch and keeps the client component free of `async` data dependencies.
 
-- **User data flows top-down from the layout** — `(app)/layout.tsx` fetches the current user once and passes `{ name, email, image }` as props to `AppSidebar`. This avoids a second `getCurrentUser()` call inside the sidebar and keeps the client component free of server-side data fetching.
+- **Settings nav conditional on role** — Settings is an owner/admin route. Hiding the link for members prevents confusion without adding a separate guard — the settings page itself also checks membership role.
 
-- **`src/components/app/` directory for shell components** — layout-level components that belong to the authenticated app shell (`AppSidebar`) live here, separate from `src/components/common/` (generic primitives) and `src/components/auth/` (auth-specific). See `docs/ARCHITECTURE.md` for the full component directory conventions.
+**Integration points:** All routes under `src/app/(app)/` inherit this layout. Auth enforcement is here — see the Auth Flow section above. The `getCurrentUser()` and `getSession()` helpers live in `src/lib/auth`.
 
-**Integration points:** All routes under `src/app/(app)/` inherit this layout. Auth enforcement is handled here — see the Auth Flow section above. The `getCurrentUser()` helper lives in `src/lib/auth`.
-
-*Updated: 2026-02-28 — Initial sidebar layout documentation*
-*Updated: 2026-03-04 — Removed AppHeader (inlined in layout as mobile-only trigger), corrected sidebar footer (OrgSwitcher + PendingInvitesButton), added Settings nav conditional, added onboarding redirect*
+*Updated: 2026-03-18 — Replaced sidebar layout documentation with top nav (switched in commit bf4218e)*
 
 ---
 
@@ -445,12 +455,13 @@ Custom stages are inserted at orders between 1 and 999. The `order` integer colu
 
 **Integration points:** New submissions from the Public Submission Flow always land in the Applied stage. The production pipeline template settings live at `src/app/(app)/productions/[id]/(production)/settings/pipeline/page.tsx`; role pipeline settings at the equivalent `(role)/settings/pipeline/` sub-route. Role general settings (name, description, slug, open/closed) are updated via `src/actions/productions/update-role.ts`.
 
-**Known issue — `Feedback.stageId` restrict constraint:** `Feedback.stageId` is a FK to `PipelineStage` with `onDelete: "restrict"` (schema line 468). The `removePipelineStage` action (`src/actions/productions/remove-pipeline-stage.ts`) moves all submissions on the stage to the APPLIED stage before deleting the `PipelineStage` row — but it does not delete or reassign `Feedback` records that reference the stage. If any `Feedback` row exists for that stage, the `db.delete(PipelineStage)` call will fail with a PostgreSQL foreign key constraint error. The fix requires either deleting associated `Feedback` rows before the stage delete or setting `Feedback.stageId` to `onDelete: "cascade"` or `"set null"`. Until fixed, removing a custom stage that has been used for feedback will surface an uncaught server error.
+**Stage deletion with feedback:** `removePipelineStage` (`src/actions/productions/remove-pipeline-stage.ts`) accepts an optional `force: boolean` param. If submissions exist on the stage, deletion is blocked outright. If only feedback rows exist (no submissions), the action returns `{ confirmRequired: true, feedbackCount }` instead of deleting. `RoleStagesEditor` (`src/components/productions/role-stages-editor.tsx`) intercepts this response and shows an `AlertDialog` listing the feedback count; confirming re-calls with `force: true`, which cascade-deletes the feedback rows before removing the stage. This resolves Known Issue #5 in `docs/ARCHITECTURE.md`.
 
 *Updated: 2026-03-01 — Initial pipeline stages documentation*
 *Updated: 2026-03-04 — Note consolidated role action (update-role handles all role mutations including slug)*
 *Updated: 2026-03-04 — Corrected stage names (Applied/Selected/Rejected), replaced isSystem/isTerminal with type enum, added production-template pipeline tier, fixed StatusChange → PipelineUpdate, updated entry point paths*
 *Updated: 2026-03-16 — Fixed settings entry point paths to sub-routes; documented Feedback.stageId restrict constraint bug*
+*Updated: 2026-03-22 — Replaced known issue note with fixed behavior: removePipelineStage force param + AlertDialog confirmation for feedback-only stage deletes*
 
 ---
 
@@ -506,11 +517,20 @@ RolePage (server)
 
 **Bulk selection:** Cards have a checkbox (visible on hover). Selecting one or more cards shows `BulkActionBar` (`src/components/productions/bulk-action-bar.tsx`) — a fixed bottom bar with a "Move to" popover. On confirm, the `bulkUpdateSubmissionStatus` action moves all selected submissions at once and writes a `PipelineUpdate` row for each. The same optimistic pattern applies: column state is updated immediately, with rollback on error. Selection is capped at 100 submissions and auto-pruned when server data changes.
 
+**Search:** A search input at the top of the board filters visible cards across all columns in real time by `firstName`, `lastName`, and `email`. Filtering happens entirely client-side — no server round-trip.
+
+**Compact view:** A `ToggleGroup` in the board header switches between `default` and `compact` card sizes. Compact mode reduces each card to a single name line with headshot avatar, allowing more cards to be visible at once in a column without scrolling. The view preference is stored in a `?view=compact` URL search param so it survives navigation.
+
+**Comparison view:** A "Compare" button in `StageControls` (`src/components/productions/stage-controls.tsx`) opens `ComparisonView` (`src/components/productions/comparison-view.tsx`). The comparison view renders headshots side-by-side for all selected submissions (or all in the column when nothing is selected) in a full-width overlay, letting the casting director evaluate headshots at a glance without opening each submission individually.
+
+**Reject reason dialog:** Moving a submission to the Rejected stage triggers `RejectReasonDialog` (`src/components/productions/reject-reason-dialog.tsx`), which prompts the user to optionally select a configured reject reason before confirming the stage move. The selection is stored in `Submission.rejectionReason`.
+
 **Integration points:** Depends on Pipeline Stages for column structure — stages come from `getRoleWithSubmissions` alongside the submissions. `SubmissionDetailSheet` is rendered as a portal controlled by `selectedSubmission` state. The `updateSubmissionStatus` and `bulkUpdateSubmissionStatus` actions both write to the `PipelineUpdate` table. See the Pipeline Stages section above for stage type definitions and audit trail details.
 
 *Updated: 2026-03-04 — Documented Kanban board replacing tabbed submission list; terminal stage unlock; optimistic drag-and-drop with @dnd-kit/react v0.3*
 *Updated: 2026-03-10 — Added candidate photo thumbnail (Avatar with headshot/initials fallback) on KanbanCard*
 *Updated: 2026-03-16 — Fixed entry point path to (role) route group; documented bulk selection and BulkActionBar*
+*Updated: 2026-03-18 — Added search, compact view, comparison view, and reject reason dialog*
 
 ---
 
@@ -812,6 +832,58 @@ Radio buttons in the form are ordered 4 → 1 (top to bottom). The rating field 
 
 ---
 
+## Comments
+
+**Overview:** Production team members can leave freetext comments on any submission. Unlike feedback, comments are not tied to a pipeline stage and have no rating or structured fields — they are a lightweight thread of notes visible to everyone on the team. Exists because feedback is stage-anchored (it records "how I felt at this stage"), while comments serve a different purpose: quick coordination notes like "follow up with this person" or "check availability before advancing."
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/actions/comments/create-comment.ts` | Mutation: inserts a `Comment` row; validates that the submission belongs to the user's active org |
+| `src/lib/schemas/comment.ts` | `createCommentFormSchema` (content, max 5000 chars) + `createCommentActionSchema` (extends with `submissionId`) |
+| `src/lib/db/schema.ts` | `Comment` table: `submissionId`, `submittedByUserId`, `content`, `createdAt`, `updatedAt` |
+| `src/lib/submission-helpers.ts` | `CommentData` interface; `comments` array on `SubmissionWithCandidate` |
+
+**How it works:**
+
+Comments are displayed inside `SubmissionDetailSheet` alongside feedback history. The `create-comment` action is a standard `secureActionClient` action. It loads the submission to verify org ownership via the ownership chain `submission → role → production → organizationId`, then inserts the `Comment` row. After insert, `revalidatePath("/", "layout")` refreshes the sheet.
+
+**Architecture decisions:**
+
+- **No stage context on comments** — feedback is explicitly stage-anchored (casting directors want to know "what did we think at the callback stage?"). Comments have no stage context, making them suitable for operational notes that aren't tied to evaluation ("she confirmed availability for July"). Mixing these into feedback would pollute the per-stage history.
+
+- **5000 char limit on content** — long enough for a detailed note, short enough to stay readable as a chat-style thread. No markdown, no mentions, no threading — intentionally minimal for the community theatre persona.
+
+**Integration points:** Comments are fetched as part of `getCandidate` (`src/actions/candidates/get-candidate.ts`) and the role-with-submissions query, making them available in both the Kanban submission detail sheet and the candidate detail page. The `Comment` table is defined alongside `Feedback` in `src/lib/db/schema.ts`.
+
+*Added: 2026-03-18 — Initial comments documentation*
+
+---
+
+## Reject Reasons
+
+**Overview:** Productions and roles can define a list of configurable rejection reason labels (e.g. "Not the right fit", "Schedule conflict"). When a submission is moved to the Rejected stage via the Kanban board, the user is prompted to optionally select one of these reasons. The chosen reason is stored in `Submission.rejectionReason`. Exists because a blank rejection gives the team no recall later when reviewing decisions.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/app/(app)/productions/[id]/(production)/settings/reject-reasons/page.tsx` | Production-level reject reasons editor page |
+| `src/app/(app)/productions/[id]/roles/[roleId]/(role)/settings/reject-reasons/page.tsx` | Role-level reject reasons editor page |
+| `src/actions/productions/update-production-reject-reasons.ts` | Mutation: updates `Production.rejectReasons` JSONB array |
+| `src/actions/productions/update-role-reject-reasons.ts` | Mutation: updates `Role.rejectReasons` JSONB array |
+| `src/components/productions/reject-reasons-editor.tsx` | Shared editor component for adding/removing reason strings; used at both production and role level |
+| `src/components/productions/reject-reason-dialog.tsx` | Dialog shown when moving a submission to Rejected; lists the role's (or production's) reasons for selection |
+
+**How it works:** Reject reasons are stored as a `string[]` in the `rejectReasons` JSONB column on both `Production` and `Role` tables. The editor is a simple list with add/remove. When a submission is dragged (or moved via BulkActionBar) to a Rejected-type stage, `RejectReasonDialog` opens. The user can select a pre-configured reason or skip. On confirm, `updateSubmissionStatus` is called with an optional `rejectionReason` field, which is written to `Submission.rejectionReason`.
+
+**Integration points:** `RejectReasonDialog` is rendered inside `RoleSubmissions`. It receives the `rejectReasons` array from the role (falling back to the production's reasons when the role has none — the fallback logic follows the same form-inheritance pattern as submission/feedback forms). The reason is stored on `Submission.rejectionReason` and displayed in `SubmissionDetailSheet`.
+
+*Added: 2026-03-18 — Initial reject reasons documentation*
+
+---
+
 ## Email Emulator
 
 **Overview:** A development-only inbox that intercepts outbound emails and stores them in memory instead of sending them via Resend. The production team can browse captured emails at `/admin/emails` and preview rendered HTML exactly as an email client would display it. Exists because the old approach (logging the full HTML string to the console) was unreadable for styled transactional emails.
@@ -862,8 +934,9 @@ GET /admin/emails/[id]
 
 - **Sandboxed iframe for HTML preview.** `sandbox="allow-same-origin allow-popups allow-top-navigation-by-user-activation"` allows links to open (email CTAs need to be testable) while blocking script execution. This prevents React Email's inline scripts from running in the admin panel's DOM context.
 
-- **`force-dynamic` on the list page.** Email sends are fire-and-forget side effects, not database writes, so the Next.js cache would serve a stale snapshot. `force-dynamic` ensures the page always reads the live store on request.
+- **`force-dynamic` on the list page.** Email sends write to the in-memory store as a side effect, not to the database, so the Next.js cache would serve a stale snapshot. `force-dynamic` ensures the page always reads the live store on request.
 
 **Integration points:** `sendEmail()` in `src/lib/email.ts` is the sole write path. The admin layout at `src/app/admin/layout.tsx` gates access to `IS_DEV` — this feature is unreachable in production by the same mechanism that hides the entire admin panel. No database, no migrations, no external service dependency.
 
 *Added: 2026-03-11 — Initial email emulator documentation*
+*Updated: 2026-03-22 — Removed stale "fire-and-forget" phrasing (sendEmail is now async and propagates errors)*

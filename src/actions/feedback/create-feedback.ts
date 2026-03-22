@@ -65,7 +65,9 @@ export const createFeedback = secureActionClient
       for (const field of feedbackFormFields) {
         if (!field.required) continue
         const value = answers[field.id]
-        if (!value || !value.trim()) {
+        if (field.type === "TOGGLE") {
+          if (value !== "true") throw new Error(`${field.label} is required.`)
+        } else if (!value || !value.trim()) {
           throw new Error(`${field.label} is required.`)
         }
       }

@@ -21,7 +21,7 @@ export const auth = betterAuth({
     enabled: true,
     sendResetPassword: async ({ user, token }) => {
       const resetUrl = getAppUrl(`/auth/reset-password?token=${token}`)
-      sendEmail({
+      await sendEmail({
         to: user.email,
         subject: "Reset your password",
         react: PasswordResetEmail({ name: user.name, resetUrl }),
@@ -34,7 +34,7 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, token }) => {
       const verifyUrl = getAppUrl(`/auth/verify-email?token=${token}`)
-      sendEmail({
+      await sendEmail({
         to: user.email,
         subject: "Verify your email",
         react: VerifyEmailEmail({ name: user.name, verifyUrl }),
@@ -73,7 +73,7 @@ export const auth = betterAuth({
       creatorRole: "owner",
       sendInvitationEmail: async (data) => {
         const acceptUrl = getAppUrl(`/accept-invitation/${data.id}`)
-        sendEmail({
+        await sendEmail({
           to: data.email,
           subject: `You're invited to ${data.organization.name}`,
           react: InvitationEmail({

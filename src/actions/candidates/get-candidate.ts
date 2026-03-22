@@ -1,9 +1,8 @@
 "use server"
 
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
-import { Candidate } from "@/lib/db/schema"
 import type {
   CommentData,
   FeedbackData,
@@ -18,7 +17,7 @@ export async function getCandidate(candidateId: string) {
   if (!orgId) return null
 
   const candidate = await db.query.Candidate.findFirst({
-    where: eq(Candidate.id, candidateId),
+    where: (c) => and(eq(c.id, candidateId), eq(c.organizationId, orgId)),
     with: {
       submissions: {
         with: {
@@ -58,7 +57,7 @@ export async function getCandidate(candidateId: string) {
     },
   })
 
-  if (!candidate || candidate.organizationId !== orgId) return null
+  if (!candidate) return null
 
   const submissions = candidate.submissions.map((submission) => {
     const productionFormFields: CustomForm[] =

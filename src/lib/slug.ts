@@ -1,22 +1,10 @@
 import { createId } from "@paralleldrive/cuid2"
 import { and, eq, type SQL } from "drizzle-orm"
 import type { PgColumn, PgTableWithColumns } from "drizzle-orm/pg-core"
+import { RESERVED_SLUGS } from "@/lib/constants/reserved-slugs"
 import db from "@/lib/db/db"
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-
-const RESERVED_SLUGS = new Set([
-  "new",
-  "create",
-  "edit",
-  "delete",
-  "settings",
-  "admin",
-  "api",
-  "submit",
-  "auth",
-  "home",
-])
 
 const MIN_LENGTH = 3
 const MAX_LENGTH = 60

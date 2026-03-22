@@ -13,14 +13,6 @@ import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useState } from "react"
-
-const HeadshotLightbox = dynamic(
-  () =>
-    import("@/components/productions/headshot-lightbox").then(
-      (mod) => mod.HeadshotLightbox,
-    ),
-  { ssr: false },
-)
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
@@ -40,6 +32,14 @@ import type {
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
 import type { CustomForm } from "@/lib/types"
+
+const HeadshotLightbox = dynamic(
+  () =>
+    import("@/components/productions/headshot-lightbox").then(
+      (mod) => mod.HeadshotLightbox,
+    ),
+  { ssr: false },
+)
 
 interface ComparisonViewProps {
   open: boolean
@@ -168,7 +168,7 @@ export function ComparisonView({
                     />
                   ) : (
                     <div className="flex size-full items-center justify-center">
-                      <span className="font-medium text-title text-muted-foreground">
+                      <span className="font-medium text-muted-foreground text-title">
                         {s.firstName[0]}
                         {s.lastName[0]}
                       </span>
@@ -253,7 +253,7 @@ export function ComparisonView({
             {localSubmissions.map((s) => (
               <div
                 key={s.id}
-                className="border-b border-border"
+                className="border-border border-b"
                 aria-hidden="true"
               />
             ))}

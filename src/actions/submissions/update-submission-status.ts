@@ -1,6 +1,7 @@
 "use server"
 
 import { and, eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
@@ -69,6 +70,7 @@ export const updateSubmissionStatus = secureActionClient
         changeByUserId: user.id,
       })
 
+      revalidatePath("/", "layout")
       return { id: submissionId }
     },
   )

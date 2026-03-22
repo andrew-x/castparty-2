@@ -7,13 +7,20 @@ import { authClient } from "@/lib/auth/auth-client"
 
 export function EmailVerificationBanner({ email }: { email: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle")
+  const [error, setError] = useState<string | null>(null)
 
   async function handleResend() {
     setStatus("sending")
-    await authClient.sendVerificationEmail({
+    setError(null)
+    const { error } = await authClient.sendVerificationEmail({
       email,
       callbackURL: "/auth/verify-email",
     })
+    if (error) {
+      setError("Failed to send verification email. Please try again.")
+      setStatus("idle")
+      return
+    }
     setStatus("sent")
   }
 
@@ -44,6 +51,7 @@ export function EmailVerificationBanner({ email }: { email: string }) {
         >
           Resend verification email
         </Button>
+        {error && <p className="text-destructive text-sm">{error}</p>}
       </AlertDescription>
     </Alert>
   )

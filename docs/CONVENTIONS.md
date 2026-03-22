@@ -27,7 +27,7 @@ Don't comment what the code clearly does. Comment *why* it does it.
 | Route directories | lowercase | `src/app/dashboard/` |
 | Style files | kebab-case or `globals.scss` | `globals.scss` |
 
-No barrel files (`index.ts` re-exports). Import from the actual file. (`src/lib/schemas/index.ts` exists but is not used for imports — always import from the specific schema file.)
+No barrel files (`index.ts` re-exports). Import from the actual file. (`src/lib/schemas/index.ts` re-exports all feature schemas as a convenience barrel, but `src/lib/schemas/auth.ts` is intentionally excluded — auth schemas use bare `"zod"` for Better Auth/hookform resolver compatibility and must not be mixed with the `"zod/v4"` schemas via the barrel.)
 
 ## TypeScript
 
@@ -179,17 +179,21 @@ bg-card border border-border rounded-xl shadow-sm
 bg-background border border-border focus:border-border-brand focus:ring-2 focus:ring-border-brand rounded-lg px-3 py-2 text-sm text-stone-900 placeholder:text-muted-foreground outline-none transition
 ```
 
-### Sidebar / Nav
+### Top Nav / Navigation Links
 
 ```
-# Container
-bg-sidebar border-r border-sidebar-border
+# Top nav container (sticky bar)
+sticky top-0 z-30 h-14 border-border border-b bg-background
 
-# Active item
-bg-brand-subtle text-brand-text font-medium rounded-md
+# Active nav link
+text-foreground
 
-# Inactive item
-text-muted-foreground hover:bg-accent hover:text-stone-900 rounded-md
+# Inactive nav link
+text-muted-foreground hover:bg-accent hover:text-accent-foreground
+
+# Mobile nav item (Sheet drawer)
+bg-accent text-accent-foreground   ← active
+text-muted-foreground hover:bg-accent hover:text-accent-foreground   ← inactive
 ```
 
 ### Badges / Status Pills
@@ -288,7 +292,8 @@ All Zod schemas live in `src/lib/schemas/[feature].ts`, not inline in form or ac
 | `src/lib/schemas/submission.ts` | Submission form/action schemas |
 | `src/lib/schemas/candidate.ts` | Candidate update schemas |
 | `src/lib/schemas/form-fields.ts` | Custom form field add/remove/reorder schemas |
-| `src/lib/schemas/auth.ts` | Auth-related schemas (admin password change, user creation) |
+| `src/lib/schemas/comment.ts` | Comment create schemas |
+| `src/lib/schemas/auth.ts` | `signUpSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema` — consolidated from inline form definitions; uses bare `"zod"` (not `"zod/v4"`) for Better Auth/hookform resolver compatibility; **not** re-exported from the barrel |
 | `src/lib/schemas/resolve.ts` | `formResolver` wrapper — centralizes the type cast for form vs action schema mismatch |
 
 **Form schema vs action schema split.** Every feature defines two schemas:
@@ -343,7 +348,7 @@ The action file imports and uses `submissionActionSchema`; the form component im
 
 ### Exception: auth forms
 
-Forms that call the Better Auth client SDK directly (`authClient.signIn.email`, `authClient.signUp.email`) don't go through `next-safe-action` and don't use `useHookFormAction`. Standard `useForm` is correct for those. See `src/components/auth/` for examples.
+Forms that call the Better Auth client SDK directly (`authClient.signIn.email`, `authClient.signUp.email`) don't go through `next-safe-action` and don't use `useHookFormAction`. Standard `useForm` is correct for those. Their Zod schemas (`signUpSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`) live in `src/lib/schemas/auth.ts` and use bare `"zod"` — not `"zod/v4"` — because the hookform resolver used by Better Auth requires the unversioned import. See `src/components/auth/` for examples.
 
 *Updated: 2026-03-04 — Added Form Patterns section (useHookFormAction, centralized schemas, schema split)*
 *Updated: 2026-03-04 — Replaced zodResolver-as-any pattern with formResolver from @/lib/schemas/resolve; removed as-any-cast subsection; corrected backend directory example to reflect actual actions/ directories*
@@ -361,6 +366,8 @@ src/actions/
 ├── submissions/     # Public submission flow, submission status updates
 ├── organizations/   # Org management, members, invitations, profiles
 ├── candidates/      # Candidate queries
+├── feedback/        # Feedback creation
+├── comments/        # Comment creation
 └── admin/           # Admin user management
 ```
 
@@ -374,7 +381,8 @@ validation, auth, logging, and type-safe return values automatically.
 "use server"
 
 import { secureActionClient } from "@/lib/action"
-import { z } from "zod/v4"
+import { z } from "zod/v4"  // canonical import — always use "zod/v4", not "zod"
+                             // Exception: src/lib/schemas/auth.ts uses bare "zod" for Better Auth/hookform resolver compatibility
 
 export const createProduction = secureActionClient
   .metadata({
@@ -480,3 +488,5 @@ await db.delete(member).where(eq(member.id, memberId))
 - **`Button` with `asChild` cannot be used in statically prerendered server components.** The shadcn `Button` with `asChild` imports `Slot` from `@radix-ui/react-slot`, which can trigger "Minified React error #143" during `next build` on statically prerendered pages (e.g., `src/app/not-found.tsx`). For navigation buttons in server-rendered pages, use the `href` prop instead of `asChild` — `<Button href="/auth">` renders as a Next.js `Link` without the `Slot` overhead. Workaround for `not-found.tsx` and similar static pages: use a styled `<Link>` with equivalent Tailwind classes if the `href` prop still causes issues.
 
 *Updated: 2026-02-28 — Added Button leftSection/rightSection props, Zod .trim() rule, common-components-only rule; fixed text hierarchy tokens (semantic tokens replace raw stone palette)*
+*Updated: 2026-03-18 — Added comments/ to actions directory; added comment.ts to schemas table; noted canonical zod/v4 import*
+*Updated: 2026-03-22 — Updated auth.ts schema description (signUpSchema/loginSchema/etc now centralized, bare "zod" rationale); clarified barrel exclusion of auth.ts; added zod/v4 exception note inline; expanded auth forms exception note*

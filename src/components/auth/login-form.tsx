@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
-import { z } from "zod"
+import type { z } from "zod"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
 import {
@@ -16,11 +16,7 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { authClient } from "@/lib/auth/auth-client"
-
-const loginSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(1, "Password is required."),
-})
+import { loginSchema } from "@/lib/schemas/auth"
 
 const errorMessages: Record<string, string> = {
   INVALID_EMAIL_OR_PASSWORD: "That email and password don't match. Try again.",

@@ -26,6 +26,7 @@ export async function getRoleStagesWithCounts(roleId: string) {
       count: count().as("submission_count"),
     })
     .from(Submission)
+    .where(eq(Submission.roleId, roleId))
     .groupBy(Submission.stageId)
     .as("sc")
 

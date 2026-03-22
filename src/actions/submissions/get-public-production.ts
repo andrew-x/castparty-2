@@ -22,5 +22,6 @@ export async function getPublicProduction(
       },
     },
   })
-  return production ?? null
+  if (!production || !production.isOpen) return null
+  return production
 }

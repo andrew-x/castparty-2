@@ -5,16 +5,17 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { PipelineStage, Submission } from "@/lib/db/schema"
+import { Feedback, PipelineStage, Submission } from "@/lib/db/schema"
 
 export const removePipelineStage = secureActionClient
   .metadata({ action: "remove-pipeline-stage" })
   .inputSchema(
     z.object({
       stageId: z.string().min(1),
+      force: z.boolean().optional(),
     }),
   )
-  .action(async ({ parsedInput: { stageId }, ctx: { user } }) => {
+  .action(async ({ parsedInput: { stageId, force }, ctx: { user } }) => {
     const orgId = user.activeOrganizationId
     if (!orgId) throw new Error("No active organization.")
 
@@ -54,6 +55,19 @@ export const removePipelineStage = secureActionClient
       throw new Error(
         "Move all submissions out of this stage before deleting it.",
       )
+    }
+
+    const [{ value: feedbackCount }] = await db
+      .select({ value: count() })
+      .from(Feedback)
+      .where(eq(Feedback.stageId, stageId))
+
+    if (feedbackCount > 0 && !force) {
+      return { confirmRequired: true, feedbackCount }
+    }
+
+    if (feedbackCount > 0) {
+      await db.delete(Feedback).where(eq(Feedback.stageId, stageId))
     }
 
     await db.delete(PipelineStage).where(eq(PipelineStage.id, stageId))

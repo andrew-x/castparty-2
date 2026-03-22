@@ -99,7 +99,9 @@ export const createSubmission = publicActionClient
       for (const field of formFields) {
         if (!field.required) continue
         const value = answers[field.id]
-        if (!value || !value.trim()) {
+        if (field.type === "TOGGLE") {
+          if (value !== "true") throw new Error(`${field.label} is required.`)
+        } else if (!value || !value.trim()) {
           throw new Error(`${field.label} is required.`)
         }
       }
@@ -176,6 +178,8 @@ export const createSubmission = publicActionClient
 
       const submissionId = generateId("sub")
 
+      // TODO: Wrap candidate upsert + submission insert in db.transaction() once
+      // we switch from neon-http to neon-serverless driver
       await db.insert(Submission).values({
         id: submissionId,
         productionId,

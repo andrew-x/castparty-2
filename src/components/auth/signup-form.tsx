@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
-import { z } from "zod"
+import type { z } from "zod"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
 import {
@@ -14,12 +14,7 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { authClient } from "@/lib/auth/auth-client"
-
-const signUpSchema = z.object({
-  name: z.string().trim().min(1, "Name is required."),
-  email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-})
+import { signUpSchema } from "@/lib/schemas/auth"
 
 const errorMessages: Record<string, string> = {
   USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL:

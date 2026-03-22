@@ -315,6 +315,8 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
                       createdAt={item.data.createdAt}
                     />
                   )
+                default:
+                  return null
               }
             })}
           </div>
@@ -363,7 +365,7 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="add-feedback" className="border-b-0 border-t">
+        <AccordionItem value="add-feedback" className="border-t border-b-0">
           <AccordionTrigger className="px-block py-block text-label [&>svg]:rotate-180 [&[data-state=open]>svg]:rotate-0">
             <span className="flex items-center gap-element">
               <MessageSquareIcon className="size-4" />
