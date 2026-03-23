@@ -42,7 +42,8 @@ export const updateSubmissionStatus = secureActionClient
 
       // Verify the target stage belongs to the same role
       const targetStage = await db.query.PipelineStage.findFirst({
-        where: (s) => and(eq(s.id, stageId), eq(s.roleId, submission.roleId)),
+        where: (s) =>
+          and(eq(s.id, stageId), eq(s.productionId, submission.productionId)),
         columns: { id: true, type: true },
       })
 

@@ -47,17 +47,19 @@ export const bulkUpdateSubmissionStatus = secureActionClient
         throw new Error("Submission not found.")
       }
 
-      // All submissions must belong to the same role (bulk move is per-role)
-      const roleIds = new Set(submissions.map((s) => s.roleId))
-      if (roleIds.size > 1) {
-        throw new Error("All submissions must belong to the same role.")
+      // All submissions must belong to the same production
+      const productionIds = new Set(submissions.map((s) => s.productionId))
+      if (productionIds.size > 1) {
+        throw new Error("All submissions must belong to the same production.")
       }
 
-      const roleId = submissions[0].roleId
-
-      // Verify the target stage belongs to the same role
+      // Verify the target stage belongs to the same production
       const targetStage = await db.query.PipelineStage.findFirst({
-        where: (s) => and(eq(s.id, stageId), eq(s.roleId, roleId)),
+        where: (s) =>
+          and(
+            eq(s.id, stageId),
+            eq(s.productionId, submissions[0].productionId),
+          ),
         columns: { id: true, type: true },
       })
 

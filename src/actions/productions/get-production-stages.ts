@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
 
@@ -17,7 +17,7 @@ export async function getProductionStages(productionId: string) {
   if (!production) return []
 
   return db.query.PipelineStage.findMany({
-    where: (s) => and(eq(s.productionId, productionId), isNull(s.roleId)),
+    where: (s) => eq(s.productionId, productionId),
     orderBy: (s) => s.order,
   })
 }

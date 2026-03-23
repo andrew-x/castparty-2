@@ -15,13 +15,9 @@ export async function getRole(roleId: string) {
       production: {
         columns: { id: true, name: true, slug: true, organizationId: true },
         with: {
-          organization: {
-            columns: { slug: true },
-          },
+          organization: { columns: { slug: true } },
+          pipelineStages: { orderBy: (s, { asc }) => [asc(s.order)] },
         },
-      },
-      pipelineStages: {
-        orderBy: (s, { asc }) => [asc(s.order)],
       },
     },
   })

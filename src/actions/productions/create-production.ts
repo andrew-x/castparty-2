@@ -8,7 +8,6 @@ import { PipelineStage, Production, Role } from "@/lib/db/schema"
 import {
   buildCustomProductionStages,
   buildProductionStages,
-  buildStagesFromTemplate,
   DEFAULT_REJECT_REASONS,
 } from "@/lib/pipeline"
 import { createProductionActionSchema } from "@/lib/schemas/production"
@@ -117,30 +116,10 @@ export const createProduction = secureActionClient
               slug: roleSlug,
               description: role.description || "",
               isOpen: true,
-              submissionFormFields: (submissionFormFields ?? []).map((f) => ({
-                ...f,
-                id: generateId("ff"),
-              })),
-              feedbackFormFields: (feedbackFormFields ?? []).map((f) => ({
-                ...f,
-                id: generateId("fbf"),
-              })),
-              rejectReasons: DEFAULT_REJECT_REASONS,
             }
           })
 
           await tx.insert(Role).values(roleValues)
-
-          // Create pipeline stages for each role from the production template
-          const allStages = roleValues.flatMap((role) =>
-            buildStagesFromTemplate(
-              templateStages,
-              role.id,
-              productionId,
-              orgId,
-            ),
-          )
-          await tx.insert(PipelineStage).values(allStages)
         }
       })
 

@@ -53,6 +53,8 @@ export interface ResumeData {
 
 export interface SubmissionWithCandidate {
   id: string
+  roleId: string
+  roleName: string
   firstName: string
   lastName: string
   email: string
@@ -100,6 +102,24 @@ export function getStageBadgeProps(stage: PipelineStageData | null): {
 
 export function getStageLabel(submission: SubmissionWithCandidate): string {
   return submission.stage?.name ?? "Inbound"
+}
+
+export type ColumnItems = Record<string, SubmissionWithCandidate[]>
+
+export function buildColumns(
+  submissions: SubmissionWithCandidate[],
+  stages: PipelineStageData[],
+): ColumnItems {
+  const columns: ColumnItems = {}
+  for (const stage of stages) {
+    columns[stage.id] = []
+  }
+  for (const sub of submissions) {
+    if (columns[sub.stageId]) {
+      columns[sub.stageId].push(sub)
+    }
+  }
+  return columns
 }
 
 export function buildActivityList(

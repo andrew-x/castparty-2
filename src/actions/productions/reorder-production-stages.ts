@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, inArray, isNull } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
@@ -32,7 +32,6 @@ export const reorderProductionStages = secureActionClient
         where: (s) =>
           and(
             eq(s.productionId, productionId),
-            isNull(s.roleId),
             eq(s.type, "CUSTOM"),
             inArray(s.id, stageIds),
           ),

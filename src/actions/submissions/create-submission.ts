@@ -38,15 +38,19 @@ export const createSubmission = publicActionClient
         where: (r) => eq(r.id, roleId),
         with: {
           production: {
-            columns: { id: true, organizationId: true, isOpen: true },
+            columns: {
+              id: true,
+              organizationId: true,
+              isOpen: true,
+              submissionFormFields: true,
+              systemFieldConfig: true,
+            },
           },
         },
         columns: {
           id: true,
           productionId: true,
           isOpen: true,
-          submissionFormFields: true,
-          systemFieldConfig: true,
         },
       })
 
@@ -68,7 +72,8 @@ export const createSubmission = publicActionClient
 
       // Resolve the APPLIED stage for this role
       const appliedStage = await db.query.PipelineStage.findFirst({
-        where: (s) => and(eq(s.roleId, roleId), eq(s.type, "APPLIED")),
+        where: (s) =>
+          and(eq(s.productionId, productionId), eq(s.type, "APPLIED")),
         columns: { id: true },
       })
 
@@ -77,7 +82,8 @@ export const createSubmission = publicActionClient
       }
 
       // Validate required system fields
-      const sfc = role.systemFieldConfig ?? DEFAULT_SYSTEM_FIELD_CONFIG
+      const sfc =
+        role.production.systemFieldConfig ?? DEFAULT_SYSTEM_FIELD_CONFIG
       if (sfc.phone === "required" && (!phone || !phone.trim())) {
         throw new Error("Phone number is required.")
       }
@@ -95,7 +101,7 @@ export const createSubmission = publicActionClient
       }
 
       // Validate required custom fields
-      const formFields = role.submissionFormFields ?? []
+      const formFields = role.production.submissionFormFields ?? []
       for (const field of formFields) {
         if (!field.required) continue
         const value = answers[field.id]

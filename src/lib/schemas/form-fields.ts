@@ -46,35 +46,6 @@ export const reorderProductionFormFieldsSchema = z.object({
   fieldIds: z.array(z.string().min(1)).min(1),
 })
 
-// --- Role form field actions ---
-
-export const addRoleFormFieldSchema = z.object({
-  roleId: z.string().min(1),
-  type: customFormFieldTypeSchema,
-  label: z.string().trim().min(1, "Label is required.").max(200),
-})
-
-export const updateRoleFormFieldSchema = z.object({
-  roleId: z.string().min(1),
-  fieldId: z.string().min(1),
-  label: z.string().trim().min(1, "Label is required.").max(200).optional(),
-  description: z.string().trim().max(500).optional(),
-  required: z.boolean().optional(),
-  options: z
-    .array(z.string().trim().min(1, "Option text is required.").max(200))
-    .optional(),
-})
-
-export const removeRoleFormFieldSchema = z.object({
-  roleId: z.string().min(1),
-  fieldId: z.string().min(1),
-})
-
-export const reorderRoleFormFieldsSchema = z.object({
-  roleId: z.string().min(1),
-  fieldIds: z.array(z.string().min(1)).min(1),
-})
-
 // --- System field config ---
 
 export const systemFieldVisibilitySchema = z.enum([
@@ -93,11 +64,6 @@ export const systemFieldConfigSchema = z.object({
 
 export const updateProductionSystemFieldConfigSchema = z.object({
   productionId: z.string().min(1),
-  systemFieldConfig: systemFieldConfigSchema,
-})
-
-export const updateRoleSystemFieldConfigSchema = z.object({
-  roleId: z.string().min(1),
   systemFieldConfig: systemFieldConfigSchema,
 })
 
@@ -127,34 +93,5 @@ export const removeProductionFeedbackFormFieldSchema = z.object({
 
 export const reorderProductionFeedbackFormFieldsSchema = z.object({
   productionId: z.string().min(1),
-  fieldIds: z.array(z.string().min(1)).min(1),
-})
-
-// --- Role feedback form field actions ---
-
-export const addRoleFeedbackFormFieldSchema = z.object({
-  roleId: z.string().min(1),
-  type: customFormFieldTypeSchema,
-  label: z.string().trim().min(1, "Label is required.").max(200),
-})
-
-export const updateRoleFeedbackFormFieldSchema = z.object({
-  roleId: z.string().min(1),
-  fieldId: z.string().min(1),
-  label: z.string().trim().min(1, "Label is required.").max(200).optional(),
-  description: z.string().trim().max(500).optional(),
-  required: z.boolean().optional(),
-  options: z
-    .array(z.string().trim().min(1, "Option text is required.").max(200))
-    .optional(),
-})
-
-export const removeRoleFeedbackFormFieldSchema = z.object({
-  roleId: z.string().min(1),
-  fieldId: z.string().min(1),
-})
-
-export const reorderRoleFeedbackFormFieldsSchema = z.object({
-  roleId: z.string().min(1),
   fieldIds: z.array(z.string().min(1)).min(1),
 })

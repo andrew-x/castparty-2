@@ -21,12 +21,12 @@ export async function getCandidate(candidateId: string) {
     with: {
       submissions: {
         with: {
-          role: {
+          role: true,
+          production: {
             with: {
               pipelineStages: true,
             },
           },
-          production: true,
           stage: true,
           files: {
             orderBy: (f, { asc }) => [asc(f.order)],
@@ -60,20 +60,11 @@ export async function getCandidate(candidateId: string) {
   if (!candidate) return null
 
   const submissions = candidate.submissions.map((submission) => {
-    const productionFormFields: CustomForm[] =
+    const formFields =
       (submission.production?.submissionFormFields as CustomForm[]) ?? []
-    const roleFormFields: CustomForm[] =
-      (submission.role?.submissionFormFields as CustomForm[]) ?? []
-    const formFields = [...productionFormFields, ...roleFormFields]
 
-    const roleFeedbackFields: CustomForm[] =
-      (submission.role?.feedbackFormFields as CustomForm[]) ?? []
-    const productionFeedbackFields: CustomForm[] =
-      (submission.production?.feedbackFormFields as CustomForm[]) ?? []
     const feedbackFormFields =
-      roleFeedbackFields.length > 0
-        ? roleFeedbackFields
-        : productionFeedbackFields
+      (submission.production?.feedbackFormFields as CustomForm[]) ?? []
 
     const feedback: FeedbackData[] = (submission.feedback ?? []).map((fb) => ({
       id: fb.id,
@@ -104,7 +95,7 @@ export async function getCandidate(candidateId: string) {
     }))
 
     const pipelineStages: PipelineStageData[] = (
-      submission.role?.pipelineStages ?? []
+      submission.production?.pipelineStages ?? []
     )
       .map((s) => ({
         id: s.id,
@@ -117,6 +108,8 @@ export async function getCandidate(candidateId: string) {
     return {
       submission: {
         id: submission.id,
+        roleId: submission.roleId,
+        roleName: submission.role?.name ?? "Unknown",
         firstName: submission.firstName,
         lastName: submission.lastName,
         email: submission.email,

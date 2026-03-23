@@ -8,7 +8,14 @@ export async function getPublicRole(productionId: string, roleSlug: string) {
     where: (r) => and(eq(r.productionId, productionId), eq(r.slug, roleSlug)),
     with: {
       production: {
-        columns: { id: true, name: true, isOpen: true, organizationId: true },
+        columns: {
+          id: true,
+          name: true,
+          isOpen: true,
+          organizationId: true,
+          submissionFormFields: true,
+          systemFieldConfig: true,
+        },
       },
     },
   })

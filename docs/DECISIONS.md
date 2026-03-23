@@ -88,22 +88,23 @@ Format: **Context** → **Decision** → **Consequences**
 
 ---
 
-## ADR-007: Configurable Pipeline Stages per Role
+## ADR-007: Configurable Pipeline Stages at the Production Level
 
 **Context:** Casting workflows vary widely — a small community theatre might move candidates straight from Applied to Selected/Rejected, while a larger production needs multiple callback rounds and specific evaluation stages. A fixed status enum would be too rigid.
 
-**Decision:** Each role gets its own pipeline: 3 system stages (Applied at order 0, Selected at 1000, Rejected at 1001) created automatically, with support for custom stages at orders 1–999 between them. Stage identity is captured by a `type` enum (`APPLIED`, `SELECTED`, `REJECTED`, `CUSTOM`) rather than boolean flags — this removes the need for separate `isSystem`/`isTerminal` columns. Non-`CUSTOM` stages are protected from removal. Stage transitions are recorded in the `PipelineUpdate` table for a full audit trail. Implementation in `src/lib/pipeline.ts` and the `PipelineStage` schema.
+**Decision:** Each production has one shared pipeline: 3 system stages (Applied at order 0, Selected at 1000, Rejected at 1001) created automatically, with support for custom stages at orders 1–999 between them. Stage identity is captured by a `type` enum (`APPLIED`, `SELECTED`, `REJECTED`, `CUSTOM`) rather than boolean flags — this removes the need for separate `isSystem`/`isTerminal` columns. Non-`CUSTOM` stages are protected from removal. Stage transitions are recorded in the `PipelineUpdate` table for a full audit trail. Implementation in `src/lib/pipeline.ts` and the `PipelineStage` schema.
 
-Productions also carry a template pipeline (`PipelineStage` rows with `roleId = null`). When a new role is created it inherits the production's template via `buildStagesFromTemplate()`. The default production template adds Screening, Audition, and Callback stages between Applied and Selected.
+All roles in a production share the same pipeline — there is no per-role pipeline override. The `PipelineStage` table has no `roleId` column.
+
+**Earlier design (removed 2026-03-22):** An earlier version used a two-tier design: a production-level template pipeline (`PipelineStage` rows with `roleId = null`) that new roles inherited, plus per-role pipeline overrides. This was removed because it caused configuration confusion — directors had to manage the same pipeline in multiple places, and the per-role override was almost never used differently from the production template.
 
 **Consequences:**
 - Mirrors the ATS pipeline model (Greenhouse/Lever pipelines) — familiar mental model for users
-- Per-role pipelines support different evaluation depths within the same production (a lead role with three callback stages alongside an ensemble role with none)
-- Production-template pipeline reduces per-role setup cost: configure once at the production level, all new roles inherit it
+- A single production-level pipeline eliminates per-role configuration overhead
 - `type` enum replaces dual boolean flags (`isSystem`, `isTerminal`) — a single value encodes both the semantic role and removal protection
 - Order gap (1–999 for custom stages) avoids renumbering when inserting stages
-- Previously, terminal stages blocked status reversals; this guard was removed — casting directors can now correct mistakes freely. The full `PipelineUpdate` audit trail provides accountability without blocking corrections.
-- Trade-off: more complex data model than a simple status enum; UI must handle variable stage counts per role
+- Terminal stages do not block status reversals — casting directors can correct mistakes freely. The full `PipelineUpdate` audit trail provides accountability without blocking corrections.
+- Trade-off: all roles in a production must share the same pipeline structure; a production needing different stage depths per role would require separate productions
 
 ---
 

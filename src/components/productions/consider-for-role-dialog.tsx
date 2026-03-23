@@ -60,10 +60,7 @@ export function ConsiderForRoleDialog({
       actionProps: {
         onSuccess({ data }) {
           if (data) {
-            window.open(
-              `/productions/${data.targetProductionId}/roles/${data.targetRoleId}`,
-              "_blank",
-            )
+            window.open(`/productions/${data.targetProductionId}`, "_blank")
           }
           onOpenChange(false)
           router.refresh()

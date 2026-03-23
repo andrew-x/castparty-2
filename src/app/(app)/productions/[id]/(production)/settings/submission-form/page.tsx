@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
-import { DefaultFormFieldsEditor } from "@/components/productions/form-fields-editor"
+import { ProductionFormFieldsEditor } from "@/components/productions/form-fields-editor"
 
 export async function generateMetadata({
   params,
@@ -31,7 +31,7 @@ export default async function ProductionSubmissionFormPage({
   return (
     <div className="flex w-full flex-col gap-section">
       <section className="flex flex-col gap-group">
-        <DefaultFormFieldsEditor
+        <ProductionFormFieldsEditor
           productionId={production.id}
           fields={production.submissionFormFields}
           systemFieldConfig={production.systemFieldConfig}

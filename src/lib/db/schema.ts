@@ -304,18 +304,6 @@ export const Role = pgTable(
     description: text().notNull().default(""),
     isOpen: boolean().default(false).notNull(),
 
-    location: text().notNull().default(""),
-    submissionFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
-    systemFieldConfig: jsonb().$type<SystemFieldConfig>().notNull().default({
-      phone: "optional",
-      location: "optional",
-      headshots: "optional",
-      resume: "optional",
-      links: "optional",
-    }),
-    feedbackFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
-    rejectReasons: jsonb().$type<string[]>().notNull().default([]),
-
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp()
       .defaultNow()
@@ -342,7 +330,6 @@ export const PipelineStage = pgTable("pipeline_stage", {
   productionId: text()
     .notNull()
     .references(() => Production.id, { onDelete: "cascade" }),
-  roleId: text().references(() => Role.id, { onDelete: "cascade" }),
 
   name: text().notNull(),
   order: integer().notNull(),
@@ -568,7 +555,6 @@ export const roleRelations = relations(Role, ({ one, many }) => ({
     references: [Production.id],
   }),
   submissions: many(Submission),
-  pipelineStages: many(PipelineStage),
   pipelineUpdates: many(PipelineUpdate),
 }))
 
@@ -625,10 +611,6 @@ export const pipelineStageRelations = relations(
     production: one(Production, {
       fields: [PipelineStage.productionId],
       references: [Production.id],
-    }),
-    role: one(Role, {
-      fields: [PipelineStage.roleId],
-      references: [Role.id],
     }),
     submissions: many(Submission),
     pipelineUpdatesFrom: many(PipelineUpdate, { relationName: "fromStage" }),

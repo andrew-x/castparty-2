@@ -7,26 +7,29 @@ import db from "@/lib/db/db"
 export async function getRolesWithSubmissions(productionId: string) {
   const user = await checkAuth()
   const orgId = user.activeOrganizationId
-  if (!orgId) return []
+  if (!orgId) return null
 
   const production = await db.query.Production.findFirst({
     where: (p) => and(eq(p.id, productionId), eq(p.organizationId, orgId)),
     columns: { id: true },
-  })
-  if (!production) return []
-
-  return db.query.Role.findMany({
-    where: (r) => eq(r.productionId, productionId),
     with: {
       pipelineStages: {
         orderBy: (s, { asc }) => [asc(s.order)],
       },
-      submissions: {
+      roles: {
         with: {
-          candidate: true,
-          stage: true,
+          submissions: {
+            with: {
+              candidate: true,
+              stage: true,
+            },
+          },
         },
       },
     },
   })
+
+  if (!production) return null
+
+  return production
 }

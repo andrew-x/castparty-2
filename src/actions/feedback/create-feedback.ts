@@ -6,7 +6,7 @@ import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Feedback } from "@/lib/db/schema"
 import { createFeedbackActionSchema } from "@/lib/schemas/feedback"
-import type { CustomForm, CustomFormResponse } from "@/lib/types"
+import type { CustomFormResponse } from "@/lib/types"
 import { generateId } from "@/lib/util"
 
 export const createFeedback = secureActionClient
@@ -20,10 +20,10 @@ export const createFeedback = secureActionClient
       // Load submission with role + production to verify ownership
       const submission = await db.query.Submission.findFirst({
         where: (s) => eq(s.id, submissionId),
-        columns: { id: true, roleId: true },
+        columns: { id: true, roleId: true, productionId: true },
         with: {
           role: {
-            columns: { id: true, feedbackFormFields: true },
+            columns: { id: true },
             with: {
               production: {
                 columns: {
@@ -46,20 +46,17 @@ export const createFeedback = secureActionClient
         throw new Error("You don't have access to this submission.")
       }
 
-      // Verify stageId belongs to the same role
+      // Verify stageId belongs to the same production
       const stage = await db.query.PipelineStage.findFirst({
-        where: (s) => and(eq(s.id, stageId), eq(s.roleId, submission.roleId)),
+        where: (s) =>
+          and(eq(s.id, stageId), eq(s.productionId, submission.productionId)),
         columns: { id: true },
       })
       if (!stage) {
-        throw new Error("Invalid stage for this role.")
+        throw new Error("Invalid stage for this production.")
       }
 
-      // Resolve feedback form fields: role-level if non-empty, else production-level
-      const feedbackFormFields: CustomForm[] =
-        submission.role.feedbackFormFields.length > 0
-          ? submission.role.feedbackFormFields
-          : submission.role.production.feedbackFormFields
+      const feedbackFormFields = submission.role.production.feedbackFormFields
 
       // Validate required fields
       for (const field of feedbackFormFields) {

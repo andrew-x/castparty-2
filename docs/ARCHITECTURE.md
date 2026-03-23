@@ -30,7 +30,7 @@ src/
 │   │           │   ├── page.tsx   # Production detail (roles list)
 │   │           │   └── settings/
 │   │           │       ├── page.tsx              # General settings (name, slug, open/closed)
-│   │           │       ├── pipeline/page.tsx      # Production template pipeline editor
+│   │           │       ├── pipeline/page.tsx      # Pipeline editor (all roles in production)
 │   │           │       ├── submission-form/       # Submission form builder
 │   │           │       ├── feedback-form/         # Feedback form builder
 │   │           │       └── reject-reasons/        # Reject reasons editor
@@ -39,11 +39,7 @@ src/
 │   │                   ├── (role)/  # Route group: shared role layout + sub-nav
 │   │                   │   ├── page.tsx           # Role Kanban board
 │   │                   │   └── settings/
-│   │                   │       ├── page.tsx             # General settings
-│   │                   │       ├── pipeline/page.tsx     # Role pipeline editor
-│   │                   │       ├── submission-form/      # Role submission form builder
-│   │                   │       ├── feedback-form/        # Role feedback form builder
-│   │                   │       └── reject-reasons/       # Role reject reasons editor
+│   │                   │       └── page.tsx       # General settings only (name, slug, description, open/closed)
 │   │                   └── stages/[stageId]/page.tsx  # Stage browse (grid + sort)
 │   ├── accept-invitation/[id]/  # Accept org invitation by link (unauthenticated-ok)
 │   ├── api/             # API route handlers
@@ -172,8 +168,8 @@ Schema lives in `src/lib/db/schema.ts`. Drizzle relational API (`db.query`) is t
 | `UserProfile` | User | `id` (FK → user, PK) — extended user metadata; currently empty (reserved for future fields) |
 | `OrganizationProfile` | Organization | `id` (FK → organization, PK), `websiteUrl`, `description`, `isOrganizationProfileOpen` — public-facing org info |
 | `Production` | Organization | `organizationId`, `name`, `slug` (unique per org), `isOpen`, `location`, `submissionFormFields` (JSONB), `feedbackFormFields` (JSONB), `systemFieldConfig` (JSONB — visibility of system fields: phone, location, headshots, resume, links), `rejectReasons` (JSONB string[]) |
-| `Role` | Production | `productionId`, `name`, `slug` (unique per production), `isOpen`, `location`, `submissionFormFields` (JSONB), `feedbackFormFields` (JSONB), `systemFieldConfig` (JSONB), `rejectReasons` (JSONB string[]) |
-| `PipelineStage` | Production + Role | `organizationId`, `productionId`, `roleId` (nullable — null = production template stage), `name`, `order`, `type` enum (`APPLIED`/`SELECTED`/`REJECTED`/`CUSTOM`) |
+| `Role` | Production | `productionId`, `name`, `slug` (unique per production), `isOpen`, `description` — no form fields, system field config, or reject reasons; all config lives on the parent `Production` |
+| `PipelineStage` | Production | `organizationId`, `productionId`, `name`, `order`, `type` enum (`APPLIED`/`SELECTED`/`REJECTED`/`CUSTOM`) — all stages are production-scoped; no `roleId` column |
 | `Candidate` | Organization | `organizationId`, `firstName`, `lastName`, `email` (unique per org), `phone`, `location` |
 | `Submission` | Role + Candidate | `productionId`, `roleId`, `candidateId`, `stageId` (FK → PipelineStage, `onDelete: "restrict"`), `rejectionReason` (nullable), `firstName`, `lastName`, `email`, `phone`, `location` (denormalized snapshot), `answers` (JSONB), `links` (text[]), `resumeText` (nullable) |
 | `PipelineUpdate` | Submission | `submissionId`, `fromStage`, `toStage`, `changeByUserId` — full audit trail of stage transitions |
@@ -183,9 +179,9 @@ Schema lives in `src/lib/db/schema.ts`. Drizzle relational API (`db.query`) is t
 
 Candidate records are deduplicated by `(organizationId, email)` — the same person applying to multiple roles in the same org shares one Candidate row.
 
-`PipelineStage` rows with `roleId = null` are production-template stages — they define the default pipeline that new roles in that production inherit. Role-scoped stages have a non-null `roleId`.
+`PipelineStage` rows are production-scoped only — all roles in a production share the same pipeline stages. There is no per-role pipeline.
 
-`SystemFieldConfig` controls whether each system submission field (phone, location, headshots, resume, links) is `"hidden"`, `"optional"`, or `"required"`. Stored as JSONB on both `Production` and `Role`; defaults to all `"optional"`.
+`SystemFieldConfig` controls whether each system submission field (phone, location, headshots, resume, links) is `"hidden"`, `"optional"`, or `"required"`. Stored as JSONB on `Production`; defaults to all `"optional"`. All roles in a production use the same config.
 
 **Submission denormalization:** `Submission` stores `firstName`, `lastName`, `email`, `phone`, `location` as a snapshot at submission time — independent of the linked `Candidate` row. This means the submission record reflects what the candidate entered on that specific form, even if their Candidate profile is later updated.
 
@@ -200,7 +196,7 @@ These were identified in a codebase audit (2026-03-18). They are documented here
 | # | Location | Issue | Impact |
 |---|----------|-------|--------|
 | 1 | `src/actions/candidates/get-candidate.ts` | `getCandidate` fetches the candidate row before checking `candidate.organizationId !== orgId` — so data is loaded then discarded if the check fails. No security bug (returns null), but wasteful. | Performance |
-| 2 | `src/actions/productions/get-role-stages-with-counts.ts` | The `submissionCountSq` subquery aggregates submissions across **all** roles (no `WHERE roleId = ?`), then joins to `PipelineStage`. Counts are correct only because the join filters to the right stage IDs, but the subquery does more work than needed. | Performance |
+| 2 | ~~`src/actions/productions/get-role-stages-with-counts.ts`~~ | ~~The `submissionCountSq` subquery aggregates submissions across **all** roles (no `WHERE roleId = ?`)~~ **Fixed (2026-03-22):** The subquery now filters by `roleId` (`.where(eq(Submission.roleId, roleId))`). Additionally, `PipelineStage` no longer has a `roleId` column — all stages are production-scoped. | ~~Performance~~ |
 | 3 | `src/actions/submissions/create-submission.ts` | Required-field validation for `TOGGLE` and `CHECKBOX_GROUP` custom fields uses `!value || !value.trim()`. For `TOGGLE`, the value is `"true"` or `"false"` (always truthy); for `CHECKBOX_GROUP`, an empty selection is `""` (falsy) but multi-select sends a comma-joined string. The `TOGGLE` case means a required toggle cannot be enforced. | Bug |
 | 4 | ~~`src/lib/email.ts`~~ | ~~`sendEmail` is fire-and-forget~~ **Fixed (2026-03-22):** `sendEmail` is now `async`; errors are logged and re-thrown, propagating to all callers. | ~~Reliability~~ |
 | 5 | ~~`src/actions/productions/remove-pipeline-stage.ts`~~ | ~~Blocks deletion if Submission count > 0, but does not check for Feedback rows~~ **Fixed (2026-03-22):** `removePipelineStage` now checks `Feedback` count. When `feedbackCount > 0` and `force` is not set it returns `{ confirmRequired: true, feedbackCount }`. The UI shows an `AlertDialog`; re-calling with `force: true` cascade-deletes the feedback rows before removing the stage. | ~~Bug~~ |
@@ -220,3 +216,4 @@ These were identified in a codebase audit (2026-03-18). They are documented here
 *Updated: 2026-03-18 — Sidebar → TopNav; added Comment table and comments/ actions; added reject-reasons routes; added accept-invitation route; corrected Submission columns (denormalized fields, rejectionReason, productionId); corrected File columns (contentType, size); added rejectReasons to Production/Role; updated actions directory list and schemas list; added Known Issues section; expanded component directory notes*
 *Updated: 2026-03-22 — Added src/lib/constants/reserved-slugs.ts to key files; updated sendEmail description (now async, errors propagate); updated stage deletion constraint note (force param + feedback cascade); closed Known Issues #4, #5, #9, #11; added TODO notes to #6 and #7 (transaction blocker); clarified zod/zod-v4 status in #10*
 *Updated: 2026-03-22 — Switched database driver from `neon-http` to `neon-serverless` with `Pool`; all 9 multi-mutation actions now wrapped in `db.transaction()`; closed Known Issues #6 and #7; updated src/lib/db/db.ts key file entry*
+*Updated: 2026-03-22 — Production/role config lifted to production level: Role table no longer stores location, submissionFormFields, systemFieldConfig, feedbackFormFields, or rejectReasons; PipelineStage no longer has a roleId column (all stages are production-scoped); role settings sub-routes for pipeline/submission-form/feedback-form/reject-reasons removed; directory layout updated; closed Known Issue #2*

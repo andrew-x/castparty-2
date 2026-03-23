@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
@@ -30,7 +30,7 @@ export const addProductionStage = secureActionClient
 
     // Find all production template stages (including system stages) and enforce limit
     const allTemplateStages = await db.query.PipelineStage.findMany({
-      where: (s) => and(eq(s.productionId, productionId), isNull(s.roleId)),
+      where: (s) => eq(s.productionId, productionId),
       columns: { id: true, order: true, type: true },
     })
     if (allTemplateStages.length >= MAX_PIPELINE_STAGES) {
@@ -48,7 +48,6 @@ export const addProductionStage = secureActionClient
       id,
       organizationId: orgId,
       productionId,
-      roleId: null,
       name,
       order: maxOrder + 1,
       type: "CUSTOM",

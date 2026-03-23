@@ -10,6 +10,16 @@ import { useEffect, useState } from "react"
 import { addProductionStage } from "@/actions/productions/add-production-stage"
 import { removeProductionStage } from "@/actions/productions/remove-production-stage"
 import { reorderProductionStages } from "@/actions/productions/reorder-production-stages"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/common/alert-dialog"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
 import {
@@ -98,7 +108,7 @@ function FixedStage({ stage }: { stage: StageData }) {
           </span>
         </button>
       </TooltipTrigger>
-      <TooltipContent>Required for all roles</TooltipContent>
+      <TooltipContent>System stage</TooltipContent>
     </Tooltip>
   )
 }
@@ -230,19 +240,23 @@ export function StagesEditor({
   )
 }
 
-// --- DefaultStagesEditor (settings page wrapper with server actions) ---
+// --- ProductionStagesEditor (settings page wrapper with server actions) ---
 
-interface DefaultStagesEditorProps {
+interface ProductionStagesEditorProps {
   productionId: string
   stages: StageData[]
 }
 
-export function DefaultStagesEditor({
+export function ProductionStagesEditor({
   productionId,
   stages,
-}: DefaultStagesEditorProps) {
+}: ProductionStagesEditorProps) {
   const router = useRouter()
   const [localStages, setLocalStages] = useState(stages)
+  const [confirmDelete, setConfirmDelete] = useState<{
+    stageId: string
+    feedbackCount: number
+  } | null>(null)
 
   useEffect(() => {
     setLocalStages(stages)
@@ -267,7 +281,17 @@ export function DefaultStagesEditor({
   const [removingStageId, setRemovingStageId] = useState<string | null>(null)
 
   const { execute: executeRemove } = useAction(removeProductionStage, {
-    onSuccess() {
+    onSuccess({ data }) {
+      if (data?.confirmRequired) {
+        // Stage has feedback — restore it and prompt for confirmation
+        setLocalStages(stages)
+        setRemovingStageId(null)
+        setConfirmDelete({
+          stageId: removingStageId as string,
+          feedbackCount: data.feedbackCount ?? 0,
+        })
+        return
+      }
       setRemovingStageId(null)
       router.refresh()
     },
@@ -287,6 +311,14 @@ export function DefaultStagesEditor({
     executeRemove({ productionId, stageId })
   }
 
+  function handleForceRemove() {
+    if (!confirmDelete) return
+    setRemovingStageId(confirmDelete.stageId)
+    setLocalStages((prev) => prev.filter((s) => s.id !== confirmDelete.stageId))
+    setConfirmDelete(null)
+    executeRemove({ productionId, stageId: confirmDelete.stageId, force: true })
+  }
+
   function handleReorder(reordered: StageData[]) {
     setLocalStages(reordered)
     const customIds = reordered
@@ -296,14 +328,38 @@ export function DefaultStagesEditor({
   }
 
   return (
-    <StagesEditor
-      stages={localStages}
-      onAdd={handleAdd}
-      onRemove={handleRemove}
-      onReorder={handleReorder}
-      isAdding={isAdding}
-      removingStageId={removingStageId}
-      description="Changes here only apply to new roles. Existing roles are not affected."
-    />
+    <>
+      <StagesEditor
+        stages={localStages}
+        onAdd={handleAdd}
+        onRemove={handleRemove}
+        onReorder={handleReorder}
+        isAdding={isAdding}
+        removingStageId={removingStageId}
+      />
+      <AlertDialog
+        open={confirmDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete stage?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This stage has {confirmDelete?.feedbackCount} feedback{" "}
+              {confirmDelete?.feedbackCount === 1 ? "entry" : "entries"} that
+              will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleForceRemove}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

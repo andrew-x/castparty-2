@@ -8,6 +8,13 @@
       "when": 1773832156617,
       "tag": "0000_fearless_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774220282233,
+      "tag": "0001_chemical_mole_man",
+      "breakpoints": true
     }
   ]
 }

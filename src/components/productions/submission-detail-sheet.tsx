@@ -38,7 +38,7 @@ interface Props {
   pipelineStages: PipelineStageData[]
   submissionFormFields: CustomForm[]
   feedbackFormFields: CustomForm[]
-  roleId: string
+  roleId?: string
   rejectReasons: string[]
   productionId: string
   otherRoleSubmissions: Record<string, OtherRoleSubmission[]>
@@ -195,7 +195,7 @@ export function SubmissionDetailSheet({
                   </Button>
                   <ConsiderForRoleDialog
                     submissionId={submission.id}
-                    currentRoleId={roleId}
+                    currentRoleId={roleId ?? submission?.roleId ?? ""}
                     open={considerDialogOpen}
                     onOpenChange={setConsiderDialogOpen}
                   />

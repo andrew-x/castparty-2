@@ -1,24 +1,13 @@
 "use client"
 
-import { CollisionPriority } from "@dnd-kit/abstract"
 import { move } from "@dnd-kit/helpers"
-import { DragDropProvider, useDroppable } from "@dnd-kit/react"
-import { useSortable } from "@dnd-kit/react/sortable"
-import {
-  GripVerticalIcon,
-  LayoutGridIcon,
-  Rows3Icon,
-  SearchIcon,
-  UsersIcon,
-} from "lucide-react"
-import Link from "next/link"
+import { DragDropProvider } from "@dnd-kit/react"
+import { LayoutGridIcon, Rows3Icon, SearchIcon, UsersIcon } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
 import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-submission-status"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
-import { Badge } from "@/components/common/badge"
-import { Checkbox } from "@/components/common/checkbox"
 import {
   Empty,
   EmptyDescription,
@@ -27,41 +16,31 @@ import {
   EmptyTitle,
 } from "@/components/common/empty"
 import { Input } from "@/components/common/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/common/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/common/toggle-group"
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
 import { ComparisonView } from "@/components/productions/comparison-view"
+import { KanbanColumn } from "@/components/productions/kanban-column"
 import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
-import day from "@/lib/dayjs"
 import type {
+  ColumnItems,
   OtherRoleSubmission,
   PipelineStageData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
+import { buildColumns } from "@/lib/submission-helpers"
 import type { CustomForm } from "@/lib/types"
-import { cn } from "@/lib/util"
-
-type ColumnItems = Record<string, SubmissionWithCandidate[]>
-
-function buildColumns(
-  submissions: SubmissionWithCandidate[],
-  stages: PipelineStageData[],
-): ColumnItems {
-  const columns: ColumnItems = {}
-  for (const stage of stages) {
-    columns[stage.id] = []
-  }
-  for (const sub of submissions) {
-    if (columns[sub.stageId]) {
-      columns[sub.stageId].push(sub)
-    }
-  }
-  return columns
-}
 
 interface Props {
   productionId: string
-  roleId: string
+  roles: { id: string; name: string; slug: string }[]
   submissions: SubmissionWithCandidate[]
   pipelineStages: PipelineStageData[]
   submissionFormFields: CustomForm[]
@@ -70,9 +49,9 @@ interface Props {
   otherRoleSubmissions: Record<string, OtherRoleSubmission[]>
 }
 
-export function RoleSubmissions({
+export function ProductionSubmissions({
   productionId,
-  roleId,
+  roles,
   submissions,
   pipelineStages,
   submissionFormFields,
@@ -101,6 +80,8 @@ export function RoleSubmissions({
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [compact, setCompact] = useState(false)
+  const [selectedRoleId, setSelectedRoleId] = useState("")
+
   // Stores pending reject info: either a single drag submission or bulk IDs
   const pendingRejectRef = useRef<
     | { type: "drag"; submissionId: string; stageId: string }
@@ -342,15 +323,18 @@ export function RoleSubmissions({
     }
   }
 
-  // Derive filtered columns for display (search doesn't mutate drag state)
-  const filteredColumns: ColumnItems = {}
+  // Derive filtered columns for display (search + role filter don't mutate drag state)
+  const showAllRoles = selectedRoleId === "" || selectedRoleId === "all"
   const query = searchQuery.toLowerCase()
+  const filteredColumns: ColumnItems = {}
   for (const [stageId, items] of Object.entries(columns)) {
-    filteredColumns[stageId] = query
-      ? items.filter((s) =>
-          `${s.firstName} ${s.lastName}`.toLowerCase().includes(query),
-        )
-      : items
+    filteredColumns[stageId] = items.filter((s) => {
+      const matchesRole = showAllRoles || s.roleId === selectedRoleId
+      const matchesSearch = query
+        ? `${s.firstName} ${s.lastName}`.toLowerCase().includes(query)
+        : true
+      return matchesRole && matchesSearch
+    })
   }
 
   if (submissions.length === 0) {
@@ -363,7 +347,7 @@ export function RoleSubmissions({
           <EmptyTitle>No candidates yet</EmptyTitle>
           <EmptyDescription>
             Candidates will appear here once they submit an audition for this
-            role.
+            production.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -372,16 +356,33 @@ export function RoleSubmissions({
 
   return (
     <>
-      {/* Toolbar: search + view toggle */}
+      {/* Toolbar: search + role filter + view toggle */}
       <div className="flex items-center justify-between gap-block px-block pb-block">
-        <div className="relative w-full max-w-sm">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by name"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex items-center gap-block">
+          <div className="relative w-full max-w-sm">
+            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          {roles.length > 1 && (
+            <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+              <SelectTrigger size="sm" aria-label="Filter by role">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                {roles.map((role) => (
+                  <SelectItem key={role.id} value={role.id}>
+                    {role.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <ToggleGroup
           type="single"
@@ -475,10 +476,10 @@ export function RoleSubmissions({
               stage={stage}
               items={filteredColumns[stage.id] ?? []}
               compact={compact}
-              searchActive={query !== ""}
+              searchActive={query !== "" || !showAllRoles}
               selectedIds={selectedIds}
               pendingSubmissionId={pendingSubmissionId}
-              stageHref={`/productions/${productionId}/roles/${roleId}/stages/${stage.id}`}
+              showRoleName={showAllRoles}
               onToggle={toggleSelection}
               onSelectAll={addToSelection}
               onDeselectAll={removeFromSelection}
@@ -520,7 +521,7 @@ export function RoleSubmissions({
         pipelineStages={pipelineStages}
         submissionFormFields={submissionFormFields}
         feedbackFormFields={feedbackFormFields}
-        roleId={roleId}
+        roleId={selectedSubmission?.roleId ?? ""}
         rejectReasons={rejectReasons}
         productionId={productionId}
         otherRoleSubmissions={otherRoleSubmissions}
@@ -539,279 +540,5 @@ export function RoleSubmissions({
         onConfirm={handleRejectConfirm}
       />
     </>
-  )
-}
-
-function KanbanColumn({
-  stage,
-  items,
-  compact,
-  searchActive,
-  selectedIds,
-  pendingSubmissionId,
-  stageHref,
-  onToggle,
-  onSelectAll,
-  onDeselectAll,
-  onSelect,
-}: {
-  stage: PipelineStageData
-  items: SubmissionWithCandidate[]
-  compact: boolean
-  searchActive: boolean
-  selectedIds: Set<string>
-  pendingSubmissionId: string | null
-  stageHref: string
-  onToggle: (id: string) => void
-  onSelectAll: (ids: string[]) => void
-  onDeselectAll: (ids: string[]) => void
-  onSelect: (s: SubmissionWithCandidate) => void
-}) {
-  const { ref, isDropTarget } = useDroppable({
-    id: stage.id,
-    type: "column",
-    accept: "item",
-    collisionPriority: CollisionPriority.Low,
-  })
-
-  const columnIds = items.map((item) => item.id)
-  const selectedInColumn = columnIds.filter((id) => selectedIds.has(id))
-  const allSelected =
-    items.length > 0 && selectedInColumn.length === items.length
-  const someSelected = selectedInColumn.length > 0 && !allSelected
-
-  const headerCheckboxState: boolean | "indeterminate" = allSelected
-    ? true
-    : someSelected
-      ? "indeterminate"
-      : false
-
-  function handleHeaderCheckboxChange() {
-    if (allSelected || someSelected) {
-      onDeselectAll(columnIds)
-    } else {
-      onSelectAll(columnIds)
-    }
-  }
-
-  return (
-    // biome-ignore lint/a11y/useSemanticElements: kanban column is not a form fieldset
-    <div
-      ref={ref}
-      role="group"
-      aria-label={`${stage.name} column`}
-      className={cn(
-        "flex w-70 shrink-0 flex-col rounded-lg bg-muted/30 p-block transition-colors",
-        isDropTarget && "bg-muted/60",
-      )}
-    >
-      <div className="flex items-center gap-element px-1 pb-block">
-        <Checkbox
-          checked={headerCheckboxState}
-          onCheckedChange={handleHeaderCheckboxChange}
-          aria-label={`Select all in ${stage.name}`}
-        />
-        <Link
-          href={stageHref}
-          className="flex-1 font-medium text-foreground text-label hover:text-brand-text hover:underline"
-        >
-          {stage.name}
-        </Link>
-        <Badge variant="secondary">{items.length}</Badge>
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-block overflow-y-auto">
-        {items.map((submission, index) => (
-          <KanbanCard
-            key={submission.id}
-            submission={submission}
-            index={index}
-            column={stage.id}
-            compact={compact}
-            isChecked={selectedIds.has(submission.id)}
-            isPending={submission.id === pendingSubmissionId}
-            onToggle={() => onToggle(submission.id)}
-            onSelect={onSelect}
-          />
-        ))}
-        {items.length === 0 && (
-          <p className="py-4 text-center text-caption text-muted-foreground">
-            {searchActive ? "No matches" : "No candidates"}
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function KanbanCard({
-  submission,
-  index,
-  column,
-  compact,
-  isChecked,
-  isPending,
-  onToggle,
-  onSelect,
-}: {
-  submission: SubmissionWithCandidate
-  index: number
-  column: string
-  compact: boolean
-  isChecked: boolean
-  isPending: boolean
-  onToggle: () => void
-  onSelect: (s: SubmissionWithCandidate) => void
-}) {
-  const { ref, handleRef, isDragSource } = useSortable({
-    id: submission.id,
-    index,
-    type: "item",
-    accept: "item",
-    group: column,
-  })
-
-  const headshotUrl = submission.headshots[0]?.url
-
-  if (compact) {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          "group flex items-center gap-2 overflow-hidden rounded-md border border-border bg-card p-1.5 transition-colors hover:bg-muted/50",
-          isDragSource && "opacity-40",
-          isPending && "pointer-events-none animate-pulse",
-          isChecked && "border-primary/50 bg-brand-subtle",
-        )}
-      >
-        {/* Inline checkbox */}
-        {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
-        <div
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            "shrink-0 opacity-0 transition-opacity group-hover:opacity-100",
-            isChecked && "opacity-100",
-          )}
-        >
-          <Checkbox
-            checked={isChecked}
-            onCheckedChange={onToggle}
-            aria-label={`Select ${submission.firstName} ${submission.lastName}`}
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onSelect(submission)}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
-        >
-          {/* Circular thumbnail */}
-          <div className="size-8 shrink-0 overflow-hidden rounded-full bg-muted">
-            {headshotUrl ? (
-              // biome-ignore lint/performance/noImgElement: external R2 URLs
-              <img
-                src={headshotUrl}
-                alt={`${submission.firstName} ${submission.lastName}`}
-                className="size-full object-cover"
-              />
-            ) : (
-              <div className="flex size-full items-center justify-center">
-                <span className="font-medium text-caption text-muted-foreground">
-                  {submission.firstName[0]}
-                  {submission.lastName[0]}
-                </span>
-              </div>
-            )}
-          </div>
-          <p className="min-w-0 truncate font-medium text-foreground text-label">
-            {submission.firstName} {submission.lastName}
-          </p>
-        </button>
-
-        {/* Inline drag handle */}
-        <div
-          ref={handleRef}
-          className="shrink-0 cursor-grab rounded-sm p-0.5 opacity-0 transition-opacity active:cursor-grabbing group-hover:opacity-100"
-        >
-          <GripVerticalIcon className="size-3.5 text-muted-foreground" />
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div
-      ref={ref}
-      className={cn(
-        "group relative overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-muted/50",
-        isDragSource && "opacity-40",
-        isPending && "pointer-events-none animate-pulse",
-        isChecked && "border-primary/50 bg-brand-subtle",
-      )}
-    >
-      <button
-        type="button"
-        onClick={() => onSelect(submission)}
-        className="w-full cursor-pointer text-left"
-      >
-        {/* Headshot */}
-        <div className="relative aspect-[4/3] w-full bg-muted">
-          {headshotUrl ? (
-            // biome-ignore lint/performance/noImgElement: external R2 URLs
-            <img
-              src={headshotUrl}
-              alt={`${submission.firstName} ${submission.lastName}`}
-              className="size-full object-cover"
-            />
-          ) : (
-            <div className="flex size-full items-center justify-center">
-              <span className="font-medium text-heading text-muted-foreground">
-                {submission.firstName[0]}
-                {submission.lastName[0]}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Name + date */}
-        <div className="flex flex-col gap-0.5 p-2">
-          <p className="truncate font-medium text-foreground text-label">
-            {submission.firstName} {submission.lastName}
-          </p>
-          <p className="text-caption text-muted-foreground">
-            {day(submission.createdAt).format("LL")}
-          </p>
-        </div>
-      </button>
-
-      {/* Drag handle */}
-      {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: drag handle needs accessible label for screen readers */}
-      <div
-        ref={handleRef}
-        className="absolute top-2 right-2 flex cursor-grab items-center justify-center rounded-sm bg-background/80 p-0.5 opacity-0 backdrop-blur-sm transition-opacity active:cursor-grabbing group-hover:opacity-100"
-        aria-label="Drag to reorder"
-      >
-        <GripVerticalIcon className="size-3.5 text-muted-foreground" />
-      </div>
-
-      {/* Checkbox overlay */}
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}
-      <div
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-        className={cn(
-          "absolute top-2 left-2 flex items-center justify-center rounded-sm bg-background/80 p-0.5 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100",
-          isChecked && "opacity-100",
-        )}
-      >
-        <Checkbox
-          checked={isChecked}
-          onCheckedChange={onToggle}
-          aria-label={`Select ${submission.firstName} ${submission.lastName}`}
-        />
-      </div>
-    </div>
   )
 }

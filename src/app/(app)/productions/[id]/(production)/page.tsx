@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
-import { getRolesWithSubmissions } from "@/actions/productions/get-roles-with-submissions"
-import { RolesList } from "@/components/productions/roles-list"
+import { getProductionSubmissions } from "@/actions/productions/get-production-submissions"
+import { ProductionSubmissions } from "@/components/productions/production-submissions"
 
 export async function generateMetadata({
   params,
@@ -29,21 +29,22 @@ export default async function ProductionPage({
     notFound()
   }
 
-  const roles = await getRolesWithSubmissions(production.id)
+  const data = await getProductionSubmissions(production.id)
+
+  if (!data) {
+    notFound()
+  }
 
   return (
-    <RolesList
+    <ProductionSubmissions
       productionId={production.id}
-      roles={roles.map((r) => ({
-        id: r.id,
-        name: r.name,
-        isOpen: r.isOpen,
-        stageCounts: r.pipelineStages.map((stage) => ({
-          name: stage.name,
-          type: stage.type,
-          count: r.submissions.filter((s) => s.stageId === stage.id).length,
-        })),
-      }))}
+      roles={data.roles}
+      submissions={data.submissions}
+      pipelineStages={data.pipelineStages}
+      submissionFormFields={data.submissionFormFields}
+      feedbackFormFields={data.feedbackFormFields}
+      rejectReasons={data.rejectReasons}
+      otherRoleSubmissions={data.otherRoleSubmissions}
     />
   )
 }

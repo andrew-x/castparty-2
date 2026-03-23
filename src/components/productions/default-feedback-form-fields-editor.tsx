@@ -15,7 +15,7 @@ interface Props {
   fields: CustomForm[]
 }
 
-export function DefaultFeedbackFormFieldsEditor({
+export function ProductionFeedbackFormFieldsEditor({
   productionId,
   fields,
 }: Props) {
@@ -105,7 +105,6 @@ export function DefaultFeedbackFormFieldsEditor({
       isAdding={isAdding}
       isSaving={isSaving}
       removingFieldId={removingFieldId}
-      description="Changes here only apply to new roles. Existing roles are not affected."
     />
   )
 }

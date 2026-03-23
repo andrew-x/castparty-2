@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
-import { DefaultFeedbackFormFieldsEditor } from "@/components/productions/default-feedback-form-fields-editor"
+import { ProductionFeedbackFormFieldsEditor } from "@/components/productions/default-feedback-form-fields-editor"
 
 export async function generateMetadata({
   params,
@@ -29,7 +29,7 @@ export default async function ProductionFeedbackFormPage({
   }
 
   return (
-    <DefaultFeedbackFormFieldsEditor
+    <ProductionFeedbackFormFieldsEditor
       productionId={production.id}
       fields={production.feedbackFormFields}
     />

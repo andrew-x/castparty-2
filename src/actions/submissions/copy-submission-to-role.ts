@@ -68,7 +68,11 @@ export const copySubmissionToRole = secureActionClient
 
       // Find the APPLIED stage for the target role
       const appliedStage = await db.query.PipelineStage.findFirst({
-        where: (s) => and(eq(s.roleId, targetRoleId), eq(s.type, "APPLIED")),
+        where: (s) =>
+          and(
+            eq(s.productionId, targetRole.productionId),
+            eq(s.type, "APPLIED"),
+          ),
         columns: { id: true },
       })
 

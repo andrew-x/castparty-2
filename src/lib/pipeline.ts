@@ -24,26 +24,7 @@ export const DEFAULT_PRODUCTION_STAGES = [
 ]
 
 /**
- * Build the 3 system pipeline stage rows for a new role (legacy fallback).
- */
-export function buildSystemStages(
-  roleId: string,
-  productionId: string,
-  organizationId: string,
-) {
-  return SYSTEM_STAGES.map((s) => ({
-    id: generateId("stg"),
-    roleId,
-    productionId,
-    organizationId,
-    name: s.name,
-    order: s.order,
-    type: s.type,
-  }))
-}
-
-/**
- * Build the default production-level template stages (roleId = null).
+ * Build the default production pipeline stages.
  */
 export function buildProductionStages(
   productionId: string,
@@ -51,7 +32,6 @@ export function buildProductionStages(
 ) {
   return DEFAULT_PRODUCTION_STAGES.map((s) => ({
     id: generateId("stg"),
-    roleId: null,
     productionId,
     organizationId,
     name: s.name,
@@ -61,7 +41,7 @@ export function buildProductionStages(
 }
 
 /**
- * Build production-level template stages from user-provided custom stage names.
+ * Build production pipeline stages from user-provided custom stage names.
  * System stages (Applied, Selected, Rejected) are always included.
  */
 export function buildCustomProductionStages(
@@ -82,31 +62,10 @@ export function buildCustomProductionStages(
 
   return stages.map((s) => ({
     id: generateId("stg"),
-    roleId: null,
     productionId,
     organizationId,
     name: s.name,
     order: s.order,
     type: s.type,
-  }))
-}
-
-/**
- * Copy production template stages into role-level stages.
- */
-export function buildStagesFromTemplate(
-  templateStages: { name: string; order: number; type: string }[],
-  roleId: string,
-  productionId: string,
-  organizationId: string,
-) {
-  return templateStages.map((s) => ({
-    id: generateId("stg"),
-    roleId,
-    productionId,
-    organizationId,
-    name: s.name,
-    order: s.order,
-    type: s.type as "APPLIED" | "SELECTED" | "REJECTED" | "CUSTOM",
   }))
 }

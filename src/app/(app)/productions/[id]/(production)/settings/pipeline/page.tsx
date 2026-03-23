@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
 import { getProductionStages } from "@/actions/productions/get-production-stages"
-import { DefaultStagesEditor } from "@/components/productions/default-stages-editor"
+import { ProductionStagesEditor } from "@/components/productions/default-stages-editor"
 
 export async function generateMetadata({
   params,
@@ -35,7 +35,7 @@ export default async function ProductionPipelinePage({
     <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
       <section className="flex flex-col gap-group">
         <h2 className="font-serif text-heading">Pipeline stages</h2>
-        <DefaultStagesEditor productionId={production.id} stages={stages} />
+        <ProductionStagesEditor productionId={production.id} stages={stages} />
       </section>
     </div>
   )

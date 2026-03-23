@@ -1,12 +1,11 @@
 "use server"
 
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { PipelineStage, Role } from "@/lib/db/schema"
-import { buildStagesFromTemplate, buildSystemStages } from "@/lib/pipeline"
+import { Role } from "@/lib/db/schema"
 import { generateUniqueSlug } from "@/lib/slug"
 import { generateId } from "@/lib/util"
 
@@ -30,13 +29,7 @@ export const createRole = secureActionClient
       // Verify the production belongs to the user's organization
       const production = await db.query.Production.findFirst({
         where: (p) => and(eq(p.id, productionId), eq(p.organizationId, orgId)),
-        columns: {
-          id: true,
-          submissionFormFields: true,
-          systemFieldConfig: true,
-          feedbackFormFields: true,
-          rejectReasons: true,
-        },
+        columns: { id: true },
       })
       if (!production) throw new Error("Production not found.")
 
@@ -48,42 +41,16 @@ export const createRole = secureActionClient
         eq(Role.productionId, productionId),
       )
 
-      await db.transaction(async (tx) => {
-        await tx.insert(Role).values({
-          id,
-          productionId,
-          name,
-          slug,
-          description: description || "",
-          isOpen: true,
-          submissionFormFields: production.submissionFormFields.map((f) => ({
-            ...f,
-            id: generateId("ff"),
-          })),
-          systemFieldConfig: production.systemFieldConfig,
-          feedbackFormFields: production.feedbackFormFields.map((f) => ({
-            ...f,
-            id: generateId("fbf"),
-          })),
-          rejectReasons: production.rejectReasons,
-        })
-
-        // Try to copy stages from the production template
-        const templateStages = await tx.query.PipelineStage.findMany({
-          where: (s) => and(eq(s.productionId, productionId), isNull(s.roleId)),
-          columns: { name: true, order: true, type: true },
-          orderBy: (s) => s.order,
-        })
-
-        const stages =
-          templateStages.length > 0
-            ? buildStagesFromTemplate(templateStages, id, productionId, orgId)
-            : buildSystemStages(id, productionId, orgId)
-
-        await tx.insert(PipelineStage).values(stages)
+      await db.insert(Role).values({
+        id,
+        productionId,
+        name,
+        slug,
+        description: description || "",
+        isOpen: true,
       })
 
       revalidatePath("/", "layout")
-      return { id }
+      return { id, slug }
     },
   )

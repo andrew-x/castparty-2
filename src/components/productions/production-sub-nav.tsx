@@ -2,6 +2,7 @@
 
 import {
   ClipboardListIcon,
+  ListIcon,
   MessageSquareTextIcon,
   SettingsIcon,
   UsersIcon,
@@ -16,7 +17,8 @@ export function ProductionSubNav({ productionId }: { productionId: string }) {
   return (
     <SubNav
       items={[
-        { label: "Roles", href: basePath, icon: UsersIcon },
+        { label: "Submissions", href: basePath, icon: UsersIcon },
+        { label: "Roles", href: `${basePath}/roles`, icon: ListIcon },
         { label: "General", href: `${basePath}/settings`, icon: SettingsIcon },
         {
           label: "Pipeline",

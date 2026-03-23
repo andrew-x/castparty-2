@@ -423,19 +423,19 @@ export function FormFieldsEditor({
   )
 }
 
-// --- DefaultFormFieldsEditor (production settings wrapper) ---
+// --- ProductionFormFieldsEditor (production settings wrapper) ---
 
-interface DefaultFormFieldsEditorProps {
+interface ProductionFormFieldsEditorProps {
   productionId: string
   fields: CustomForm[]
   systemFieldConfig?: SystemFieldConfig
 }
 
-export function DefaultFormFieldsEditor({
+export function ProductionFormFieldsEditor({
   productionId,
   fields,
   systemFieldConfig: initialSystemFieldConfig,
-}: DefaultFormFieldsEditorProps) {
+}: ProductionFormFieldsEditorProps) {
   const router = useRouter()
   const [localFields, setLocalFields] = useState(fields)
   const [localSystemFieldConfig, setLocalSystemFieldConfig] =
@@ -542,7 +542,6 @@ export function DefaultFormFieldsEditor({
       isAdding={isAdding}
       isSaving={isSaving}
       removingFieldId={removingFieldId}
-      description="Changes here only apply to new roles. Existing roles are not affected."
     />
   )
 }
