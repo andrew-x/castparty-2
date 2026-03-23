@@ -32,9 +32,9 @@ import { createProductionFormSchema } from "@/lib/schemas/production"
 import { formResolver } from "@/lib/schemas/resolve"
 import { slugify } from "@/lib/slugify"
 import {
-  DEFAULT_SYSTEM_FIELD_CONFIG,
   type CustomForm,
   type CustomFormFieldType,
+  DEFAULT_SYSTEM_FIELD_CONFIG,
 } from "@/lib/types"
 import { getAppUrl } from "@/lib/url"
 import { generateId } from "@/lib/util"

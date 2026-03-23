@@ -3,6 +3,7 @@
 import {
   ClipboardListIcon,
   ListIcon,
+  MailIcon,
   MessageSquareTextIcon,
   SettingsIcon,
   UsersIcon,
@@ -39,6 +40,11 @@ export function ProductionSubNav({ productionId }: { productionId: string }) {
           label: "Reject reasons",
           href: `${basePath}/settings/reject-reasons`,
           icon: XCircleIcon,
+        },
+        {
+          label: "Email templates",
+          href: `${basePath}/settings/emails`,
+          icon: MailIcon,
         },
       ]}
     />

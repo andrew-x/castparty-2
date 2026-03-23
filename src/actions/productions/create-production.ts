@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { PipelineStage, Production, Role } from "@/lib/db/schema"
+import { DEFAULT_EMAIL_TEMPLATES } from "@/lib/email-template"
 import {
   buildCustomProductionStages,
   buildProductionStages,
@@ -94,6 +95,7 @@ export const createProduction = secureActionClient
           submissionFormFields: submissionFormFields ?? [],
           feedbackFormFields: feedbackFormFields ?? [],
           rejectReasons: DEFAULT_REJECT_REASONS,
+          emailTemplates: DEFAULT_EMAIL_TEMPLATES,
         })
 
         await tx.insert(PipelineStage).values(templateStages)

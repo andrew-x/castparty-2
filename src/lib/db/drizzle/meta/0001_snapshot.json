@@ -1,6 +1,6 @@
 {
-  "id": "70e79774-c24c-441a-965e-5503e3711ceb",
-  "prevId": "1fe9ea4c-1621-419c-ae0c-42083d5be8cd",
+  "id": "aaac90df-0874-4c12-96de-37f1533a9b69",
+  "prevId": "79f8b9fd-c34b-4d3e-ba33-04d1b7dcb4ef",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1236,6 +1236,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'[]'::jsonb"
+        },
+        "email_templates": {
+          "name": "email_templates",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"submissionReceived\":{\"subject\":\"Your submission for {{role_name}} has been received\",\"body\":\"Hi {{first_name}},\\n\\nThank you for submitting for {{role_name}} in {{production_name}}. We've received your submission and will be in touch.\\n\\nBreak a leg!\\n\\n{{organization_name}}\"},\"rejected\":{\"subject\":\"Update on your submission for {{role_name}}\",\"body\":\"Hi {{first_name}},\\n\\nThank you for your interest in {{role_name}} in {{production_name}}. After careful consideration, we've decided to go in a different direction for this role.\\n\\nWe appreciate you taking the time to audition and wish you the best in your future endeavors.\\n\\n{{organization_name}}\"},\"selected\":{\"subject\":\"Congratulations! You've been selected for {{role_name}}\",\"body\":\"Hi {{first_name}},\\n\\nWe're excited to let you know that you've been selected for {{role_name}} in {{production_name}}!\\n\\nWe'll be in touch soon with next steps. Congratulations!\\n\\n{{organization_name}}\"}}'::jsonb"
         },
         "created_at": {
           "name": "created_at",

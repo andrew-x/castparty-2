@@ -108,7 +108,6 @@ CREATE TABLE "pipeline_stage" (
 	"id" text PRIMARY KEY NOT NULL,
 	"organization_id" text NOT NULL,
 	"production_id" text NOT NULL,
-	"role_id" text,
 	"name" text NOT NULL,
 	"order" integer NOT NULL,
 	"type" "pipeline_stage_type" DEFAULT 'CUSTOM' NOT NULL,
@@ -140,6 +139,7 @@ CREATE TABLE "production" (
 	"system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional"}'::jsonb NOT NULL,
 	"feedback_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"reject_reasons" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"email_templates" jsonb,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -151,11 +151,6 @@ CREATE TABLE "role" (
 	"slug" text NOT NULL,
 	"description" text DEFAULT '' NOT NULL,
 	"is_open" boolean DEFAULT false NOT NULL,
-	"location" text DEFAULT '' NOT NULL,
-	"submission_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
-	"system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional"}'::jsonb NOT NULL,
-	"feedback_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
-	"reject_reasons" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -239,7 +234,6 @@ ALTER TABLE "member" ADD CONSTRAINT "member_user_id_user_id_fk" FOREIGN KEY ("us
 ALTER TABLE "organization_profile" ADD CONSTRAINT "organization_profile_id_organization_id_fk" FOREIGN KEY ("id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pipeline_stage" ADD CONSTRAINT "pipeline_stage_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pipeline_stage" ADD CONSTRAINT "pipeline_stage_production_id_production_id_fk" FOREIGN KEY ("production_id") REFERENCES "public"."production"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pipeline_stage" ADD CONSTRAINT "pipeline_stage_role_id_role_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."role"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pipeline_update" ADD CONSTRAINT "pipeline_update_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pipeline_update" ADD CONSTRAINT "pipeline_update_production_id_production_id_fk" FOREIGN KEY ("production_id") REFERENCES "public"."production"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pipeline_update" ADD CONSTRAINT "pipeline_update_role_id_role_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."role"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

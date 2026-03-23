@@ -12,6 +12,7 @@ import {
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
+import { sendSubmissionEmailAction } from "@/actions/submissions/send-submission-email"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Button } from "@/components/common/button"
 import {
@@ -22,16 +23,18 @@ import {
   SheetTitle,
 } from "@/components/common/sheet"
 import { ConsiderForRoleDialog } from "@/components/productions/consider-for-role-dialog"
+import { EmailPreviewDialog } from "@/components/productions/email-preview-dialog"
 import { FeedbackPanel } from "@/components/productions/feedback-panel"
 import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { StageControls } from "@/components/productions/stage-controls"
 import { SubmissionInfoPanel } from "@/components/productions/submission-info-panel"
+import { interpolateTemplate } from "@/lib/email-template"
 import type {
   OtherRoleSubmission,
   PipelineStageData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
-import type { CustomForm } from "@/lib/types"
+import type { CustomForm, EmailTemplates } from "@/lib/types"
 
 interface Props {
   submission: SubmissionWithCandidate | null
@@ -41,6 +44,9 @@ interface Props {
   roleId?: string
   rejectReasons: string[]
   productionId: string
+  productionName: string
+  organizationName: string
+  emailTemplates: EmailTemplates
   otherRoleSubmissions: Record<string, OtherRoleSubmission[]>
   onClose: () => void
   onStageChange?: (submission: SubmissionWithCandidate) => void
@@ -56,6 +62,9 @@ export function SubmissionDetailSheet({
   roleId,
   rejectReasons,
   productionId,
+  productionName,
+  organizationName,
+  emailTemplates,
   otherRoleSubmissions,
   onClose,
   onStageChange,
@@ -65,16 +74,42 @@ export function SubmissionDetailSheet({
   const router = useRouter()
   const lightboxOpen = useRef(false)
 
-  const { execute: executeStatusChange } = useAction(updateSubmissionStatus, {
-    onSuccess() {
-      router.refresh()
+  const { executeAsync: executeStatusChange } = useAction(
+    updateSubmissionStatus,
+    {
+      onSuccess() {
+        router.refresh()
+      },
     },
-  })
+  )
+
+  const { execute: executeSendEmail } = useAction(sendSubmissionEmailAction)
 
   const [considerDialogOpen, setConsiderDialogOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [selectDialogOpen, setSelectDialogOpen] = useState(false)
+  const pendingSelectStageId = useRef<string | null>(null)
 
   const rejectedStage = pipelineStages.find((s) => s.type === "REJECTED")
+  const selectedStage = pipelineStages.find((s) => s.type === "SELECTED")
+
+  function getTemplateVariables(): Record<string, string> {
+    if (!submission) {
+      return {
+        first_name: "",
+        last_name: "",
+        production_name: "",
+        role_name: "",
+      }
+    }
+    return {
+      first_name: submission.firstName,
+      last_name: submission.lastName,
+      production_name: productionName,
+      role_name: submission.roleName,
+      organization_name: organizationName,
+    }
+  }
 
   function handleStatusChange(stageId: string, rejectionReason?: string) {
     if (!submission) return
@@ -82,6 +117,17 @@ export function SubmissionDetailSheet({
     // Intercept moves to REJECTED stage — show dialog first
     if (rejectedStage && stageId === rejectedStage.id && !rejectionReason) {
       setRejectDialogOpen(true)
+      return
+    }
+
+    // Intercept moves to SELECTED stage — show email preview first
+    if (
+      selectedStage &&
+      stageId === selectedStage.id &&
+      submission.stageId !== selectedStage.id
+    ) {
+      pendingSelectStageId.current = stageId
+      setSelectDialogOpen(true)
       return
     }
 
@@ -99,11 +145,92 @@ export function SubmissionDetailSheet({
     })
   }
 
-  function handleRejectConfirm(reason: string) {
-    if (!rejectedStage) return
+  async function handleRejectConfirm(
+    reason: string,
+    sendEmail: boolean,
+    emailSubject?: string,
+    emailBody?: string,
+  ) {
+    if (!rejectedStage || !submission) return
     setRejectDialogOpen(false)
-    handleStatusChange(rejectedStage.id, reason)
+
+    const newStage =
+      pipelineStages.find((s) => s.id === rejectedStage.id) ?? null
+    onStageChange?.({
+      ...submission,
+      stageId: rejectedStage.id,
+      rejectionReason: reason,
+      stage: newStage,
+    })
+
+    const result = await executeStatusChange({
+      submissionId: submission.id,
+      stageId: rejectedStage.id,
+      rejectionReason: reason,
+    })
+
+    if (sendEmail && result?.data) {
+      executeSendEmail({
+        submissionId: submission.id,
+        templateType: "rejected",
+        customSubject: emailSubject,
+        customBody: emailBody,
+      })
+    }
   }
+
+  async function handleSelectConfirm(
+    sendEmail: boolean,
+    emailSubject: string,
+    emailBody: string,
+  ) {
+    const stageId = pendingSelectStageId.current
+    if (!stageId || !submission) return
+    pendingSelectStageId.current = null
+    setSelectDialogOpen(false)
+
+    const newStage = pipelineStages.find((s) => s.id === stageId) ?? null
+    onStageChange?.({
+      ...submission,
+      stageId,
+      rejectionReason: null,
+      stage: newStage,
+    })
+
+    const result = await executeStatusChange({
+      submissionId: submission.id,
+      stageId,
+    })
+
+    if (sendEmail && result?.data) {
+      executeSendEmail({
+        submissionId: submission.id,
+        templateType: "selected",
+        customSubject: emailSubject,
+        customBody: emailBody,
+      })
+    }
+  }
+
+  const variables = getTemplateVariables()
+  const rejectPreview = submission
+    ? {
+        subject: interpolateTemplate(
+          emailTemplates.rejected.subject,
+          variables,
+        ),
+        body: interpolateTemplate(emailTemplates.rejected.body, variables),
+      }
+    : undefined
+  const selectPreview = submission
+    ? {
+        subject: interpolateTemplate(
+          emailTemplates.selected.subject,
+          variables,
+        ),
+        body: interpolateTemplate(emailTemplates.selected.body, variables),
+      }
+    : { subject: "", body: "" }
 
   return (
     <Sheet
@@ -244,7 +371,20 @@ export function SubmissionDetailSheet({
         open={rejectDialogOpen}
         onOpenChange={setRejectDialogOpen}
         reasons={rejectReasons}
+        emailPreview={rejectPreview}
         onConfirm={handleRejectConfirm}
+      />
+
+      <EmailPreviewDialog
+        open={selectDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) pendingSelectStageId.current = null
+          setSelectDialogOpen(open)
+        }}
+        initialSubject={selectPreview.subject}
+        initialBody={selectPreview.body}
+        actionLabel="Select"
+        onConfirm={handleSelectConfirm}
       />
     </Sheet>
   )
