@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
 import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-submission-status"
+import { sendSubmissionEmailAction } from "@/actions/submissions/send-submission-email"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import {
   Empty,
@@ -26,9 +27,11 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/common/toggle-group"
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
 import { ComparisonView } from "@/components/productions/comparison-view"
+import { EmailPreviewDialog } from "@/components/productions/email-preview-dialog"
 import { KanbanColumn } from "@/components/productions/kanban-column"
 import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
+import { interpolateTemplate } from "@/lib/email-template"
 import type {
   ColumnItems,
   OtherRoleSubmission,
@@ -36,10 +39,13 @@ import type {
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
 import { buildColumns } from "@/lib/submission-helpers"
-import type { CustomForm } from "@/lib/types"
+import type { CustomForm, EmailTemplates } from "@/lib/types"
 
 interface Props {
   productionId: string
+  productionName: string
+  organizationName: string
+  emailTemplates: EmailTemplates
   roles: { id: string; name: string; slug: string }[]
   submissions: SubmissionWithCandidate[]
   pipelineStages: PipelineStageData[]
@@ -51,6 +57,9 @@ interface Props {
 
 export function ProductionSubmissions({
   productionId,
+  productionName,
+  organizationName,
+  emailTemplates,
   roles,
   submissions,
   pipelineStages,
@@ -78,6 +87,7 @@ export function ProductionSubmissions({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [comparisonOpen, setComparisonOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [selectDialogOpen, setSelectDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [compact, setCompact] = useState(false)
   const [selectedRoleId, setSelectedRoleId] = useState("")
@@ -89,7 +99,16 @@ export function ProductionSubmissions({
     | null
   >(null)
 
+  // Stores pending select info for a single drag
+  const pendingSelectRef = useRef<{
+    submissionId: string
+    stageId: string
+  } | null>(null)
+
   const rejectedStage = pipelineStages.find((s) => s.type === "REJECTED")
+  const selectedStage = pipelineStages.find((s) => s.type === "SELECTED")
+
+  const { execute: executeSendEmail } = useAction(sendSubmissionEmailAction)
 
   function selectSubmission(submission: SubmissionWithCandidate | null) {
     setSelectedSubmission(submission)
@@ -188,16 +207,19 @@ export function ProductionSubmissions({
     })
   }
 
-  const { execute: executeStatusChange } = useAction(updateSubmissionStatus, {
-    onSuccess() {
-      setPendingSubmissionId(null)
+  const { executeAsync: executeStatusChangeAsync } = useAction(
+    updateSubmissionStatus,
+    {
+      onSuccess() {
+        setPendingSubmissionId(null)
+      },
+      onError() {
+        setPendingSubmissionId(null)
+        setColumns(previousColumns.current)
+        router.refresh()
+      },
     },
-    onError() {
-      setPendingSubmissionId(null)
-      setColumns(previousColumns.current)
-      router.refresh()
-    },
-  })
+  )
 
   const { execute: executeBulkMove, isPending: isBulkMovePending } = useAction(
     bulkUpdateSubmissionStatus,
@@ -267,7 +289,12 @@ export function ProductionSubmissions({
     })
   }
 
-  function handleRejectConfirm(reason: string) {
+  function handleRejectConfirm(
+    reason: string,
+    sendEmail: boolean,
+    emailSubject?: string,
+    emailBody?: string,
+  ) {
     setRejectDialogOpen(false)
     const pending = pendingRejectRef.current
     pendingRejectRef.current = null
@@ -275,10 +302,19 @@ export function ProductionSubmissions({
 
     if (pending.type === "drag") {
       setPendingSubmissionId(pending.submissionId)
-      executeStatusChange({
+      executeStatusChangeAsync({
         submissionId: pending.submissionId,
         stageId: pending.stageId,
         rejectionReason: reason,
+      }).then((result) => {
+        if (sendEmail && result?.data) {
+          executeSendEmail({
+            submissionId: pending.submissionId,
+            templateType: "rejected",
+            customSubject: emailSubject,
+            customBody: emailBody,
+          })
+        }
       })
     } else {
       // Use captured submissionIds, not current selectedIds
@@ -320,6 +356,63 @@ export function ProductionSubmissions({
     // If drag was pending, revert the optimistic column move
     if (pending?.type === "drag") {
       setColumns(previousColumns.current)
+    }
+  }
+
+  function handleSelectConfirm(
+    sendEmail: boolean,
+    emailSubject: string,
+    emailBody: string,
+  ) {
+    setSelectDialogOpen(false)
+    const pending = pendingSelectRef.current
+    pendingSelectRef.current = null
+    if (!pending) return
+
+    setPendingSubmissionId(pending.submissionId)
+    executeStatusChangeAsync({
+      submissionId: pending.submissionId,
+      stageId: pending.stageId,
+    }).then((result) => {
+      if (sendEmail && result?.data) {
+        executeSendEmail({
+          submissionId: pending.submissionId,
+          templateType: "selected",
+          customSubject: emailSubject,
+          customBody: emailBody,
+        })
+      }
+    })
+  }
+
+  function handleSelectCancel() {
+    setSelectDialogOpen(false)
+    const pending = pendingSelectRef.current
+    pendingSelectRef.current = null
+    if (pending) {
+      setColumns(previousColumns.current)
+    }
+  }
+
+  function getEmailPreviewForSubmission(
+    submissionId: string,
+    templateKey: keyof typeof emailTemplates,
+  ) {
+    const sub = submissions.find((s) => s.id === submissionId)
+    if (!sub) return { subject: "", body: "" }
+    const variables = {
+      first_name: sub.firstName,
+      last_name: sub.lastName,
+      production_name: productionName,
+      role_name: sub.roleName,
+      organization_name: organizationName,
+    }
+    return {
+      subject: interpolateTemplate(
+        emailTemplates[templateKey].subject,
+        variables,
+      ),
+      body: interpolateTemplate(emailTemplates[templateKey].body, variables),
     }
   }
 
@@ -461,8 +554,18 @@ export function ProductionSubmissions({
               return
             }
 
+            // If dragging to SELECTED, show the email preview dialog
+            if (selectedStage && newStageId === selectedStage.id) {
+              pendingSelectRef.current = {
+                submissionId,
+                stageId: newStageId,
+              }
+              setSelectDialogOpen(true)
+              return
+            }
+
             setPendingSubmissionId(submissionId)
-            executeStatusChange({
+            executeStatusChangeAsync({
               submissionId,
               stageId: newStageId,
             })
@@ -524,6 +627,9 @@ export function ProductionSubmissions({
         roleId={selectedSubmission?.roleId ?? ""}
         rejectReasons={rejectReasons}
         productionId={productionId}
+        productionName={productionName}
+        organizationName={organizationName}
+        emailTemplates={emailTemplates}
         otherRoleSubmissions={otherRoleSubmissions}
         onClose={() => selectSubmission(null)}
         onStageChange={selectSubmission}
@@ -537,7 +643,40 @@ export function ProductionSubmissions({
           if (!open) handleRejectCancel()
         }}
         reasons={rejectReasons}
+        emailPreview={
+          pendingRejectRef.current?.type === "drag"
+            ? getEmailPreviewForSubmission(
+                pendingRejectRef.current.submissionId,
+                "rejected",
+              )
+            : undefined
+        }
         onConfirm={handleRejectConfirm}
+      />
+
+      <EmailPreviewDialog
+        open={selectDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) handleSelectCancel()
+        }}
+        initialSubject={
+          pendingSelectRef.current
+            ? getEmailPreviewForSubmission(
+                pendingSelectRef.current.submissionId,
+                "selected",
+              ).subject
+            : ""
+        }
+        initialBody={
+          pendingSelectRef.current
+            ? getEmailPreviewForSubmission(
+                pendingSelectRef.current.submissionId,
+                "selected",
+              ).body
+            : ""
+        }
+        actionLabel="Select"
+        onConfirm={handleSelectConfirm}
       />
     </>
   )

@@ -45,3 +45,14 @@ export const SYSTEM_FIELD_LABELS: Record<keyof SystemFieldConfig, string> = {
   resume: "Resume",
   links: "Links",
 }
+
+export interface EmailTemplate {
+  subject: string
+  body: string
+}
+
+export interface EmailTemplates {
+  submissionReceived: EmailTemplate
+  rejected: EmailTemplate
+  selected: EmailTemplate
+}

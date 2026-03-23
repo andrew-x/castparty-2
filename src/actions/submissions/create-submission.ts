@@ -3,6 +3,7 @@
 import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { extractText, getDocumentProxy } from "unpdf"
+import { sendSubmissionEmail } from "@/actions/submissions/send-submission-email"
 import { publicActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Candidate, File, Submission } from "@/lib/db/schema"
@@ -44,6 +45,7 @@ export const createSubmission = publicActionClient
               isOpen: true,
               submissionFormFields: true,
               systemFieldConfig: true,
+              emailTemplates: true,
             },
           },
         },
@@ -277,6 +279,13 @@ export const createSubmission = publicActionClient
           logger.error("PDF parsing failed", err)
           // PDF parsing is best-effort — don't fail the submission
         }
+      }
+
+      // Send submission received email (fire-and-forget)
+      try {
+        await sendSubmissionEmail(submissionId, "submissionReceived")
+      } catch (err) {
+        logger.error("Submission received email failed", err)
       }
 
       revalidatePath("/", "layout")

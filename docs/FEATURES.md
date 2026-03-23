@@ -16,6 +16,7 @@
 | Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | General settings (name, slug, location, open/closed); sub-routes for pipeline template, submission form, feedback form, and reject reasons |
 | Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/settings/page.tsx` | General settings only (name, slug, description, open/closed); pipeline, forms, and reject reasons are configured at the production level |
 | Reject Reasons | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/reject-reasons/page.tsx` | Configurable list of rejection reason labels at the production level; shown when moving a submission to Rejected stage |
+| Email Templates | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/emails/page.tsx` | Per-production customizable email templates (submission received, rejected, selected) with variable insertion; auto-sends on submission, preview-and-confirm for rejected/selected |
 | Admin Panel | `shipped` | `src/app/admin/page.tsx` | Internal user management (list, create, change password, delete); bypasses org scope |
 | Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | Paginated grid of candidates with search and filters (production, role); each card shows a headshot thumbnail |
 | Candidate Detail | `shipped` | `src/app/(app)/candidates/[candidateId]/page.tsx` | Individual candidate profile showing personal details and all submissions across roles |
@@ -926,3 +927,72 @@ GET /admin/emails/[id]
 
 *Added: 2026-03-11 — Initial email emulator documentation*
 *Updated: 2026-03-22 — Removed stale "fire-and-forget" phrasing (sendEmail is now async and propagates errors)*
+
+---
+
+## Email Templates
+
+**Overview:** Casting directors can customise three per-production email templates — Submission Received, Rejected, and Selected — each with a subject line and plain-text body. Templates support four variables (`{{first_name}}`, `{{last_name}}`, `{{production_name}}`, `{{role_name}}`). The Submission Received email is auto-sent whenever a performer submits. Rejected and Selected emails show the casting director an interpolated preview before they confirm the send. Exists because performers had no acknowledgement loop after submitting or being decided on, which is table-stakes communication for any casting process.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/lib/email-template.ts` | `interpolateTemplate()`, `DEFAULT_EMAIL_TEMPLATES`, `TEMPLATE_VARIABLES`, `TEMPLATE_VARIABLE_LABELS` |
+| `src/lib/emails/template-email.tsx` | React Email component; wraps interpolated body in `EmailLayout`; splits on `\n\n` for paragraphs |
+| `src/lib/schemas/email-template.ts` | Zod schemas for template validation (`.trim()` before `.min(1)` on subject/body) |
+| `src/actions/productions/update-email-templates.ts` | `secureActionClient` action to save all three templates at once |
+| `src/actions/submissions/send-submission-email.tsx` | `sendSubmissionEmail(submissionId, templateType)` — plain async function called by `create-submission.ts`; `sendSubmissionEmailAction` — `secureActionClient` wrapper called by the client for rejected/selected emails |
+| `src/components/productions/email-templates-form.tsx` | Accordion form with three collapsible sections; `useHookFormAction`; "Submission Received" open by default |
+| `src/components/productions/variable-insert-buttons.tsx` | Row of small buttons that insert `{{variable_name}}` at the cursor position (appends to end when unfocused) |
+| `src/components/productions/email-preview-dialog.tsx` | Reusable preview dialog: shows interpolated subject + body, "Confirm & send email" / "Confirm without email" / "Cancel" |
+| `src/app/(app)/productions/[id]/(production)/settings/emails/page.tsx` | Settings page; passes production id and stored `emailTemplates` to `EmailTemplatesForm` |
+
+**Data model:** `emailTemplates` is a JSONB column on the `Production` table typed as `EmailTemplates` (defined in `src/lib/types.ts`). The column defaults to `DEFAULT_EMAIL_TEMPLATES` so every new production arrives pre-configured. Pre-migration rows that have `null` in this column fall back to `DEFAULT_EMAIL_TEMPLATES` at runtime inside `sendSubmissionEmail`.
+
+**How it works:**
+
+```
+Submission Received (auto-send):
+  createSubmission action
+    └── after files are stored, try {
+          sendSubmissionEmail(submissionId, "submissionReceived")
+            └── fetch submission + role + production from DB
+            └── interpolateTemplate(template, variables)
+            └── sendEmail({ to, subject, react: <TemplateEmail />, text })
+        } catch { logger.error(...) }  ← email failure never breaks the submission
+
+Rejected (preview & confirm):
+  SubmissionDetailSheet detects stage type === REJECTED
+    └── opens enhanced RejectReasonDialog
+          ├── top: rejection reason radio group (existing)
+          └── bottom: read-only interpolated email preview
+          └── "Reject & send email" → onConfirm(reason, true)
+                └── updateSubmissionStatus → then sendSubmissionEmailAction("rejected")
+          └── "Reject without email" → onConfirm(reason, false)
+
+Selected (preview & confirm):
+  SubmissionDetailSheet detects stage type === SELECTED
+    └── opens EmailPreviewDialog (client-side interpolation for preview)
+          └── "Select & send email" → onConfirm(true)
+                └── updateSubmissionStatus → then sendSubmissionEmailAction("selected")
+          └── "Select without email" → onConfirm(false)
+
+Error handling (rejected/selected):
+  If sendSubmissionEmailAction fails after a successful status update →
+    show error toast; status change is NOT rolled back
+```
+
+**Architecture decisions:**
+
+- **Two exports from `send-submission-email.tsx`: plain function + action wrapper.** The submission-received email is sent inside `create-submission.ts` (a server function, no auth required), so it needs a plain `async function` it can `await` directly. Rejected/selected emails are triggered from client components, so they need a `secureActionClient` action. Rather than duplicating the DB query and interpolation logic, the action is a thin wrapper around the same plain function.
+
+- **Fire-and-forget with try/catch for submission-received.** Email delivery is secondary to the submission being recorded. Wrapping the call in try/catch and logging the error (never rethrowing) means a transient Resend failure cannot block a performer's audition from being saved. Rejected/selected emails follow a different pattern: they are initiated explicitly by the casting director, so the client receives the error and shows a toast.
+
+- **Client-side interpolation for preview, server-side for actual send.** The preview in the dialog is rendered by calling `interpolateTemplate` directly in the browser (using the variables available in client state). The actual `sendEmail` call always goes through the server action, which re-fetches the submission data and re-interpolates — ensuring the email content matches DB state even if the client variables are stale.
+
+- **`EmailPreviewDialog` is generic, not coupled to selection.** The dialog accepts `actionLabel`, `previewSubject`, `previewBody`, and `onConfirm(sendEmail: boolean)` — no assumption about which template type is being previewed. This makes it reusable if additional preview-before-send flows are added (e.g., a manual "Send update" button).
+
+**Integration points:** The `Production` schema change (`emailTemplates` JSONB column) is in `src/lib/db/schema.ts`. `RejectReasonDialog` (`src/components/productions/reject-reason-dialog.tsx`) gained `emailTemplate`, `submissionData`, and an updated `onConfirm(reason, sendEmail)` signature. `SubmissionDetailSheet` (`src/components/productions/submission-detail-sheet.tsx`) is the coordinator for both the rejection and selection email flows — it intercepts stage moves, opens the appropriate dialog, and fires the send action on confirmation. `create-submission.ts` is the only caller of the plain `sendSubmissionEmail` function. The Email Emulator (`/admin/emails` in dev) captures all outbound emails, including template emails — see the Email Emulator section above.
+
+*Added: 2026-03-23 — Initial email templates documentation*

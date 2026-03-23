@@ -14,7 +14,7 @@ export async function getProduction(id: string) {
       where: (p) => and(eq(p.id, id), eq(p.organizationId, orgId)),
       with: {
         organization: {
-          columns: { slug: true },
+          columns: { name: true, slug: true },
         },
       },
     })) ?? null
