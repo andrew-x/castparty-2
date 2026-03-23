@@ -126,7 +126,7 @@ export function SubmissionFormPreview({
         )}
 
         <Button type="button" disabled className="w-fit">
-          Submit audition
+          Submit
         </Button>
       </FieldGroup>
     </div>

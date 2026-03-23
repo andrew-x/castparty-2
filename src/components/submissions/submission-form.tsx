@@ -488,7 +488,7 @@ export function SubmissionForm({
           loading={uploading || action.isPending}
           className="w-fit"
         >
-          {uploading ? "Uploading files..." : "Submit audition"}
+          {uploading ? "Uploading files..." : "Submit"}
         </Button>
       </FieldGroup>
     </form>

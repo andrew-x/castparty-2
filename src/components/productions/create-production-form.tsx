@@ -24,12 +24,18 @@ import {
   type StageData,
   StagesEditor,
 } from "@/components/productions/default-stages-editor"
+import { FeedbackFormPreview } from "@/components/productions/feedback-form-preview"
 import { FormFieldsEditor } from "@/components/productions/form-fields-editor"
+import { SubmissionFormPreview } from "@/components/productions/submission-form-preview"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { createProductionFormSchema } from "@/lib/schemas/production"
 import { formResolver } from "@/lib/schemas/resolve"
 import { slugify } from "@/lib/slugify"
-import type { CustomForm, CustomFormFieldType } from "@/lib/types"
+import {
+  DEFAULT_SYSTEM_FIELD_CONFIG,
+  type CustomForm,
+  type CustomFormFieldType,
+} from "@/lib/types"
 import { getAppUrl } from "@/lib/url"
 import { generateId } from "@/lib/util"
 
@@ -440,22 +446,33 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
 
       {step === "submissionForm" && (
         <FieldGroup>
-          <div className="flex flex-col gap-block">
-            <div>
-              <h2 className="font-medium text-heading">Submission form</h2>
-              <p className="text-caption text-muted-foreground">
-                Add custom fields to the form candidates fill out when
-                submitting for a role. These will be the defaults for all roles.
-              </p>
-            </div>
+          <div className="grid grid-cols-1 gap-section lg:grid-cols-[1fr_440px]">
+            <div className="flex flex-col gap-block">
+              <div>
+                <h2 className="font-medium text-heading">Submission form</h2>
+                <p className="text-caption text-muted-foreground">
+                  Add custom fields to the form candidates fill out when
+                  submitting for a role. These will be the defaults for all
+                  roles.
+                </p>
+              </div>
 
-            <FormFieldsEditor
-              fields={submissionFormFields}
-              onAdd={handleAddSubmissionField}
-              onSave={handleSaveSubmissionField}
-              onRemove={handleRemoveSubmissionField}
-              onReorder={handleReorderSubmissionFields}
-            />
+              <FormFieldsEditor
+                fields={submissionFormFields}
+                onAdd={handleAddSubmissionField}
+                onSave={handleSaveSubmissionField}
+                onRemove={handleRemoveSubmissionField}
+                onReorder={handleReorderSubmissionFields}
+              />
+            </div>
+            <div className="hidden lg:block">
+              <div className="sticky top-4">
+                <SubmissionFormPreview
+                  systemFieldConfig={DEFAULT_SYSTEM_FIELD_CONFIG}
+                  customFields={submissionFormFields}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-between">
@@ -475,22 +492,30 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
 
       {step === "feedbackForm" && (
         <FieldGroup>
-          <div className="flex flex-col gap-block">
-            <div>
-              <h2 className="font-medium text-heading">Feedback form</h2>
-              <p className="text-caption text-muted-foreground">
-                Add custom fields for the production team to fill out when
-                reviewing candidates. These will be the defaults for all roles.
-              </p>
-            </div>
+          <div className="grid grid-cols-1 gap-section lg:grid-cols-[1fr_440px]">
+            <div className="flex flex-col gap-block">
+              <div>
+                <h2 className="font-medium text-heading">Feedback form</h2>
+                <p className="text-caption text-muted-foreground">
+                  Add custom fields for the production team to fill out when
+                  reviewing candidates. These will be the defaults for all
+                  roles.
+                </p>
+              </div>
 
-            <FormFieldsEditor
-              fields={feedbackFormFields}
-              onAdd={handleAddFeedbackField}
-              onSave={handleSaveFeedbackField}
-              onRemove={handleRemoveFeedbackField}
-              onReorder={handleReorderFeedbackFields}
-            />
+              <FormFieldsEditor
+                fields={feedbackFormFields}
+                onAdd={handleAddFeedbackField}
+                onSave={handleSaveFeedbackField}
+                onRemove={handleRemoveFeedbackField}
+                onReorder={handleReorderFeedbackFields}
+              />
+            </div>
+            <div className="hidden lg:block">
+              <div className="sticky top-4">
+                <FeedbackFormPreview customFields={feedbackFormFields} />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-between">
