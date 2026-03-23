@@ -3,8 +3,10 @@
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  EllipsisVerticalIcon,
   MailIcon,
   MapPinIcon,
+  PencilIcon,
   PhoneIcon,
   UserRoundPlusIcon,
   XIcon,
@@ -15,6 +17,11 @@ import { useRef, useState } from "react"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Button } from "@/components/common/button"
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/common/popover"
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -22,6 +29,7 @@ import {
   SheetTitle,
 } from "@/components/common/sheet"
 import { ConsiderForRoleDialog } from "@/components/productions/consider-for-role-dialog"
+import { EditSubmissionDialog } from "@/components/productions/edit-submission-dialog"
 import { FeedbackPanel } from "@/components/productions/feedback-panel"
 import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { StageControls } from "@/components/productions/stage-controls"
@@ -73,6 +81,7 @@ export function SubmissionDetailSheet({
 
   const [considerDialogOpen, setConsiderDialogOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   const rejectedStage = pipelineStages.find((s) => s.type === "REJECTED")
 
@@ -185,14 +194,40 @@ export function SubmissionDetailSheet({
                     pipelineStages={pipelineStages}
                     onStageChange={handleStatusChange}
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    leftSection={<UserRoundPlusIcon />}
-                    onClick={() => setConsiderDialogOpen(true)}
-                  >
-                    Consider for role
-                  </Button>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        tooltip="More actions"
+                      >
+                        <EllipsisVerticalIcon />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-56 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditDialogOpen(true)}
+                        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-foreground text-label transition-colors hover:bg-muted"
+                      >
+                        <PencilIcon className="size-4" />
+                        Edit submission
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConsiderDialogOpen(true)}
+                        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-foreground text-label transition-colors hover:bg-muted"
+                      >
+                        <UserRoundPlusIcon className="size-4" />
+                        Consider for another role
+                      </button>
+                    </PopoverContent>
+                  </Popover>
+                  <EditSubmissionDialog
+                    submission={submission}
+                    open={editDialogOpen}
+                    onOpenChange={setEditDialogOpen}
+                  />
                   <ConsiderForRoleDialog
                     submissionId={submission.id}
                     currentRoleId={roleId ?? submission?.roleId ?? ""}

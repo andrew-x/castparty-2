@@ -73,6 +73,11 @@ export function StageControls({
       {rejectedStage && (
         <Button
           variant={isRejected ? "destructive" : "outline"}
+          className={
+            isRejected
+              ? undefined
+              : "border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          }
           size="sm"
           leftSection={<XCircleIcon />}
           onClick={() => {
