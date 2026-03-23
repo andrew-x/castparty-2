@@ -112,7 +112,7 @@ function PageContent({
     <div
       className={cn(
         "flex flex-1 flex-col",
-        isFlush ? "pt-0 pb-0" : "pt-group pb-section",
+        isFlush ? "pt-0 pb-0" : "pt-block pb-section",
         className,
       )}
       data-slot="page-content"
