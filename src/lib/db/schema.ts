@@ -266,6 +266,7 @@ export const Production = pgTable(
     slug: text().notNull(),
     description: text().notNull().default(""),
     isOpen: boolean().default(false).notNull(),
+    isArchived: boolean().default(false).notNull(),
 
     location: text().notNull().default(""),
     submissionFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
@@ -309,6 +310,7 @@ export const Role = pgTable(
     slug: text().notNull(),
     description: text().notNull().default(""),
     isOpen: boolean().default(false).notNull(),
+    isArchived: boolean().default(false).notNull(),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp()

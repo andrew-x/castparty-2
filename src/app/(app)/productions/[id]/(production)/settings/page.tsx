@@ -39,6 +39,7 @@ export default async function ProductionSettingsPage({
           currentLocation={production.location}
           currentSlug={production.slug}
           isOpen={production.isOpen}
+          isArchived={production.isArchived}
         />
       </section>
     </div>

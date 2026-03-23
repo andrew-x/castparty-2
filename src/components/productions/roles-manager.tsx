@@ -1,6 +1,6 @@
 "use client"
 
-import { PlusIcon, UserIcon } from "lucide-react"
+import { ArchiveIcon, PlusIcon, UserIcon } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { Badge } from "@/components/common/badge"
@@ -23,6 +23,7 @@ interface RoleItem {
   slug: string
   description: string
   isOpen: boolean
+  isArchived: boolean
 }
 
 interface Props {
@@ -41,10 +42,14 @@ export function RolesManager({
   const router = useRouter()
   const searchParams = useSearchParams()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
+
+  const hasArchived = roles.some((r) => r.isArchived)
+  const visibleRoles = showArchived ? roles : roles.filter((r) => !r.isArchived)
 
   const roleSlug = searchParams.get("role")
   const selectedRole =
-    roles.find((r) => r.slug === roleSlug) ?? roles[0] ?? null
+    roles.find((r) => r.slug === roleSlug) ?? visibleRoles[0] ?? null
 
   function handleRoleClick(slug: string) {
     router.replace(`?role=${slug}`, { scroll: false })
@@ -104,7 +109,7 @@ export function RolesManager({
             </Button>
           </div>
           <nav className="flex-1 overflow-y-auto">
-            {roles.map((role) => {
+            {visibleRoles.map((role) => {
               const isActive = selectedRole?.slug === role.slug
               return (
                 <button
@@ -116,25 +121,45 @@ export function RolesManager({
                     isActive
                       ? "border-l-brand bg-muted/50"
                       : "border-l-transparent",
+                    role.isArchived && "opacity-60",
                   )}
                 >
                   <span className="min-w-0 flex-1 truncate font-medium text-sm">
                     {role.name}
                   </span>
-                  <Badge
-                    variant={role.isOpen ? "secondary" : "outline"}
-                    className={cn(
-                      "text-[10px]",
-                      role.isOpen
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {role.isOpen ? "Open" : "Closed"}
-                  </Badge>
+                  {role.isArchived ? (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] text-muted-foreground"
+                    >
+                      <ArchiveIcon className="mr-1 size-2.5" />
+                      Archived
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant={role.isOpen ? "secondary" : "outline"}
+                      className={cn(
+                        "text-[10px]",
+                        role.isOpen
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {role.isOpen ? "Open" : "Closed"}
+                    </Badge>
+                  )}
                 </button>
               )
             })}
+            {hasArchived && (
+              <button
+                type="button"
+                onClick={() => setShowArchived((v) => !v)}
+                className="w-full px-4 py-2 text-caption text-muted-foreground hover:text-foreground"
+              >
+                {showArchived ? "Hide archived" : "Show archived"}
+              </button>
+            )}
           </nav>
         </div>
 
@@ -150,6 +175,7 @@ export function RolesManager({
               currentSlug={selectedRole.slug}
               currentDescription={selectedRole.description}
               currentIsOpen={selectedRole.isOpen}
+              currentIsArchived={selectedRole.isArchived}
             />
           )}
         </div>

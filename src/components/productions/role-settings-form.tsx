@@ -30,6 +30,7 @@ interface Props {
   currentSlug: string
   currentDescription: string
   currentIsOpen: boolean
+  currentIsArchived: boolean
 }
 
 export function RoleSettingsForm({
@@ -40,6 +41,7 @@ export function RoleSettingsForm({
   currentSlug,
   currentDescription,
   currentIsOpen,
+  currentIsArchived,
 }: Props) {
   const router = useRouter()
   const { form, action } = useHookFormAction(
@@ -52,6 +54,7 @@ export function RoleSettingsForm({
           description: currentDescription,
           slug: currentSlug,
           isOpen: currentIsOpen,
+          isArchived: currentIsArchived,
         },
       },
       actionProps: {
@@ -73,7 +76,8 @@ export function RoleSettingsForm({
     watched.name !== currentName ||
     watched.description !== currentDescription ||
     watched.slug !== currentSlug ||
-    watched.isOpen !== currentIsOpen
+    watched.isOpen !== currentIsOpen ||
+    watched.isArchived !== currentIsArchived
 
   const auditionUrl = getAppUrl(
     `/s/${orgSlug}/${productionSlug}/${watched.slug || currentSlug}`,
@@ -155,6 +159,31 @@ export function RoleSettingsForm({
                 id={field.name}
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={watched.isArchived}
+              />
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="isArchived"
+          control={form.control}
+          render={({ field }) => (
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>Archive role</FieldTitle>
+                <FieldDescription>
+                  Archived roles are hidden from the role list. Archiving
+                  automatically closes auditions for this role.
+                </FieldDescription>
+              </FieldContent>
+              <Switch
+                id={field.name}
+                checked={field.value}
+                onCheckedChange={(checked) => {
+                  field.onChange(checked)
+                  if (checked) form.setValue("isOpen", false)
+                }}
               />
             </Field>
           )}

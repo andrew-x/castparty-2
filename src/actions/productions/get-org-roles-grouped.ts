@@ -1,6 +1,6 @@
 "use server"
 
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
 
@@ -10,11 +10,12 @@ export async function getOrgRolesGroupedByProduction() {
   if (!orgId) return []
 
   return db.query.Production.findMany({
-    where: (p) => eq(p.organizationId, orgId),
+    where: (p) => and(eq(p.organizationId, orgId), eq(p.isArchived, false)),
     columns: { id: true, name: true },
     with: {
       roles: {
         columns: { id: true, name: true, productionId: true },
+        where: (r) => eq(r.isArchived, false),
       },
     },
     orderBy: (p, { desc }) => [desc(p.createdAt)],

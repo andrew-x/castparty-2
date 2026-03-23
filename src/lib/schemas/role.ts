@@ -6,6 +6,7 @@ export const updateRoleFormSchema = z.object({
   description: z.string().trim(),
   slug: slugSchema,
   isOpen: z.boolean(),
+  isArchived: z.boolean(),
 })
 
 export const updateRoleActionSchema = z.object({
@@ -14,4 +15,5 @@ export const updateRoleActionSchema = z.object({
   description: z.string().trim().optional(),
   slug: slugSchemaStrict.optional(),
   isOpen: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
 })

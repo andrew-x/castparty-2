@@ -42,6 +42,7 @@ export default async function RolesPage({
         slug: r.slug,
         description: r.description,
         isOpen: r.isOpen,
+        isArchived: r.isArchived,
       }))}
     />
   )

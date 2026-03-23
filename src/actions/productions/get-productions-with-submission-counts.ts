@@ -1,6 +1,6 @@
 "use server"
 
-import { count, desc, eq, sql } from "drizzle-orm"
+import { asc, count, desc, eq, sql } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
 import { Production, Role, Submission } from "@/lib/db/schema"
@@ -34,6 +34,7 @@ export async function getProductionsWithSubmissionCounts() {
       name: Production.name,
       description: Production.description,
       isOpen: Production.isOpen,
+      isArchived: Production.isArchived,
       createdAt: Production.createdAt,
       roleCount: sql<number>`coalesce(${roleCountSq.count}, 0)`,
       submissionCount: sql<number>`coalesce(${submissionCountSq.count}, 0)`,
@@ -45,5 +46,5 @@ export async function getProductionsWithSubmissionCounts() {
       eq(submissionCountSq.productionId, Production.id),
     )
     .where(eq(Production.organizationId, orgId))
-    .orderBy(desc(Production.createdAt))
+    .orderBy(asc(Production.isArchived), desc(Production.createdAt))
 }
