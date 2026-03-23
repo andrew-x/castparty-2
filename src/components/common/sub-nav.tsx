@@ -57,7 +57,7 @@ export function SubNav({ items }: Props) {
 
       <nav
         className={cn(
-          "flex flex-1 flex-col gap-tight",
+          "flex flex-1 flex-col gap-tight pt-2",
           collapsed ? "items-center px-1.5" : "px-2",
         )}
       >
