@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
 import { EmailTemplatesForm } from "@/components/productions/email-templates-form"
+import { DEFAULT_EMAIL_TEMPLATES } from "@/lib/email-template"
 import type { EmailTemplates } from "@/lib/types"
 
 export async function generateMetadata({
@@ -34,7 +35,9 @@ export default async function EmailTemplatesSettingsPage({
     <EmailTemplatesForm
       production={{
         id: production.id,
-        emailTemplates: production.emailTemplates as EmailTemplates,
+        emailTemplates:
+          (production.emailTemplates as EmailTemplates | null) ??
+          DEFAULT_EMAIL_TEMPLATES,
       }}
     />
   )

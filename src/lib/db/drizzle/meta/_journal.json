@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774271993051,
-      "tag": "0000_conscious_purifiers",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1774279154798,
-      "tag": "0001_odd_blizzard",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1774268082788,
-      "tag": "0002_faulty_lady_deathstrike",
+      "when": 1774307976756,
+      "tag": "0000_harsh_dagger",
       "breakpoints": true
     }
   ]

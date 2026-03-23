@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
 import { getProductionSubmissions } from "@/actions/productions/get-production-submissions"
 import { ProductionSubmissions } from "@/components/productions/production-submissions"
+import { DEFAULT_EMAIL_TEMPLATES } from "@/lib/email-template"
 import type { EmailTemplates } from "@/lib/types"
 
 export async function generateMetadata({
@@ -41,7 +42,10 @@ export default async function ProductionPage({
       productionId={production.id}
       productionName={production.name}
       organizationName={production.organization.name}
-      emailTemplates={production.emailTemplates as EmailTemplates}
+      emailTemplates={
+        (production.emailTemplates as EmailTemplates | null) ??
+        DEFAULT_EMAIL_TEMPLATES
+      }
       roles={data.roles}
       submissions={data.submissions}
       pipelineStages={data.pipelineStages}

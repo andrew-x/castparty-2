@@ -134,6 +134,7 @@ CREATE TABLE "production" (
 	"slug" text NOT NULL,
 	"description" text DEFAULT '' NOT NULL,
 	"is_open" boolean DEFAULT false NOT NULL,
+	"is_archived" boolean DEFAULT false NOT NULL,
 	"location" text DEFAULT '' NOT NULL,
 	"submission_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional"}'::jsonb NOT NULL,
@@ -151,6 +152,7 @@ CREATE TABLE "role" (
 	"slug" text NOT NULL,
 	"description" text DEFAULT '' NOT NULL,
 	"is_open" boolean DEFAULT false NOT NULL,
+	"is_archived" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );

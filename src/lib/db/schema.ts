@@ -10,7 +10,6 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
-import { DEFAULT_EMAIL_TEMPLATES } from "@/lib/email-template"
 import type {
   CustomForm,
   CustomFormResponse,
@@ -279,10 +278,7 @@ export const Production = pgTable(
     }),
     feedbackFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
     rejectReasons: jsonb().$type<string[]>().notNull().default([]),
-    emailTemplates: jsonb()
-      .$type<EmailTemplates>()
-      .notNull()
-      .default(DEFAULT_EMAIL_TEMPLATES),
+    emailTemplates: jsonb().$type<EmailTemplates>(),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp()
