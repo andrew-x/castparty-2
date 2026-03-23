@@ -38,10 +38,12 @@ export const updateProductionFormSchema = z.object({
   location: z.string().trim().max(200),
   slug: slugSchema,
   isOpen: z.boolean(),
+  isArchived: z.boolean(),
 })
 
 export const updateProductionActionSchema = updateProductionFormSchema.extend({
   productionId: z.string().min(1),
   slug: slugSchemaStrict,
   isOpen: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
 })

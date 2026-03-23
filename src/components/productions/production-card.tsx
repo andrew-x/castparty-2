@@ -1,4 +1,9 @@
-import { ClapperboardIcon, LockIcon, LockOpenIcon } from "lucide-react"
+import {
+  ArchiveIcon,
+  ClapperboardIcon,
+  LockIcon,
+  LockOpenIcon,
+} from "lucide-react"
 import Link from "next/link"
 import {
   Tooltip,
@@ -13,6 +18,7 @@ interface Props {
     id: string
     name: string
     isOpen: boolean
+    isArchived: boolean
     createdAt: Date
     roleCount: number
     submissionCount: number
@@ -23,7 +29,10 @@ export function ProductionCard({ production }: Props) {
   return (
     <Link
       href={`/productions/${production.id}`}
-      className="group relative flex items-start gap-element rounded-lg border px-block py-element transition-colors hover:bg-muted/50"
+      className={cn(
+        "group relative flex items-start gap-element rounded-lg border px-block py-element transition-colors hover:bg-muted/50",
+        production.isArchived && "opacity-60",
+      )}
     >
       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
         <ClapperboardIcon className="size-5 text-foreground" />
@@ -44,23 +53,35 @@ export function ProductionCard({ production }: Props) {
           <span
             className={cn(
               "absolute top-element right-block",
-              production.isOpen
-                ? "text-muted-foreground/60"
-                : "text-muted-foreground/40",
+              production.isArchived
+                ? "text-muted-foreground/40"
+                : production.isOpen
+                  ? "text-muted-foreground/60"
+                  : "text-muted-foreground/40",
             )}
           >
-            {production.isOpen ? (
+            {production.isArchived ? (
+              <ArchiveIcon className="size-3.5" />
+            ) : production.isOpen ? (
               <LockOpenIcon className="size-3.5" />
             ) : (
               <LockIcon className="size-3.5" />
             )}
             <span className="sr-only">
-              {production.isOpen ? "Open" : "Closed"}
+              {production.isArchived
+                ? "Archived"
+                : production.isOpen
+                  ? "Open"
+                  : "Closed"}
             </span>
           </span>
         </TooltipTrigger>
         <TooltipContent>
-          {production.isOpen ? "Accepting submissions" : "Closed"}
+          {production.isArchived
+            ? "Archived"
+            : production.isOpen
+              ? "Accepting submissions"
+              : "Closed"}
         </TooltipContent>
       </Tooltip>
     </Link>

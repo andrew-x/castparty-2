@@ -30,6 +30,7 @@ interface Props {
   currentLocation: string
   currentSlug: string
   isOpen: boolean
+  isArchived: boolean
 }
 
 export function ProductionSettingsForm({
@@ -39,6 +40,7 @@ export function ProductionSettingsForm({
   currentLocation,
   currentSlug,
   isOpen,
+  isArchived,
 }: Props) {
   const router = useRouter()
   const cityOptions = useCityOptions()
@@ -52,6 +54,7 @@ export function ProductionSettingsForm({
           location: currentLocation,
           slug: currentSlug,
           isOpen,
+          isArchived,
         },
       },
       actionProps: {
@@ -74,7 +77,8 @@ export function ProductionSettingsForm({
     watched.name !== currentName ||
     watched.location !== currentLocation ||
     watched.slug !== currentSlug ||
-    watched.isOpen !== isOpen
+    watched.isOpen !== isOpen ||
+    watched.isArchived !== isArchived
 
   const auditionUrl = getAppUrl(`/s/${orgSlug}/${watched.slug || currentSlug}`)
 
@@ -87,6 +91,7 @@ export function ProductionSettingsForm({
           location: v.location,
           slug: v.slug,
           isOpen: v.isOpen,
+          isArchived: v.isArchived,
         }),
       )}
     >
@@ -166,6 +171,31 @@ export function ProductionSettingsForm({
                 id={field.name}
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={watched.isArchived}
+              />
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="isArchived"
+          control={form.control}
+          render={({ field }) => (
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>Archive production</FieldTitle>
+                <FieldDescription>
+                  Archived productions are hidden from the Home and Productions
+                  pages. Archiving automatically closes auditions.
+                </FieldDescription>
+              </FieldContent>
+              <Switch
+                id={field.name}
+                checked={field.value}
+                onCheckedChange={(checked) => {
+                  field.onChange(checked)
+                  if (checked) form.setValue("isOpen", false)
+                }}
               />
             </Field>
           )}

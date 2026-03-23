@@ -1,5 +1,6 @@
 import { ClapperboardIcon } from "lucide-react"
 import type { Metadata } from "next"
+import Link from "next/link"
 import { getProductionsWithSubmissionCounts } from "@/actions/productions/get-productions-with-submission-counts"
 import { Button } from "@/components/common/button"
 import {
@@ -18,17 +19,29 @@ export const metadata: Metadata = {
   title: "Home — Castparty",
 }
 
-export default async function HomePage() {
-  const [user, productions] = await Promise.all([
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  const showArchived = params.showArchived === "true"
+
+  const [user, allProductions] = await Promise.all([
     getCurrentUser(),
     getProductionsWithSubmissionCounts(),
   ])
+
+  const hasArchived = allProductions.some((p) => p.isArchived)
+  const productions = showArchived
+    ? allProductions
+    : allProductions.filter((p) => !p.isArchived)
 
   return (
     <Page>
       <PageHeader title={`Welcome, ${user?.name}.`} />
       <PageContent>
-        {productions.length === 0 && (
+        {allProductions.length === 0 && (
           <div className="flex flex-1 flex-col items-center justify-center">
             <Empty>
               <EmptyHeader>
@@ -47,9 +60,19 @@ export default async function HomePage() {
           </div>
         )}
 
-        {productions.length > 0 && (
+        {allProductions.length > 0 && (
           <div className="flex flex-col gap-block">
-            <h2 className="font-medium text-heading">Your productions</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-medium text-heading">Your productions</h2>
+              {hasArchived && (
+                <Link
+                  href={showArchived ? "/home" : "/home?showArchived=true"}
+                  className="text-caption text-muted-foreground hover:text-foreground"
+                >
+                  {showArchived ? "Hide archived" : "Show archived"}
+                </Link>
+              )}
+            </div>
             <div className="grid gap-block sm:grid-cols-2 lg:grid-cols-3">
               {productions.map((production) => (
                 <ProductionCard key={production.id} production={production} />
