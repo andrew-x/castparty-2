@@ -17,6 +17,9 @@ import { VerifyEmailEmail } from "@/lib/emails/verify-email"
 import { getAppUrl } from "@/lib/url"
 
 export const auth = betterAuth({
+  baseURL:
+    process.env.BETTER_AUTH_URL ??
+    `http://localhost:${process.env.PORT ?? 3000}`,
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, token }) => {
