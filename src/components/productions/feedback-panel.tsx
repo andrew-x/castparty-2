@@ -1,16 +1,17 @@
 "use client"
 
-import { useState } from "react"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import {
   ArrowRightIcon,
   ChevronDownIcon,
   InboxIcon,
+  ListIcon,
   MailIcon,
   MessageCircleIcon,
   MessageSquareIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { createComment } from "@/actions/comments/create-comment"
 import { createFeedback } from "@/actions/feedback/create-feedback"
 import {
@@ -35,6 +36,7 @@ import {
 } from "@/components/common/select"
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/components/common/toggle-group"
 import {
   Tooltip,
   TooltipContent,
@@ -53,6 +55,7 @@ import type {
 } from "@/lib/submission-helpers"
 import { buildActivityList } from "@/lib/submission-helpers"
 import type { CustomForm } from "@/lib/types"
+import { cn } from "@/lib/util"
 
 interface Props {
   submission: SubmissionWithCandidate
@@ -327,19 +330,78 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
   )
 
   const activityItems = buildActivityList(submission)
+  const [activityFilter, setActivityFilter] = useState<
+    "all" | "feedback" | "comment" | "email"
+  >("all")
+
+  const filteredItems =
+    activityFilter === "all"
+      ? activityItems
+      : activityItems.filter((item) => item.type === activityFilter)
+
+  const emptyLabel =
+    activityFilter === "all"
+      ? "No activity yet."
+      : `No ${activityFilter === "comment" ? "comments" : activityFilter} yet.`
 
   return (
     <div className="flex h-full flex-col">
       {/* Activity list */}
       <div className="flex-1 overflow-y-auto p-block">
-        <h3 className="font-medium text-foreground text-label">Activity</h3>
-        {activityItems.length === 0 ? (
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium text-foreground text-label">Activity</h3>
+          <ToggleGroup
+            type="single"
+            value={activityFilter}
+            onValueChange={(v) =>
+              v &&
+              setActivityFilter(v as "all" | "feedback" | "comment" | "email")
+            }
+            className="gap-0.5"
+          >
+            {(
+              [
+                { value: "all", icon: ListIcon, label: "All activity" },
+                {
+                  value: "feedback",
+                  icon: MessageSquareIcon,
+                  label: "Feedback",
+                },
+                {
+                  value: "comment",
+                  icon: MessageCircleIcon,
+                  label: "Comments",
+                },
+                { value: "email", icon: MailIcon, label: "Emails" },
+              ] as const
+            ).map(({ value, icon: Icon, label }) => (
+              <Tooltip key={value}>
+                <TooltipTrigger asChild>
+                  <ToggleGroupItem
+                    value={value}
+                    aria-label={label}
+                    className={cn(
+                      "h-6 min-w-6 px-1",
+                      activityFilter === value
+                        ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                  </ToggleGroupItem>
+                </TooltipTrigger>
+                <TooltipContent>{label}</TooltipContent>
+              </Tooltip>
+            ))}
+          </ToggleGroup>
+        </div>
+        {filteredItems.length === 0 ? (
           <p className="py-4 text-center text-caption text-muted-foreground">
-            No activity yet.
+            {emptyLabel}
           </p>
         ) : (
           <div className="mt-block flex flex-col gap-block">
-            {activityItems.map((item) => {
+            {filteredItems.map((item) => {
               switch (item.type) {
                 case "feedback":
                   return (
