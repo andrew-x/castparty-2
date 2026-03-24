@@ -8,6 +8,27 @@
       "when": 1774307976756,
       "tag": "0000_harsh_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774343915847,
+      "tag": "0001_free_gamora",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774344169499,
+      "tag": "0002_jittery_famine",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774344907761,
+      "tag": "0003_even_maverick",
+      "breakpoints": true
     }
   ]
 }

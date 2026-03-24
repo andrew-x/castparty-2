@@ -1,9 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import {
   ArrowRightIcon,
+  ChevronDownIcon,
   InboxIcon,
+  MailIcon,
   MessageCircleIcon,
   MessageSquareIcon,
 } from "lucide-react"
@@ -43,6 +46,7 @@ import { createFeedbackFormSchema } from "@/lib/schemas/feedback"
 import { formResolver } from "@/lib/schemas/resolve"
 import type {
   CommentData,
+  EmailData,
   FeedbackData,
   StageChangeData,
   SubmissionWithCandidate,
@@ -214,6 +218,48 @@ function StageChangeItem({ stageChange }: { stageChange: StageChangeData }) {
   )
 }
 
+function EmailItem({ email }: { email: EmailData }) {
+  const [expanded, setExpanded] = useState(false)
+  const senderName = email.sentBy?.name ?? "System"
+  const isLong = email.bodyText.length > 100
+  const preview = isLong ? `${email.bodyText.slice(0, 100)}...` : email.bodyText
+
+  return (
+    <div className="flex flex-col gap-element rounded-md border p-block">
+      <div className="flex items-center gap-element">
+        <MailIcon className="size-3.5 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-caption text-foreground">
+            {senderName} sent an email
+          </p>
+          <p className="text-caption text-muted-foreground">
+            {day(email.sentAt).format("LLL")}
+          </p>
+        </div>
+      </div>
+      <p className="font-medium text-caption text-foreground">
+        {email.subject}
+      </p>
+      <p className="whitespace-pre-line text-caption text-muted-foreground">
+        {expanded ? email.bodyText : preview}
+      </p>
+      {isLong && (
+        <Button
+          variant="ghost"
+          size="icon"
+          tooltip={expanded ? "Show less" : "Show more"}
+          onClick={() => setExpanded((prev) => !prev)}
+          className="mx-auto h-5 w-5 text-muted-foreground"
+        >
+          <ChevronDownIcon
+            className={`size-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+          />
+        </Button>
+      )}
+    </div>
+  )
+}
+
 function SubmittedItem({ createdAt }: { createdAt: Date | string }) {
   return (
     <div className="flex items-center gap-element py-1 text-caption text-muted-foreground">
@@ -308,6 +354,8 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
                       stageChange={item.data}
                     />
                   )
+                case "email":
+                  return <EmailItem key={item.data.id} email={item.data} />
                 case "submitted":
                   return (
                     <SubmittedItem

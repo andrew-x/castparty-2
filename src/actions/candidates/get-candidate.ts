@@ -5,6 +5,7 @@ import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
 import type {
   CommentData,
+  EmailData,
   FeedbackData,
   PipelineStageData,
   StageChangeData,
@@ -52,6 +53,12 @@ export async function getCandidate(candidateId: string) {
             },
             orderBy: (pu, { desc }) => [desc(pu.createdAt)],
           },
+          emails: {
+            with: {
+              sentBy: { columns: { name: true } },
+            },
+            orderBy: (e, { desc }) => [desc(e.sentAt)],
+          },
         },
       },
     },
@@ -92,6 +99,15 @@ export async function getCandidate(candidateId: string) {
       toStageName: pu.toStage?.name ?? null,
       changedBy: pu.changedBy,
       createdAt: pu.createdAt,
+    }))
+
+    const emails: EmailData[] = (submission.emails ?? []).map((e) => ({
+      id: e.id,
+      subject: e.subject,
+      bodyText: e.bodyText,
+      templateType: e.templateType,
+      sentBy: e.sentBy,
+      sentAt: e.sentAt,
     }))
 
     const pipelineStages: PipelineStageData[] = (
@@ -144,6 +160,7 @@ export async function getCandidate(candidateId: string) {
         feedback,
         comments,
         stageChanges,
+        emails,
         candidate: {
           id: candidate.id,
           firstName: candidate.firstName,

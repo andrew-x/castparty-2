@@ -17,6 +17,7 @@
 | Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/settings/page.tsx` | General settings only (name, slug, description, open/closed); pipeline, forms, and reject reasons are configured at the production level |
 | Reject Reasons | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/reject-reasons/page.tsx` | Configurable list of rejection reason labels at the production level; shown when moving a submission to Rejected stage |
 | Email Templates | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/emails/page.tsx` | Per-production customizable email templates (submission received, rejected, selected) with variable insertion; auto-sends on submission, preview-and-confirm for rejected/selected |
+| Email Storage | `shipped` | `src/lib/db/schema.ts` (`Email` table) | Every outbound submission email is persisted to a dedicated `Email` table and surfaced in the submission activity log alongside comments, feedback, and stage changes |
 | Admin Panel | `shipped` | `src/app/admin/page.tsx` | Internal user management (list, create, change password, delete); bypasses org scope |
 | Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | Paginated grid of candidates with search and filters (production, role); each card shows a headshot thumbnail |
 | Candidate Detail | `shipped` | `src/app/(app)/candidates/[candidateId]/page.tsx` | Individual candidate profile showing personal details and all submissions across roles |
@@ -942,7 +943,7 @@ GET /admin/emails/[id]
 | `src/lib/emails/template-email.tsx` | React Email component; wraps interpolated body in `EmailLayout`; splits on `\n\n` for paragraphs |
 | `src/lib/schemas/email-template.ts` | Zod schemas for template validation (`.trim()` before `.min(1)` on subject/body) |
 | `src/actions/productions/update-email-templates.ts` | `secureActionClient` action to save all three templates at once |
-| `src/actions/submissions/send-submission-email.tsx` | `sendSubmissionEmail(submissionId, templateType)` — plain async function called by `create-submission.ts`; `sendSubmissionEmailAction` — `secureActionClient` wrapper called by the client for rejected/selected emails |
+| `src/actions/submissions/send-submission-email.tsx` | `sendSubmissionEmail(submissionId, templateType, customSubject?, customBody?, sentByUserId?)` — plain async function; calls `sendEmail()`, then inserts an `Email` row regardless of send outcome; `sendSubmissionEmailAction` — `secureActionClient` wrapper for client use (rejected/selected) |
 | `src/components/productions/email-templates-form.tsx` | Accordion form with three collapsible sections; `useHookFormAction`; "Submission Received" open by default |
 | `src/components/productions/variable-insert-buttons.tsx` | Row of small buttons that insert `{{variable_name}}` at the cursor position (appends to end when unfocused) |
 | `src/components/productions/email-preview-dialog.tsx` | Reusable preview dialog: shows interpolated subject + body, "Confirm & send email" / "Confirm without email" / "Cancel" |
@@ -959,7 +960,8 @@ Submission Received (auto-send):
           sendSubmissionEmail(submissionId, "submissionReceived")
             └── fetch submission + role + production from DB
             └── interpolateTemplate(template, variables)
-            └── sendEmail({ to, subject, react: <TemplateEmail />, text })
+            └── sendEmail({ to, subject, react: <TemplateEmail />, text }) → { html }
+            └── db.insert(Email) with status="sent"|"failed"  ← always recorded
         } catch { logger.error(...) }  ← email failure never breaks the submission
 
 Rejected (preview & confirm):
@@ -993,6 +995,76 @@ Error handling (rejected/selected):
 
 - **`EmailPreviewDialog` is generic, not coupled to selection.** The dialog accepts `actionLabel`, `previewSubject`, `previewBody`, and `onConfirm(sendEmail: boolean)` — no assumption about which template type is being previewed. This makes it reusable if additional preview-before-send flows are added (e.g., a manual "Send update" button).
 
-**Integration points:** The `Production` schema change (`emailTemplates` JSONB column) is in `src/lib/db/schema.ts`. `RejectReasonDialog` (`src/components/productions/reject-reason-dialog.tsx`) gained `emailTemplate`, `submissionData`, and an updated `onConfirm(reason, sendEmail)` signature. `SubmissionDetailSheet` (`src/components/productions/submission-detail-sheet.tsx`) is the coordinator for both the rejection and selection email flows — it intercepts stage moves, opens the appropriate dialog, and fires the send action on confirmation. `create-submission.ts` is the only caller of the plain `sendSubmissionEmail` function. The Email Emulator (`/admin/emails` in dev) captures all outbound emails, including template emails — see the Email Emulator section above.
+**Integration points:** The `Production` schema change (`emailTemplates` JSONB column) is in `src/lib/db/schema.ts`. `RejectReasonDialog` (`src/components/productions/reject-reason-dialog.tsx`) gained `emailTemplate`, `submissionData`, and an updated `onConfirm(reason, sendEmail)` signature. `SubmissionDetailSheet` (`src/components/productions/submission-detail-sheet.tsx`) is the coordinator for both the rejection and selection email flows — it intercepts stage moves, opens the appropriate dialog, and fires the send action on confirmation. `create-submission.ts` is the only caller of the plain `sendSubmissionEmail` function. The Email Emulator (`/admin/emails` in dev) captures all outbound emails, including template emails — see the Email Emulator section above. Every successful or failed send is also persisted to the `Email` table — see the Email Storage section below.
 
 *Added: 2026-03-23 — Initial email templates documentation*
+*Updated: 2026-03-24 — Reflect Email Storage integration: sendSubmissionEmail now inserts an Email row; updated signature and flow diagram*
+
+---
+
+## Email Storage
+
+**Overview:** Every outbound submission email — whether auto-sent on submission or manually triggered by a casting director — is persisted to a dedicated `Email` table in the database. Stored emails surface in the submission detail sheet's activity log alongside comments, feedback, and stage changes, giving casting directors a full chronological record of all communication with a performer. Exists because the previous approach (dev-mode in-memory emulator + zero production persistence) meant there was no audit trail of what was sent or when, which is critical when a performer disputes a decision or asks for a resend.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/lib/db/schema.ts` (`Email` table) | Schema: id, organizationId, submissionId (nullable), sentByUserId (nullable), toEmail, subject, bodyText, bodyHtml, templateType (nullable), status (`"sent"` / `"failed"`), sentAt |
+| `src/lib/submission-helpers.ts` | `EmailData` interface; `ActivityItem` union type (includes `"email"` variant); `buildActivityList()` merges and sorts emails with other activity by `sentAt` |
+| `src/actions/submissions/send-submission-email.tsx` | Inserts an `Email` row after every send attempt, with `status="failed"` when `sendEmail()` throws; re-throws after recording so callers still receive the error |
+| `src/actions/productions/get-production-submissions.ts` | Includes `emails` in the Submission query via Drizzle `with`; maps to `EmailData[]` before returning |
+| `src/actions/candidates/get-candidate.ts` | Same `emails` inclusion for the candidate detail view |
+| `src/components/productions/feedback-panel.tsx` | Renders `EmailItem` in the activity feed: sender name (falls back to "System"), timestamp, subject, and a 100-character body preview |
+
+**Data model:**
+
+```
+Email
+  id              text PK          (generateId("eml") prefix)
+  organizationId  text NOT NULL     FK → Organization (cascade delete)
+  submissionId    text NULL         FK → Submission (cascade delete) — nullable for future manual emails
+  sentByUserId    text NULL         FK → User (set null on delete) — null for system-triggered sends
+  toEmail         text NOT NULL
+  subject         text NOT NULL
+  bodyText        text NOT NULL
+  bodyHtml        text NOT NULL
+  templateType    text NULL         e.g. "submissionReceived", "rejected", "selected" — null for future free-form emails
+  status          text NOT NULL     "sent" | "failed"
+  sentAt          timestamp         default now()
+```
+
+Indexes: `email_submissionId_idx`, `email_organizationId_idx`.
+
+**How it works:**
+
+```
+sendSubmissionEmail(submissionId, templateType, ...)
+  └── fetch submission from DB
+  └── interpolate subject + body (or use customSubject/customBody)
+  └── try { sendEmail(...) → { html }; status = "sent" }
+      catch { status = "failed"; capture error }
+  └── db.insert(Email).values({ ..., status })   ← always runs
+  └── if sendError → rethrow
+        ↑ caller sees the error but the Email row is already committed
+
+Activity log (FeedbackPanel):
+  buildActivityList(submission)
+    └── merges feedback + comments + stageChanges + emails + submitted
+    └── sorted descending by sentAt / createdAt
+    └── EmailItem renders: sender, sentAt, subject, body preview (≤100 chars)
+```
+
+**Architecture decisions:**
+
+- **Record failures, not just successes.** The Email row is inserted inside a `try/catch` that wraps `sendEmail()`. If delivery fails, `status` is set to `"failed"` and the row is still committed before the error is rethrown. This means the activity log accurately reflects delivery failures rather than silently omitting them — a casting director can see that an email was attempted and failed, rather than wondering if it was ever sent.
+
+- **`sentByUserId` is nullable by design.** System-triggered emails (submission received) have no authenticated user context, so `sentByUserId` is `null`. Manually triggered emails (rejected/selected, via `sendSubmissionEmailAction`) pass `user.id` from the session. The UI falls back to "System" when `sentBy` is null. This distinction also supports future manual free-form emails sent by named team members.
+
+- **`submissionId` and `templateType` are nullable to support future use cases.** The schema is intentionally broader than the current feature. `submissionId` being nullable allows org-level emails (e.g., a broadcast to all applicants for a production) to be stored without a specific submission. `templateType` being nullable leaves room for freeform or custom emails not based on a predefined template.
+
+- **`bodyHtml` is stored even though only `bodyText` is shown in the UI.** The rendered HTML is available for a future "view full email" detail view without needing to re-render. Storing it at send time ensures the preview always matches what was actually sent, even if the template changes later.
+
+**Integration points:** `sendSubmissionEmail()` in `src/actions/submissions/send-submission-email.tsx` is the sole write path. `get-production-submissions.ts` and `get-candidate.ts` are the two read paths. The `Email` table relations are defined in `src/lib/db/schema.ts`: `Organization` has `many(Email)`, `Submission` has `many(Email)`, and `Email` belongs to both. The activity log in `src/lib/submission-helpers.ts` is shared by the production submission board and the candidate detail view. See the Email Templates section above for the send logic; see the Email Emulator section for the dev-mode inbox.
+
+*Added: 2026-03-24 — Initial email storage documentation*

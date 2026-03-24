@@ -5,6 +5,7 @@ import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
 import type {
   CommentData,
+  EmailData,
   FeedbackData,
   HeadshotData,
   OtherRoleSubmission,
@@ -65,6 +66,12 @@ export async function getProductionSubmissions(productionId: string) {
                 },
                 orderBy: (pu, { desc }) => [desc(pu.createdAt)],
               },
+              emails: {
+                with: {
+                  sentBy: { columns: { name: true } },
+                },
+                orderBy: (e, { desc }) => [desc(e.sentAt)],
+              },
             },
           },
         },
@@ -123,6 +130,15 @@ export async function getProductionSubmissions(productionId: string) {
         createdAt: pu.createdAt,
       }))
 
+      const emails: EmailData[] = sub.emails.map((e) => ({
+        id: e.id,
+        subject: e.subject,
+        bodyText: e.bodyText,
+        templateType: e.templateType,
+        sentBy: e.sentBy,
+        sentAt: e.sentAt,
+      }))
+
       submissions.push({
         id: sub.id,
         roleId: role.id,
@@ -144,6 +160,7 @@ export async function getProductionSubmissions(productionId: string) {
         feedback,
         comments,
         stageChanges,
+        emails,
         candidate: sub.candidate,
       })
     }

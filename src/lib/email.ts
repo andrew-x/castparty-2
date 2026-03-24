@@ -18,19 +18,21 @@ export async function sendEmail({
   subject,
   react,
   text,
-}: SendEmailOptions) {
+}: SendEmailOptions): Promise<{ html: string }> {
   try {
+    const { render } = await import("@react-email/components")
+    const html = await render(react)
+
     if (IS_DEV) {
-      const { render } = await import("@react-email/components")
-      const html = await render(react)
       addEmail({ to, subject, html, text })
       logger.info(`[Email] To: ${to} | Subject: ${subject}`)
-      return
+      return { html }
     }
 
     const { Resend } = await import("resend")
     const resend = new Resend(process.env.RESEND_API_KEY)
-    await resend.emails.send({ from, to, subject, react, text })
+    await resend.emails.send({ from, to, subject, html, text })
+    return { html }
   } catch (error) {
     logger.error("[Email] Failed to send:", error)
     throw error

@@ -184,6 +184,7 @@ export const organizationRelations = relations(
     candidates: many(Candidate),
     pipelineStages: many(PipelineStage),
     pipelineUpdates: many(PipelineUpdate),
+    emails: many(Email),
     profile: one(OrganizationProfile, {
       fields: [organization.id],
       references: [OrganizationProfile.id],
@@ -499,6 +500,32 @@ export const Feedback = pgTable(
   ],
 )
 
+export const Email = pgTable(
+  "email",
+  {
+    id: text().primaryKey(),
+    organizationId: text()
+      .notNull()
+      .references(() => Organization.id, { onDelete: "cascade" }),
+    submissionId: text().references(() => Submission.id, {
+      onDelete: "cascade",
+    }),
+    sentByUserId: text().references(() => User.id, { onDelete: "set null" }),
+
+    toEmail: text().notNull(),
+    subject: text().notNull(),
+    bodyText: text().notNull(),
+    bodyHtml: text().notNull(),
+    templateType: text(),
+
+    sentAt: timestamp().defaultNow().notNull(),
+  },
+  (table) => [
+    index("email_submissionId_idx").on(table.submissionId),
+    index("email_organizationId_idx").on(table.organizationId),
+  ],
+)
+
 export const Comment = pgTable(
   "comment",
   {
@@ -592,6 +619,7 @@ export const submissionRelations = relations(Submission, ({ one, many }) => ({
   files: many(File),
   feedback: many(Feedback),
   comments: many(Comment),
+  emails: many(Email),
 }))
 
 export const fileRelations = relations(File, ({ one }) => ({
@@ -678,6 +706,21 @@ export const commentRelations = relations(Comment, ({ one }) => ({
   }),
   submittedBy: one(User, {
     fields: [Comment.submittedByUserId],
+    references: [User.id],
+  }),
+}))
+
+export const emailRelations = relations(Email, ({ one }) => ({
+  organization: one(Organization, {
+    fields: [Email.organizationId],
+    references: [Organization.id],
+  }),
+  submission: one(Submission, {
+    fields: [Email.submissionId],
+    references: [Submission.id],
+  }),
+  sentBy: one(User, {
+    fields: [Email.sentByUserId],
     references: [User.id],
   }),
 }))

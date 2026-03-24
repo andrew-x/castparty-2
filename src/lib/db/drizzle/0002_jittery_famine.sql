@@ -1,0 +1,1 @@
+ALTER TABLE "email" DROP COLUMN "created_at";

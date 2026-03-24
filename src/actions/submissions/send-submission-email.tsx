@@ -4,31 +4,31 @@ import { eq } from "drizzle-orm"
 import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
+import { Email } from "@/lib/db/schema"
 import { sendEmail } from "@/lib/email"
 import {
   DEFAULT_EMAIL_TEMPLATES,
   interpolateTemplate,
 } from "@/lib/email-template"
 import { TemplateEmail } from "@/lib/emails/template-email"
+import logger from "@/lib/logger"
 import type { EmailTemplates } from "@/lib/types"
+import { generateId } from "@/lib/util"
 
 type TemplateType = keyof EmailTemplates
 
 /**
- * Plain async function for sending a submission email.
- * Called directly by create-submission (no auth required).
- * Called by the action wrapper below for authenticated use.
- */
-/**
- * Sends an email for a submission. When customSubject/customBody are provided,
- * they are used directly (already interpolated by the client). Otherwise, the
- * production's template is interpolated server-side.
+ * Sends an email for a submission and records it in the Email table.
+ * When customSubject/customBody are provided, they are used directly
+ * (already interpolated by the client). Otherwise, the production's
+ * template is interpolated server-side.
  */
 export async function sendSubmissionEmail(
   submissionId: string,
   templateType: TemplateType,
   customSubject?: string,
   customBody?: string,
+  sentByUserId?: string,
 ) {
   const submission = await db.query.Submission.findFirst({
     where: (s) => eq(s.id, submissionId),
@@ -40,7 +40,7 @@ export async function sendSubmissionEmail(
     with: {
       role: { columns: { name: true } },
       production: {
-        columns: { name: true, emailTemplates: true },
+        columns: { name: true, emailTemplates: true, organizationId: true },
         with: { organization: { columns: { name: true } } },
       },
     },
@@ -72,12 +72,31 @@ export async function sendSubmissionEmail(
     body = interpolateTemplate(template.body, variables)
   }
 
-  await sendEmail({
+  const { html } = await sendEmail({
     to: submission.email,
     subject,
     react: <TemplateEmail body={body} preview={subject} />,
     text: body,
   })
+
+  try {
+    await db.insert(Email).values({
+      id: generateId("eml"),
+      organizationId: submission.production.organizationId,
+      submissionId,
+      sentByUserId: sentByUserId ?? null,
+      toEmail: submission.email,
+      subject,
+      bodyText: body,
+      bodyHtml: html,
+      templateType,
+    })
+  } catch (error) {
+    logger.error("[Email] Sent successfully but failed to save record", error)
+    throw new Error(
+      "Email was sent successfully but could not be saved to the activity log. No need to resend.",
+    )
+  }
 }
 
 /**
@@ -123,6 +142,7 @@ export const sendSubmissionEmailAction = secureActionClient
         templateType,
         customSubject,
         customBody,
+        user.id,
       )
       return { success: true }
     },

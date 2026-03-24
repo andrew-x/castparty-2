@@ -25,10 +25,20 @@ export interface StageChangeData {
   createdAt: Date | string
 }
 
+export interface EmailData {
+  id: string
+  subject: string
+  bodyText: string
+  templateType: string | null
+  sentBy: { name: string } | null
+  sentAt: Date | string
+}
+
 export type ActivityItem =
   | { type: "feedback"; data: FeedbackData }
   | { type: "comment"; data: CommentData }
   | { type: "stage_change"; data: StageChangeData }
+  | { type: "email"; data: EmailData }
   | { type: "submitted"; data: { createdAt: Date | string } }
 
 export interface PipelineStageData {
@@ -72,6 +82,7 @@ export interface SubmissionWithCandidate {
   feedback: FeedbackData[]
   comments: CommentData[]
   stageChanges: StageChangeData[]
+  emails: EmailData[]
   candidate: {
     id: string
     firstName: string
@@ -138,9 +149,15 @@ export function buildActivityList(
       type: "stage_change" as const,
       data: sc,
     })),
+    ...submission.emails.map((e) => ({
+      type: "email" as const,
+      data: e,
+    })),
     { type: "submitted" as const, data: { createdAt: submission.createdAt } },
   ]
-  return items.sort(
-    (a, b) => day(b.data.createdAt).valueOf() - day(a.data.createdAt).valueOf(),
-  )
+  return items.sort((a, b) => {
+    const timeA = a.type === "email" ? a.data.sentAt : a.data.createdAt
+    const timeB = b.type === "email" ? b.data.sentAt : b.data.createdAt
+    return day(timeB).valueOf() - day(timeA).valueOf()
+  })
 }
