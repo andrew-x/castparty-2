@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { createComment } from "@/actions/comments/create-comment"
 import { createFeedback } from "@/actions/feedback/create-feedback"
+import { sendCustomEmailAction } from "@/actions/submissions/send-custom-email"
 import {
   Accordion,
   AccordionContent,
@@ -44,6 +45,7 @@ import {
 } from "@/components/common/tooltip"
 import day from "@/lib/dayjs"
 import { createCommentFormSchema } from "@/lib/schemas/comment"
+import { customEmailFormSchema } from "@/lib/schemas/custom-email"
 import { createFeedbackFormSchema } from "@/lib/schemas/feedback"
 import { formResolver } from "@/lib/schemas/resolve"
 import type {
@@ -329,6 +331,28 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
     },
   )
 
+  // Email form setup
+  const emailDefaultValues = { subject: "", body: "" }
+
+  const { form: emailForm, action: emailAction } = useHookFormAction(
+    sendCustomEmailAction,
+    formResolver(customEmailFormSchema),
+    {
+      formProps: { defaultValues: emailDefaultValues },
+      actionProps: {
+        onSuccess() {
+          emailForm.reset(emailDefaultValues)
+          router.refresh()
+        },
+        onError({ error }) {
+          emailForm.setError("root", {
+            message: error.serverError ?? "Something went wrong. Try again.",
+          })
+        },
+      },
+    },
+  )
+
   const activityItems = buildActivityList(submission)
   const [activityFilter, setActivityFilter] = useState<
     "all" | "feedback" | "comment" | "email"
@@ -433,9 +457,58 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
         )}
       </div>
 
-      {/* Comment + Feedback form accordions (mutually exclusive) */}
+      {/* Email + Comment + Feedback form accordions (mutually exclusive) */}
       <Accordion type="single" collapsible className="border-t-2">
-        <AccordionItem value="add-comment" className="border-b-0">
+        <AccordionItem value="send-email" className="border-b-0">
+          <AccordionTrigger className="px-block py-block text-label [&>svg]:rotate-180 [&[data-state=open]>svg]:rotate-0">
+            <span className="flex items-center gap-element">
+              <MailIcon className="size-4" />
+              Send email
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <form
+              onSubmit={emailForm.handleSubmit((values) => {
+                emailForm.clearErrors("root")
+                emailAction.execute({
+                  ...values,
+                  submissionId: submission.id,
+                })
+              })}
+              className="flex flex-col gap-block px-block pb-block"
+            >
+              <p className="text-caption text-muted-foreground">
+                To: {submission.email}
+              </p>
+              <Input placeholder="Subject" {...emailForm.register("subject")} />
+              {emailForm.formState.errors.subject && (
+                <p className="text-caption text-destructive">
+                  {emailForm.formState.errors.subject.message}
+                </p>
+              )}
+              <Textarea
+                placeholder="Write your email..."
+                rows={4}
+                {...emailForm.register("body")}
+              />
+              {emailForm.formState.errors.body && (
+                <p className="text-caption text-destructive">
+                  {emailForm.formState.errors.body.message}
+                </p>
+              )}
+              {emailForm.formState.errors.root && (
+                <p className="text-caption text-destructive">
+                  {emailForm.formState.errors.root.message}
+                </p>
+              )}
+              <Button type="submit" loading={emailAction.isPending}>
+                Send email
+              </Button>
+            </form>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="add-comment" className="border-t border-b-0">
           <AccordionTrigger className="px-block py-block text-label [&>svg]:rotate-180 [&[data-state=open]>svg]:rotate-0">
             <span className="flex items-center gap-element">
               <MessageCircleIcon className="size-4" />

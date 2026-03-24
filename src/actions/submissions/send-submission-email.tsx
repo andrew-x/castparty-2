@@ -22,10 +22,13 @@ type TemplateType = keyof EmailTemplates
  * When customSubject/customBody are provided, they are used directly
  * (already interpolated by the client). Otherwise, the production's
  * template is interpolated server-side.
+ *
+ * templateType can be null for freeform custom emails (requires
+ * customSubject and customBody).
  */
 export async function sendSubmissionEmail(
   submissionId: string,
-  templateType: TemplateType,
+  templateType: TemplateType | null,
   customSubject?: string,
   customBody?: string,
   sentByUserId?: string,
@@ -55,6 +58,11 @@ export async function sendSubmissionEmail(
     subject = customSubject
     body = customBody
   } else {
+    if (!templateType)
+      throw new Error(
+        "templateType is required when custom subject/body are not provided.",
+      )
+
     const templates =
       (submission.production.emailTemplates as EmailTemplates | null) ??
       DEFAULT_EMAIL_TEMPLATES

@@ -1,5 +1,6 @@
 export * from "./candidate"
 export * from "./comment"
+export * from "./custom-email"
 export * from "./feedback"
 export * from "./form-fields"
 export * from "./organization"
