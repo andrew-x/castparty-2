@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/util"
 
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/heic"
-const MAX_FILES = 10
+const DEFAULT_MAX_FILES = 10
 const MAX_FILE_SIZE = 20 * 1024 * 1024
 
 export interface HeadshotFile {
@@ -27,6 +27,7 @@ interface Props {
   files: HeadshotFile[]
   onChange: (files: HeadshotFile[]) => void
   error?: string
+  maxFiles?: number
 }
 
 function SortableThumbnail({
@@ -84,7 +85,12 @@ function SortableThumbnail({
   )
 }
 
-export function HeadshotUploader({ files, onChange, error }: Props) {
+export function HeadshotUploader({
+  files,
+  onChange,
+  error,
+  maxFiles = DEFAULT_MAX_FILES,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [localError, setLocalError] = useState<string | null>(null)
 
@@ -108,9 +114,9 @@ export function HeadshotUploader({ files, onChange, error }: Props) {
     }
 
     const combined = [...files, ...newFiles]
-    if (combined.length > MAX_FILES) {
-      setLocalError(`You can upload up to ${MAX_FILES} headshots.`)
-      onChange(combined.slice(0, MAX_FILES))
+    if (combined.length > maxFiles) {
+      setLocalError(`You can upload up to ${maxFiles} headshots.`)
+      onChange(combined.slice(0, maxFiles))
     } else {
       onChange(combined)
     }
@@ -160,7 +166,7 @@ export function HeadshotUploader({ files, onChange, error }: Props) {
         </DragDropProvider>
       )}
 
-      {files.length < MAX_FILES && (
+      {files.length < maxFiles && (
         <button
           type="button"
           onClick={() => inputRef.current?.click()}

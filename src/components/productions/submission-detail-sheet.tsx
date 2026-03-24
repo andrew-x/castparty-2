@@ -6,7 +6,6 @@ import {
   MailIcon,
   MapPinIcon,
   PhoneIcon,
-  UserRoundPlusIcon,
   XIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -27,6 +26,8 @@ import { EmailPreviewDialog } from "@/components/productions/email-preview-dialo
 import { FeedbackPanel } from "@/components/productions/feedback-panel"
 import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { StageControls } from "@/components/productions/stage-controls"
+import { SubmissionActionsMenu } from "@/components/productions/submission-actions-menu"
+import { SubmissionEditForm } from "@/components/productions/submission-edit-form"
 import { SubmissionInfoPanel } from "@/components/productions/submission-info-panel"
 import { interpolateTemplate } from "@/lib/email-template"
 import type {
@@ -85,10 +86,18 @@ export function SubmissionDetailSheet({
 
   const { execute: executeSendEmail } = useAction(sendSubmissionEmailAction)
 
+  const [isEditing, setIsEditing] = useState(false)
   const [considerDialogOpen, setConsiderDialogOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [selectDialogOpen, setSelectDialogOpen] = useState(false)
   const pendingSelectStageId = useRef<string | null>(null)
+  const prevSubmissionId = useRef(submission?.id)
+
+  // Exit edit mode when navigating between submissions
+  if (submission?.id !== prevSubmissionId.current) {
+    prevSubmissionId.current = submission?.id
+    if (isEditing) setIsEditing(false)
+  }
 
   const rejectedStage = pipelineStages.find((s) => s.type === "REJECTED")
   const selectedStage = pipelineStages.find((s) => s.type === "SELECTED")
@@ -287,39 +296,41 @@ export function SubmissionDetailSheet({
                   <SheetDescription className="sr-only">
                     Submission details and feedback
                   </SheetDescription>
-                  <div className="mt-element flex flex-wrap items-center gap-group text-label text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <MailIcon className="size-3.5" />
-                      {submission.email}
-                    </span>
-                    {submission.phone && (
+                  {!isEditing && (
+                    <div className="mt-element flex flex-wrap items-center gap-group text-label text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <PhoneIcon className="size-3.5" />
-                        {submission.phone}
+                        <MailIcon className="size-3.5" />
+                        {submission.email}
                       </span>
-                    )}
-                    {submission.location && (
-                      <span className="flex items-center gap-1">
-                        <MapPinIcon className="size-3.5" />
-                        {submission.location}
-                      </span>
-                    )}
-                  </div>
+                      {submission.phone && (
+                        <span className="flex items-center gap-1">
+                          <PhoneIcon className="size-3.5" />
+                          {submission.phone}
+                        </span>
+                      )}
+                      {submission.location && (
+                        <span className="flex items-center gap-1">
+                          <MapPinIcon className="size-3.5" />
+                          {submission.location}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-element">
-                  <StageControls
-                    submission={submission}
-                    pipelineStages={pipelineStages}
-                    onStageChange={handleStatusChange}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    leftSection={<UserRoundPlusIcon />}
-                    onClick={() => setConsiderDialogOpen(true)}
-                  >
-                    Consider for role
-                  </Button>
+                  {!isEditing && (
+                    <>
+                      <StageControls
+                        submission={submission}
+                        pipelineStages={pipelineStages}
+                        onStageChange={handleStatusChange}
+                      />
+                      <SubmissionActionsMenu
+                        onEdit={() => setIsEditing(true)}
+                        onConsiderForRole={() => setConsiderDialogOpen(true)}
+                      />
+                    </>
+                  )}
                   <ConsiderForRoleDialog
                     submissionId={submission.id}
                     currentRoleId={roleId ?? submission?.roleId ?? ""}
@@ -340,19 +351,31 @@ export function SubmissionDetailSheet({
             )}
 
             <div className="flex min-h-0 flex-1">
-              {/* Left pane: submission data */}
+              {/* Left pane: submission data or edit form */}
               <div className="flex-1 overflow-y-auto p-block">
-                <SubmissionInfoPanel
-                  submission={submission}
-                  submissionFormFields={submissionFormFields}
-                  productionId={productionId}
-                  otherRoles={
-                    otherRoleSubmissions[submission.candidate.id] ?? []
-                  }
-                  onLightboxOpenChange={(open) => {
-                    lightboxOpen.current = open
-                  }}
-                />
+                {isEditing ? (
+                  <SubmissionEditForm
+                    submission={submission}
+                    submissionFormFields={submissionFormFields}
+                    onCancel={() => setIsEditing(false)}
+                    onSaved={() => {
+                      setIsEditing(false)
+                      router.refresh()
+                    }}
+                  />
+                ) : (
+                  <SubmissionInfoPanel
+                    submission={submission}
+                    submissionFormFields={submissionFormFields}
+                    productionId={productionId}
+                    otherRoles={
+                      otherRoleSubmissions[submission.candidate.id] ?? []
+                    }
+                    onLightboxOpenChange={(open) => {
+                      lightboxOpen.current = open
+                    }}
+                  />
+                )}
               </div>
 
               {/* Right pane: feedback */}
