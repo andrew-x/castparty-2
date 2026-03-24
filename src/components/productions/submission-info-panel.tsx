@@ -148,37 +148,42 @@ export function SubmissionInfoPanel({
         </p>
       </div>
 
-      {submission.answers.length > 0 && (
+      {submissionFormFields.length > 0 && (
         <div className="flex flex-col gap-block">
           <h3 className="font-medium text-foreground text-label">
             Form responses
           </h3>
           <div className="flex flex-col gap-element">
-            {submission.answers.map((answer) => {
-              const field = submissionFormFields.find(
-                (f) => f.id === answer.fieldId,
+            {submissionFormFields.map((field) => {
+              const answer = submission.answers.find(
+                (a) => a.fieldId === field.id,
               )
-              if (!field) return null
 
-              let displayValue: string
-              if (field.type === "TEXT" || field.type === "TEXTAREA") {
-                displayValue = answer.textValue ?? ""
-              } else if (field.type === "SELECT") {
-                displayValue = answer.optionValues?.[0] ?? ""
-              } else if (field.type === "CHECKBOX_GROUP") {
-                displayValue = answer.optionValues?.join(", ") ?? ""
-              } else {
-                displayValue = answer.booleanValue ? "Yes" : "No"
+              let displayValue = ""
+              if (answer) {
+                if (field.type === "TEXT" || field.type === "TEXTAREA") {
+                  displayValue = answer.textValue ?? ""
+                } else if (field.type === "SELECT") {
+                  displayValue = answer.optionValues?.[0] ?? ""
+                } else if (field.type === "CHECKBOX_GROUP") {
+                  displayValue = answer.optionValues?.join(", ") ?? ""
+                } else {
+                  displayValue = answer.booleanValue ? "Yes" : "No"
+                }
               }
 
-              if (!displayValue) return null
-
               return (
-                <div key={answer.fieldId}>
+                <div key={field.id}>
                   <p className="font-medium text-caption text-muted-foreground">
                     {field.label}
                   </p>
-                  <p className="text-foreground text-label">{displayValue}</p>
+                  {displayValue ? (
+                    <p className="text-foreground text-label">{displayValue}</p>
+                  ) : (
+                    <p className="text-label text-muted-foreground italic">
+                      Not answered
+                    </p>
+                  )}
                 </div>
               )
             })}

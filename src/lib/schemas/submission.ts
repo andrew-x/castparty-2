@@ -60,6 +60,29 @@ export const bulkUpdateSubmissionStatusSchema = z.object({
   rejectionReason: z.string().trim().min(1).max(500).optional(),
 })
 
+export const updateSubmissionFormSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required.").max(100),
+  lastName: z.string().trim().min(1, "Last name is required.").max(100),
+  email: z.string().trim().email("Enter a valid email."),
+  phone: z.string().trim().max(50).optional().or(z.literal("")),
+  location: z.string().trim().max(200).optional().or(z.literal("")),
+  links: z
+    .preprocess(
+      (val) =>
+        Array.isArray(val)
+          ? val.filter((v) => typeof v === "string" && v.trim())
+          : [],
+      z.array(z.string().trim().url("Enter a valid URL.")),
+    )
+    .default([]),
+})
+
+export const updateSubmissionActionSchema = updateSubmissionFormSchema.extend({
+  submissionId: z.string().min(1),
+  newHeadshots: z.array(headShotFileSchema).max(10).default([]),
+  newResume: resumeFileSchema.optional(),
+})
+
 export const copySubmissionFormSchema = z.object({
   targetRoleId: z.string().min(1, "Select a role."),
 })

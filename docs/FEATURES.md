@@ -28,7 +28,8 @@
 | Custom Form Fields | `shipped` | `src/lib/types.ts` | Custom form fields in 2 contexts: production-submission and production-feedback (5 types: TEXT, TEXTAREA, SELECT, CHECKBOX_GROUP, TOGGLE); configured in production settings, rendered in public submission form and feedback panel |
 | Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/page.tsx` | Horizontal Kanban board for reviewing and triaging submissions; drag-and-drop, bulk selection, comparison view, search, and compact/default view toggle |
 | Stage Browse | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/stages/[stageId]/page.tsx` | Grid view of all submissions in one pipeline stage with sortable cards; bulk selection supported |
-| Submission Detail Sheet | `shipped` | `src/components/productions/submission-detail-sheet.tsx` | Right-side sheet showing full submission details (headshots, resume, links, custom field answers), feedback panel, and comments; prev/next navigation |
+| Submission Detail Sheet | `shipped` | `src/components/productions/submission-detail-sheet.tsx` | Right-side sheet showing full submission details (headshots, resume, links, custom field answers), feedback panel, and comments; prev/next navigation; ellipsis actions menu with "Edit submission" and "Consider for another role" |
+| Submission Editing | `shipped` | `src/components/productions/submission-edit-form.tsx` | In-sheet edit mode for updating contact info, links, headshots, and resume; custom form responses are read-only; changes sync to the Candidate record transactionally |
 | Headshot Lightbox | `shipped` | `src/components/productions/headshot-lightbox.tsx` | Full-screen headshot viewer with zoom; uses `yet-another-react-lightbox`; dynamically imported (no SSR) from SubmissionDetailSheet |
 | Bulk Submission Status | `shipped` | `src/actions/submissions/bulk-update-submission-status.ts` | Move up to 100 selected submissions to a target pipeline stage in one action; optimistic UI via BulkActionBar; full PipelineUpdate audit trail |
 | Comparison View | `shipped` | `src/components/productions/comparison-view.tsx` | Side-by-side headshot comparison for multiple submissions within the same Kanban column; toggle from the stage controls |
@@ -846,6 +847,63 @@ Comments are displayed inside `SubmissionDetailSheet` alongside feedback history
 **Integration points:** Comments are fetched as part of `getCandidate` (`src/actions/candidates/get-candidate.ts`) and the role-with-submissions query, making them available in both the Kanban submission detail sheet and the candidate detail page. The `Comment` table is defined alongside `Feedback` in `src/lib/db/schema.ts`.
 
 *Added: 2026-03-18 — Initial comments documentation*
+
+---
+
+## Submission Editing
+
+**Overview:** Casting directors can edit a submission's contact details, links, headshots, and resume from inside the submission detail sheet without navigating away. Exists because performers frequently share outdated contact information at audition sign-in, and casting directors need a quick path to correct it without creating a new submission.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/components/productions/submission-edit-form.tsx` | Client form component; pre-populates fields from `SubmissionWithCandidate`; uses `useHookFormAction` to wire `updateSubmission` to react-hook-form |
+| `src/components/productions/submission-actions-menu.tsx` | Popover menu triggered by the ellipsis button in the sheet header; exposes "Edit submission" and "Consider for another role" |
+| `src/components/productions/submission-detail-sheet.tsx` | Owns the `isEditing` boolean; swaps between the info panel and `SubmissionEditForm` |
+| `src/components/productions/submission-info-panel.tsx` | View mode info panel; form responses section now iterates all configured questions, showing "Not answered" in italics for unanswered ones |
+| `src/actions/submissions/update-submission.ts` | `secureActionClient` action; moves new headshots and resume from `temp/` to permanent R2 paths, enforces max-10-headshot cap, blocks resume upload if one already exists, runs the submission + candidate update in a single Drizzle transaction |
+| `src/components/submissions/headshot-uploader.tsx` | `maxFiles` prop added; edit form passes the remaining headshot slots as the cap |
+| `src/lib/schemas/submission.ts` | `updateSubmissionFormSchema` + `updateSubmissionActionSchema` |
+
+**How it works:**
+
+```
+SubmissionDetailSheet
+  ├── Header: SubmissionActionsMenu (ellipsis popover)
+  │     ├── "Edit submission"         → setIsEditing(true)
+  │     └── "Consider for another role" → opens existing consider-for-role flow
+  │
+  ├── [isEditing = false] → SubmissionInfoPanel (read-only)
+  │
+  └── [isEditing = true]  → SubmissionEditForm
+        ├── Contact fields: firstName, lastName, email, phone, location
+        ├── Links editor (existing LinksEditor component)
+        ├── HeadshotUploader — adds new headshots only (max 10 total); existing headshots not removable
+        ├── ResumeUploader   — only shown when submission has no resume; hides once one exists
+        ├── Form responses   — read-only display (all questions, "Not answered" for blanks)
+        └── Save → updateSubmission action
+              ├── Move new headshots from temp/ → headshots/ in R2; insert File rows
+              ├── Move new resume from temp/ → resumes/ in R2; insert File row + extract PDF text
+              ├── Email conflict check (if email changed)
+              └── db.transaction: UPDATE Submission + UPDATE Candidate
+```
+
+**Edit constraints (intentional):**
+
+- **Headshots and resumes cannot be removed** — deletion would require a separate confirmation and R2 cleanup flow. The add-only path covers the common case (adding a better headshot) without the complexity of removal.
+- **Resume upload only when none exists** — a casting director should not silently overwrite a resume the performer submitted. If a replacement is needed, the old one must be deleted first (not yet supported in the UI).
+- **Custom form responses are read-only** — form answers are part of the performer's original submission record. Allowing edits would obscure what the candidate actually submitted, undermining audit integrity.
+
+**Architecture decisions:**
+
+- **Submission and Candidate updated in the same transaction** — a `Candidate` row is the cross-production identity record for a performer. When contact details change on a submission, the canonical candidate record must stay in sync. Doing both in a single transaction prevents a partial update where the submission email differs from the candidate email.
+- **Email conflict check inside the transaction** — checking for a conflicting candidate email and applying the update in the same transaction prevents a race condition where another concurrent update could insert a duplicate email between check and write.
+- **`maxFiles` prop on `HeadshotUploader`** — the uploader previously had a hardcoded cap. Exposing it as a prop lets the edit form pass `10 - existingCount` as the limit, keeping the enforced cap consistent between client UX and the server action's `existingCount + newHeadshots.length > 10` check.
+
+**Integration points:** `updateSubmission` uses the same two-phase R2 upload pattern (presign → move from `temp/`) as `create-submission.ts` — see the Resume Upload section. The `SubmissionActionsMenu` replaces the standalone "Consider for role" button that previously sat in the sheet header, so the consider-for-role flow is unchanged but now accessed through the menu. Both view mode (`SubmissionInfoPanel`) and edit mode show all form questions including unanswered ones — this change to `submission-info-panel.tsx` makes the empty-question display consistent across both modes.
+
+*Added: 2026-03-24 — Initial submission editing documentation*
 
 ---
 
