@@ -55,6 +55,7 @@ For deeper architecture details, read `docs/ARCHITECTURE.md`.
 - **Biome** (not ESLint/Prettier) handles linting and formatting. Run `bun run format` after making changes.
 - 2-space indentation. Import organization is automatic.
 - React and Next.js domain rules enabled.
+- Codex project hooks, rules, and custom agents live in `.codex/`. Keep Codex-specific automation there rather than duplicating instructions inline.
 
 For full conventions, read `docs/CONVENTIONS.md`.
 
@@ -69,6 +70,21 @@ Institutional knowledge lives in `docs/`. Read these docs for context before mak
 - `docs/DECISIONS.md` -- Architecture Decision Records (why we chose X over Y).
 
 After completing a feature or significant change, update the relevant docs (especially `docs/FEATURES.md` and `docs/CONVENTIONS.md`).
+
+### Documentation Helpers
+
+Use the `librarian` custom agent for `docs/` questions and doc maintenance when subagents are available.
+
+- **Query:** Route doc questions through `librarian` instead of reading large sections of `docs/` into the main context.
+- **Update:** After a major feature or architectural change, ask `librarian` to sync the affected docs against the real code.
+
+### Developer Docs
+
+Use the repo-scoped `dev-docs` skill in `.agents/skills/dev-docs/` whenever you need version-accurate documentation for dependencies, framework APIs, or config.
+
+- Check bundled references first.
+- Prefer official docs over third-party summaries.
+- Don't guess at APIs that can be looked up.
 
 ## Coding Standards
 
@@ -299,7 +315,11 @@ Push back proactively. If a prompt seems wrong, flag it before implementing. If 
 
 ### Code Review Triggers
 
-After completing a feature touching 3+ files, modifying shared utilities, adding a dependency, or refactoring code others depend on, use the `/review` command to review your changes before considering the work done.
+After completing a feature touching 3+ files, modifying shared utilities, adding a dependency, or refactoring code others depend on, run a review before considering the work done.
+
+- Use the `review-diff` skill for a quick review of local changes.
+- Use the `code_reviewer` custom agent for a deeper read on uncommitted changes when the work is broad or risky.
+- Fix Critical findings immediately. Fix Important findings before considering the task done.
 
 ### Avoid Over-Engineering
 

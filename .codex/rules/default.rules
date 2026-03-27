@@ -1,0 +1,93 @@
+prefix_rule(
+    pattern = ["git", "status"],
+    decision = "allow",
+    justification = "Repository status checks are safe and read-only.",
+    match = [
+        "git status",
+        "git status --short",
+    ],
+    not_match = [
+        "git stash",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "diff"],
+    decision = "allow",
+    justification = "Diff inspection is safe and read-only.",
+    match = [
+        "git diff",
+        "git diff --stat",
+        "git diff -- src/app/page.tsx",
+    ],
+    not_match = [
+        "git difftool",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "log"],
+    decision = "allow",
+    justification = "Log inspection is safe and read-only.",
+    match = [
+        "git log --oneline -20",
+        "git log --stat",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "show"],
+    decision = "allow",
+    justification = "Showing commits or file contents is safe and read-only.",
+    match = [
+        "git show HEAD~1",
+        "git show --stat HEAD",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "rev-parse"],
+    decision = "allow",
+    justification = "Resolving repository metadata is safe and read-only.",
+    match = [
+        "git rev-parse --show-toplevel",
+        "git rev-parse HEAD",
+    ],
+)
+
+prefix_rule(
+    pattern = ["bun", "run", "lint"],
+    decision = "allow",
+    justification = "Project lint checks are routine validation.",
+    match = [
+        "bun run lint",
+    ],
+)
+
+prefix_rule(
+    pattern = ["bun", "run", "format"],
+    decision = "allow",
+    justification = "Project formatting is a standard repo-local maintenance step.",
+    match = [
+        "bun run format",
+    ],
+)
+
+prefix_rule(
+    pattern = ["bunx", "biome", "check"],
+    decision = "allow",
+    justification = "Biome checks are routine validation.",
+    match = [
+        "bunx biome check",
+        "bunx biome check src/app/page.tsx",
+    ],
+)
+
+prefix_rule(
+    pattern = ["bunx", "biome", "format", "--write"],
+    decision = "allow",
+    justification = "Biome formatting is a standard repo-local maintenance step.",
+    match = [
+        "bunx biome format --write src/app/page.tsx",
+    ],
+)

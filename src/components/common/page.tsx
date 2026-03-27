@@ -72,11 +72,13 @@ function PageHeader({
           </BreadcrumbList>
         </Breadcrumb>
       )}
-      <div>
-        <div className="flex items-center justify-between">
-          <h1 className="font-serif text-title">{title}</h1>
+      <div className="min-w-0">
+        <div className="flex flex-col gap-element sm:flex-row sm:items-start sm:justify-between">
+          <h1 className="min-w-0 font-serif text-title">{title}</h1>
           {actions && (
-            <div className="flex items-center gap-element">{actions}</div>
+            <div className="flex shrink-0 items-center gap-element sm:justify-end">
+              {actions}
+            </div>
           )}
         </div>
         {description &&

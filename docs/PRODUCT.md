@@ -1,6 +1,6 @@
 # Product Context
 
-> **Maintained by:** Librarian agent (`.claude/agents/librarian.md`)
+> **Maintained by:** Librarian agent (`.codex/agents/librarian.toml`, `.claude/agents/librarian.md`)
 > **Read when:** Making feature decisions, evaluating UX tradeoffs, or writing issue descriptions
 
 ## What Castparty Is

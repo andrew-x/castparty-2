@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ROOT=$(git rev-parse --show-toplevel 2>/dev/null) && find \"$ROOT/.claude/plans\" -name '*.md' -mtime +7 -delete 2>/dev/null || true",
+            "statusMessage": "Cleaning stale Claude plans"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/pre_tool_use_policy.py\"",
+            "statusMessage": "Checking command policy"
+          }
+        ]
+      }
+    ]
+  }
+}
