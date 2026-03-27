@@ -133,12 +133,14 @@ export function KanbanCard({
         {/* Headshot */}
         <div className="relative aspect-[4/3] w-full bg-muted">
           {headshotUrl ? (
-            // biome-ignore lint/performance/noImgElement: external R2 URLs
-            <img
-              src={headshotUrl}
-              alt={`${submission.firstName} ${submission.lastName}`}
-              className="size-full object-cover"
-            />
+            <div className="flex size-full items-center justify-center bg-muted">
+              {/* biome-ignore lint/performance/noImgElement: external R2 URLs */}
+              <img
+                src={headshotUrl}
+                alt={`${submission.firstName} ${submission.lastName}`}
+                className="size-full object-contain"
+              />
+            </div>
           ) : (
             <div className="flex size-full items-center justify-center">
               <span className="font-medium text-heading text-muted-foreground">
