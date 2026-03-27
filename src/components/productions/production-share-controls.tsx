@@ -10,6 +10,7 @@ import {
 import { QRCodeCanvas } from "qrcode.react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/common/button"
+import { ButtonGroup } from "@/components/common/button-group"
 import {
   Dialog,
   DialogContent,
@@ -112,10 +113,10 @@ export function ProductionShareControls({ url, href, fileName }: Props) {
           </span>
         </div>
 
-        <div className="flex items-center gap-element">
+        <ButtonGroup>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon-xs"
             onClick={handleCopyLink}
             aria-label={copyLinkLabel}
             tooltip={copyLinkLabel}
@@ -128,27 +129,27 @@ export function ProductionShareControls({ url, href, fileName }: Props) {
           </Button>
 
           <Button
-            href={href}
-            target="_blank"
-            rel="noreferrer"
             variant="ghost"
-            size="icon-sm"
-            aria-label="Open public page"
-            tooltip="Open public page"
-          >
-            <ExternalLinkIcon />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon-sm"
+            size="icon-xs"
             onClick={() => setDialogOpen(true)}
             aria-label="Show QR code"
             tooltip="Show QR code"
           >
             <QrCodeIcon />
           </Button>
-        </div>
+
+          <Button
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Open public page"
+            tooltip="Open public page"
+          >
+            <ExternalLinkIcon />
+          </Button>
+        </ButtonGroup>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
