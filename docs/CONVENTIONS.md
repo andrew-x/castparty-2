@@ -60,7 +60,7 @@ Use `unknown` when the type is genuinely unknown, then narrow with guards.
 
 ## Voice & Tone
 
-All UI copy follows the voice and tone rules in `.claude/rules/voice-and-tone.md`. Key points: plain rehearsal-room language, no jargon, no exclamation marks, no emoji, no em dashes. "Production team" for organizer-side users, "candidate" for talent-side users — no synonyms.
+All UI copy follows the voice and tone rules in `AGENTS.md`. Key points: plain rehearsal-room language, no jargon, no exclamation marks, no emoji, no em dashes. "Production team" for organizer-side users, "candidate" for talent-side users — no synonyms.
 
 ## Code Quality (Biome Config)
 
