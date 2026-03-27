@@ -11,7 +11,7 @@
 | Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | Org settings (name, slug, description, website, visibility), members table, invite/remove/role-change, ownership transfer; owner/admin only |
 | Accept Invitation | `shipped` | `src/app/accept-invitation/[id]/page.tsx` | Accept an org invitation by link (token-based); works when not logged in — redirects to auth with return URL |
 | Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | Grid of production cards for the active org; each card shows submission count; empty state with create CTA |
-| Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | Production overview with roles list and submission counts per role; inline role creation |
+| Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | Production overview with roles list and submission counts per role; inline role creation plus header share tools for the public link and QR code |
 | Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | 5-step wizard to create a new production: Details → Casting Pipeline → Submission Form → Feedback Form → Roles |
 | Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | General settings (name, slug, location, open/closed); sub-routes for pipeline template, submission form, feedback form, and reject reasons |
 | Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/settings/page.tsx` | General settings only (name, slug, description, open/closed); pipeline, forms, and reject reasons are configured at the production level |

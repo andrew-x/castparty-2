@@ -6,7 +6,7 @@ import {
   PageContent,
   PageHeader,
 } from "@/components/common/page"
-import { PreviewLinkButtons } from "@/components/common/preview-link-buttons"
+import { ProductionShareControls } from "@/components/productions/production-share-controls"
 import { ProductionSubNav } from "@/components/productions/production-sub-nav"
 import { getAppUrl } from "@/lib/url"
 
@@ -34,11 +34,12 @@ export default async function ProductionLayout({
           { label: production.name },
         ]}
         actions={
-          <PreviewLinkButtons
+          <ProductionShareControls
             url={getAppUrl(
               `/s/${production.organization.slug}/${production.slug}`,
             )}
             href={`/s/${production.organization.slug}/${production.slug}`}
+            fileName={`${production.slug}-qr`}
           />
         }
       />
