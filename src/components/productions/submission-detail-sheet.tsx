@@ -53,6 +53,7 @@ interface Props {
   otherRoleSubmissions: Record<string, OtherRoleSubmission[]>
   onClose: () => void
   onStageChange?: (submission: SubmissionWithCandidate) => void
+  onNavigateToSubmission?: (submissionId: string) => void
   onPrev: (() => void) | null
   onNext: (() => void) | null
 }
@@ -71,6 +72,7 @@ export function SubmissionDetailSheet({
   otherRoleSubmissions,
   onClose,
   onStageChange,
+  onNavigateToSubmission,
   onPrev,
   onNext,
 }: Props) {
@@ -264,7 +266,7 @@ export function SubmissionDetailSheet({
                 variant="ghost"
                 size="icon-sm"
                 tooltip="Close"
-                tooltipSide="right"
+                tooltipDirection="right"
                 onClick={onClose}
               >
                 <XIcon />
@@ -274,7 +276,7 @@ export function SubmissionDetailSheet({
                   variant="ghost"
                   size="icon-sm"
                   tooltip="Previous candidate"
-                  tooltipSide="right"
+                  tooltipDirection="right"
                   onClick={onPrev}
                 >
                   <ChevronLeftIcon />
@@ -285,7 +287,7 @@ export function SubmissionDetailSheet({
                   variant="ghost"
                   size="icon-sm"
                   tooltip="Next candidate"
-                  tooltipSide="right"
+                  tooltipDirection="right"
                   onClick={onNext}
                 >
                   <ChevronRightIcon />
@@ -378,10 +380,10 @@ export function SubmissionDetailSheet({
                   <SubmissionInfoPanel
                     submission={submission}
                     submissionFormFields={submissionFormFields}
-                    productionId={productionId}
                     otherRoles={(
                       otherRoleSubmissions[submission.candidate.id] ?? []
                     ).filter((r) => r.roleId !== submission.roleId)}
+                    onNavigateToSubmission={onNavigateToSubmission}
                     onLightboxOpenChange={(open) => {
                       lightboxOpen.current = open
                     }}
