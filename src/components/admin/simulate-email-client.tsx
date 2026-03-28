@@ -17,7 +17,7 @@ import { formResolver } from "@/lib/schemas/resolve"
 import { simulateInboundEmailFormSchema } from "@/lib/schemas/simulate-inbound-email"
 
 const defaultValues = {
-  submissionId: "",
+  toEmail: "",
   fromEmail: "",
   subject: "",
   bodyText: "",
@@ -59,15 +59,15 @@ export function SimulateEmailClient() {
       >
         <FieldGroup>
           <Controller
-            name="submissionId"
+            name="toEmail"
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid || undefined}>
-                <FieldLabel htmlFor={field.name}>Submission ID</FieldLabel>
+                <FieldLabel htmlFor={field.name}>To (reply address)</FieldLabel>
                 <Input
                   {...field}
                   id={field.name}
-                  placeholder="sub-..."
+                  placeholder="reply+sub-...@inbound.joincastparty.com"
                   aria-invalid={fieldState.invalid}
                 />
                 {fieldState.error && <FieldError errors={[fieldState.error]} />}

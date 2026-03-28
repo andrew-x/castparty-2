@@ -11,8 +11,12 @@ export const simulateInboundEmailAction = adminActionClient
   .metadata({ action: "simulate-inbound-email" })
   .inputSchema(simulateInboundEmailFormSchema)
   .action(async ({ parsedInput }) => {
+    const match = parsedInput.toEmail.match(/^reply\+([^@]+)@/)
+    if (!match) throw new Error("Invalid reply address format.")
+    const submissionId = match[1]
+
     const submission = await db.query.Submission.findFirst({
-      where: (s) => eq(s.id, parsedInput.submissionId),
+      where: (s) => eq(s.id, submissionId),
       columns: { id: true },
       with: {
         role: {
@@ -24,17 +28,14 @@ export const simulateInboundEmailAction = adminActionClient
 
     if (!submission) throw new Error("Submission not found.")
 
-    const inboundDomain =
-      process.env.INBOUND_EMAIL_DOMAIN ?? "inbound.joincastparty.com"
-
     await db.insert(Email).values({
       id: generateId("eml"),
       organizationId: submission.role.production.organizationId,
-      submissionId: parsedInput.submissionId,
+      submissionId,
       sentByUserId: null,
       direction: "inbound",
       fromEmail: parsedInput.fromEmail,
-      toEmail: `reply+${parsedInput.submissionId}@${inboundDomain}`,
+      toEmail: parsedInput.toEmail,
       subject: parsedInput.subject,
       bodyText: parsedInput.bodyText,
       bodyHtml: parsedInput.bodyText,
