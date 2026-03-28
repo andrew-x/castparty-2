@@ -336,11 +336,17 @@ export function SubmissionForm({
               Roles
               <RequiredMarker />
             </FieldLegend>
+            <FieldDescription className="!-mt-1">
+              Select the roles you'd like to audition for.
+            </FieldDescription>
             <div className="flex max-h-[280px] flex-col gap-element overflow-y-auto">
               {availableRoles.map((role) => {
                 const checked = selectedRoleIds.includes(role.id)
                 return (
-                  <FieldLabel key={role.id} className="flex items-start gap-2">
+                  <FieldLabel
+                    key={role.id}
+                    className="flex items-start gap-2 has-data-[state=checked]:bg-transparent"
+                  >
                     <Checkbox
                       checked={checked}
                       onCheckedChange={() => {
