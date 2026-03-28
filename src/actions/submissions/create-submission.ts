@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { extractText, getDocumentProxy } from "unpdf"
 import { sendSubmissionEmail } from "@/actions/submissions/send-submission-email"
@@ -22,7 +22,7 @@ export const createSubmission = publicActionClient
       parsedInput: {
         orgId,
         productionId,
-        roleId,
+        roleIds,
         firstName,
         lastName,
         email,
@@ -34,21 +34,10 @@ export const createSubmission = publicActionClient
         resume,
       },
     }) => {
-      // Validate the full ownership chain: role → production → org
-      const role = await db.query.Role.findFirst({
-        where: (r) => eq(r.id, roleId),
-        with: {
-          production: {
-            columns: {
-              id: true,
-              organizationId: true,
-              isOpen: true,
-              submissionFormFields: true,
-              systemFieldConfig: true,
-              emailTemplates: true,
-            },
-          },
-        },
+      // Validate all roles exist and belong to the production
+      const roles = await db.query.Role.findMany({
+        where: (r) =>
+          and(eq(r.productionId, productionId), inArray(r.id, roleIds)),
         columns: {
           id: true,
           productionId: true,
@@ -56,23 +45,37 @@ export const createSubmission = publicActionClient
         },
       })
 
-      if (
-        !role ||
-        role.productionId !== productionId ||
-        role.production.organizationId !== orgId
-      ) {
-        throw new Error("This role is not available for submissions.")
+      if (roles.length !== roleIds.length) {
+        throw new Error("One or more roles are not available for submissions.")
       }
 
-      if (!role.production.isOpen) {
+      for (const role of roles) {
+        if (!role.isOpen) {
+          throw new Error("One or more roles are not open for auditions.")
+        }
+      }
+
+      // Validate production ownership and fetch config
+      const production = await db.query.Production.findFirst({
+        where: (p) => and(eq(p.id, productionId), eq(p.organizationId, orgId)),
+        columns: {
+          id: true,
+          isOpen: true,
+          submissionFormFields: true,
+          systemFieldConfig: true,
+          emailTemplates: true,
+        },
+      })
+
+      if (!production) {
+        throw new Error("This production is not available for submissions.")
+      }
+
+      if (!production.isOpen) {
         throw new Error("This production is not accepting auditions right now.")
       }
 
-      if (!role.isOpen) {
-        throw new Error("This role is not open for auditions right now.")
-      }
-
-      // Resolve the APPLIED stage for this role
+      // Resolve the APPLIED stage for this production
       const appliedStage = await db.query.PipelineStage.findFirst({
         where: (s) =>
           and(eq(s.productionId, productionId), eq(s.type, "APPLIED")),
@@ -80,12 +83,11 @@ export const createSubmission = publicActionClient
       })
 
       if (!appliedStage) {
-        throw new Error("Pipeline is not configured for this role.")
+        throw new Error("Pipeline is not configured for this production.")
       }
 
       // Validate required system fields
-      const sfc =
-        role.production.systemFieldConfig ?? DEFAULT_SYSTEM_FIELD_CONFIG
+      const sfc = production.systemFieldConfig ?? DEFAULT_SYSTEM_FIELD_CONFIG
       if (sfc.phone === "required" && (!phone || !phone.trim())) {
         throw new Error("Phone number is required.")
       }
@@ -103,7 +105,7 @@ export const createSubmission = publicActionClient
       }
 
       // Validate required custom fields
-      const formFields = role.production.submissionFormFields ?? []
+      const formFields = production.submissionFormFields ?? []
       for (const field of formFields) {
         if (!field.required) continue
         const value = answers[field.id]
@@ -159,9 +161,57 @@ export const createSubmission = publicActionClient
           }
         })
 
-      const submissionId = generateId("sub")
+      // Generate one submission ID per role
+      const submissionIds = roleIds.map(() => generateId("sub"))
 
-      // Candidate upsert + submission insert — atomic
+      // Move files from temp/ to permanent R2 storage before the transaction
+      // (R2 operations can't participate in a Postgres transaction)
+      type MovedFile = { url: string; key: string; path: string }
+      let movedHeadshots: {
+        moved: MovedFile
+        headshot: (typeof headshots)[number]
+        index: number
+      }[] = []
+      let movedResume: MovedFile | undefined
+
+      if (headshots.length > 0) {
+        const tempPrefix = `${r2Root}/temp/headshots/`
+        for (const headshot of headshots) {
+          if (!headshot.key.startsWith(tempPrefix)) {
+            throw new Error("Invalid file key.")
+          }
+        }
+
+        await Promise.all(
+          headshots.map(async (h) => {
+            const exists = await checkFileExists(h.key)
+            if (!exists)
+              throw new Error("Headshot upload not found. Try uploading again.")
+          }),
+        )
+
+        movedHeadshots = await Promise.all(
+          headshots.map(async (headshot, index) => {
+            const moved = await moveFileByKey(headshot.key, "headshots")
+            return { moved, headshot, index }
+          }),
+        )
+      }
+
+      if (resume) {
+        const tempPrefix = `${r2Root}/temp/resumes/`
+        if (!resume.key.startsWith(tempPrefix)) {
+          throw new Error("Invalid file key.")
+        }
+
+        const resumeExists = await checkFileExists(resume.key)
+        if (!resumeExists)
+          throw new Error("Resume upload not found. Try uploading again.")
+
+        movedResume = await moveFileByKey(resume.key, "resumes")
+      }
+
+      // All DB writes in a single atomic transaction
       await db.transaction(async (tx) => {
         const [candidate] = await tx
           .insert(Candidate)
@@ -185,87 +235,64 @@ export const createSubmission = publicActionClient
           })
           .returning({ id: Candidate.id })
 
-        await tx.insert(Submission).values({
-          id: submissionId,
-          productionId,
-          roleId,
-          candidateId: candidate.id,
-          stageId: appliedStage.id,
-          firstName,
-          lastName,
-          email,
-          phone: phone ?? "",
-          location: location || "",
-          answers: formResponses,
-          links,
-        })
-      })
-
-      // Move headshots from temp/ to permanent prefix and create File records
-      if (headshots.length > 0) {
-        const tempPrefix = `${r2Root}/temp/headshots/`
-        for (const headshot of headshots) {
-          if (!headshot.key.startsWith(tempPrefix)) {
-            throw new Error("Invalid file key.")
-          }
-        }
-
-        // Verify all temp files exist before moving
-        for (const headshot of headshots) {
-          const exists = await checkFileExists(headshot.key)
-          if (!exists)
-            throw new Error("Headshot upload not found. Try uploading again.")
-        }
-
-        const fileRecords = await Promise.all(
-          headshots.map(async (headshot, index) => {
-            const moved = await moveFileByKey(headshot.key, "headshots")
-            return {
-              id: generateId("file"),
-              submissionId,
-              type: "HEADSHOT" as const,
-              url: moved.url,
-              key: moved.key,
-              path: moved.path,
-              filename: headshot.filename,
-              contentType: headshot.contentType,
-              size: headshot.size,
-              order: index,
-            }
-          }),
+        await tx.insert(Submission).values(
+          roleIds.map((roleId, i) => ({
+            id: submissionIds[i],
+            productionId,
+            roleId,
+            candidateId: candidate.id,
+            stageId: appliedStage.id,
+            firstName,
+            lastName,
+            email,
+            phone: phone ?? "",
+            location: location || "",
+            answers: formResponses,
+            links,
+          })),
         )
 
-        await db.insert(File).values(fileRecords)
-      }
-
-      if (resume) {
-        const tempPrefix = `${r2Root}/temp/resumes/`
-        if (!resume.key.startsWith(tempPrefix)) {
-          throw new Error("Invalid file key.")
+        if (movedHeadshots.length > 0) {
+          await tx.insert(File).values(
+            submissionIds.flatMap((subId) =>
+              movedHeadshots.map(({ moved, headshot, index }) => ({
+                id: generateId("file"),
+                submissionId: subId,
+                type: "HEADSHOT" as const,
+                url: moved.url,
+                key: moved.key,
+                path: moved.path,
+                filename: headshot.filename,
+                contentType: headshot.contentType,
+                size: headshot.size,
+                order: index,
+              })),
+            ),
+          )
         }
 
-        const resumeExists = await checkFileExists(resume.key)
-        if (!resumeExists)
-          throw new Error("Resume upload not found. Try uploading again.")
+        if (movedResume && resume) {
+          await tx.insert(File).values(
+            submissionIds.map((subId) => ({
+              id: generateId("file"),
+              submissionId: subId,
+              type: "RESUME" as const,
+              url: movedResume.url,
+              key: movedResume.key,
+              path: movedResume.path,
+              filename: resume.filename,
+              contentType: resume.contentType,
+              size: resume.size,
+              order: 0,
+            })),
+          )
+        }
+      })
 
-        const moved = await moveFileByKey(resume.key, "resumes")
-
-        await db.insert(File).values({
-          id: generateId("file"),
-          submissionId,
-          type: "RESUME",
-          url: moved.url,
-          key: moved.key,
-          path: moved.path,
-          filename: resume.filename,
-          contentType: resume.contentType,
-          size: resume.size,
-          order: 0,
-        })
-
-        // Parse PDF text from the uploaded file
+      // Parse PDF text from the uploaded resume (best-effort)
+      if (movedResume) {
         try {
-          const response = await fetch(moved.url)
+          const response = await fetch(movedResume.url)
           const buffer = await response.arrayBuffer()
           const pdf = await getDocumentProxy(new Uint8Array(buffer))
           const { text } = await extractText(pdf, { mergePages: true })
@@ -273,22 +300,23 @@ export const createSubmission = publicActionClient
             await db
               .update(Submission)
               .set({ resumeText: text.trim() })
-              .where(eq(Submission.id, submissionId))
+              .where(inArray(Submission.id, submissionIds))
           }
         } catch (err) {
           logger.error("PDF parsing failed", err)
-          // PDF parsing is best-effort — don't fail the submission
         }
       }
 
-      // Send submission received email (fire-and-forget)
-      try {
-        await sendSubmissionEmail(submissionId, "submissionReceived")
-      } catch (err) {
-        logger.error("Submission received email failed", err)
-      }
+      // Send submission received emails in parallel (fire-and-forget)
+      await Promise.allSettled(
+        submissionIds.map((subId) =>
+          sendSubmissionEmail(subId, "submissionReceived").catch((err) =>
+            logger.error("Submission received email failed", err),
+          ),
+        ),
+      )
 
       revalidatePath("/", "layout")
-      return { id: submissionId }
+      return { ids: submissionIds }
     },
   )
