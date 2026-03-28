@@ -4,7 +4,7 @@ import { and, eq, not } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { Production, Role } from "@/lib/db/schema"
+import { Production } from "@/lib/db/schema"
 import { updateProductionActionSchema } from "@/lib/schemas/production"
 
 export const updateProduction = secureActionClient
@@ -44,13 +44,6 @@ export const updateProduction = secureActionClient
           ...(status !== undefined && { status }),
         })
         .where(eq(Production.id, productionId))
-
-      if (status === "archive") {
-        await db
-          .update(Role)
-          .set({ status: "archive" })
-          .where(eq(Role.productionId, productionId))
-      }
 
       revalidatePath("/", "layout")
       return { success: true }

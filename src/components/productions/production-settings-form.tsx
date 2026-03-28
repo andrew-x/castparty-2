@@ -180,9 +180,7 @@ export function ProductionSettingsForm({
                   <RadioGroupItem value="archive" />
                   <FieldContent>
                     <FieldTitle>Archived</FieldTitle>
-                    <FieldDescription>
-                      Hidden from all lists. Archiving also archives all roles.
-                    </FieldDescription>
+                    <FieldDescription>Hidden from all lists.</FieldDescription>
                   </FieldContent>
                 </Label>
               </RadioGroup>
