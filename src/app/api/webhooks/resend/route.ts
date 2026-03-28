@@ -1,9 +1,6 @@
-import { eq } from "drizzle-orm"
 import { Webhook } from "svix"
-import db from "@/lib/db/db"
-import { Email } from "@/lib/db/schema"
+import { receiveInboundEmail } from "@/actions/emails/receive-inbound-email"
 import logger from "@/lib/logger"
-import { generateId } from "@/lib/util"
 
 interface ResendEmailReceivedEvent {
   type: string
@@ -72,39 +69,15 @@ export async function POST(req: Request) {
     return new Response("OK", { status: 200 })
   }
 
-  const submission = await db.query.Submission.findFirst({
-    where: (s) => eq(s.id, submissionId),
-    columns: { id: true },
-    with: {
-      role: {
-        columns: { id: true },
-        with: { production: { columns: { organizationId: true } } },
-      },
-    },
-  })
-
-  if (!submission) {
-    logger.error("[Webhook] Submission not found for ID:", submissionId)
-    return new Response("OK", { status: 200 })
-  }
-
-  const fromEmail = payload.data.from ?? "unknown"
-  const subject = payload.data.subject ?? "(no subject)"
-  const bodyText = payload.data.text ?? ""
-  const bodyHtml = payload.data.html ?? bodyText
-
-  await db.insert(Email).values({
-    id: generateId("eml"),
-    organizationId: submission.role.production.organizationId,
+  await receiveInboundEmail({
+    resendEmailId: payload.data.email_id,
     submissionId,
-    sentByUserId: null,
-    direction: "inbound",
-    fromEmail,
-    toEmail: toAddresses.join(", "),
-    subject,
-    bodyText,
-    bodyHtml,
-    templateType: null,
+    fromEmail: payload.data.from ?? "unknown",
+    toAddresses,
+    subject: payload.data.subject ?? "(no subject)",
+    bodyText: payload.data.text ?? "",
+    bodyHtml: payload.data.html ?? payload.data.text ?? "",
+    createdAt: payload.data.created_at,
   })
 
   return new Response("OK", { status: 200 })

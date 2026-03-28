@@ -522,12 +522,14 @@ export const Email = pgTable(
     bodyText: text().notNull(),
     bodyHtml: text().notNull(),
     templateType: text(),
+    resendEmailId: text(),
 
     sentAt: timestamp().defaultNow().notNull(),
   },
   (table) => [
     index("email_submissionId_idx").on(table.submissionId),
     index("email_organizationId_idx").on(table.organizationId),
+    uniqueIndex("email_resendEmailId_idx").on(table.resendEmailId),
   ],
 )
 

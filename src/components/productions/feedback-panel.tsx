@@ -239,7 +239,7 @@ function EmailItem({ email }: { email: EmailData }) {
     <div
       className={cn(
         "flex flex-col gap-element rounded-md border p-block",
-        isInbound && "border-l-4 border-l-blue-400/40 bg-blue-50/30",
+        isInbound && "border-l-4 border-l-brand-text/40 bg-brand-subtle/30",
       )}
     >
       <div className="flex items-center gap-element">
@@ -253,7 +253,10 @@ function EmailItem({ email }: { email: EmailData }) {
           </p>
         </div>
         {isInbound && (
-          <Badge variant="outline" className="border-blue-300 text-blue-600">
+          <Badge
+            variant="outline"
+            className="border-border-brand text-brand-text"
+          >
             Reply
           </Badge>
         )}
