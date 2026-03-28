@@ -32,10 +32,10 @@ export default async function HomePage({
     getProductionsWithSubmissionCounts(),
   ])
 
-  const hasArchived = allProductions.some((p) => p.isArchived)
+  const hasArchived = allProductions.some((p) => p.status === "archive")
   const productions = showArchived
     ? allProductions
-    : allProductions.filter((p) => !p.isArchived)
+    : allProductions.filter((p) => p.status !== "archive")
 
   return (
     <Page>

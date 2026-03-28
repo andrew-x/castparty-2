@@ -17,7 +17,8 @@ import {
   FieldTitle,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
-import { Switch } from "@/components/common/switch"
+import { Label } from "@/components/common/label"
+import { RadioGroup, RadioGroupItem } from "@/components/common/radio-group"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { updateProductionFormSchema } from "@/lib/schemas/production"
 import { formResolver } from "@/lib/schemas/resolve"
@@ -29,8 +30,7 @@ interface Props {
   currentName: string
   currentLocation: string
   currentSlug: string
-  isOpen: boolean
-  isArchived: boolean
+  status: "open" | "closed" | "archive"
 }
 
 export function ProductionSettingsForm({
@@ -39,8 +39,7 @@ export function ProductionSettingsForm({
   currentName,
   currentLocation,
   currentSlug,
-  isOpen,
-  isArchived,
+  status,
 }: Props) {
   const router = useRouter()
   const cityOptions = useCityOptions()
@@ -53,8 +52,7 @@ export function ProductionSettingsForm({
           name: currentName,
           location: currentLocation,
           slug: currentSlug,
-          isOpen,
-          isArchived,
+          status,
         },
       },
       actionProps: {
@@ -77,8 +75,7 @@ export function ProductionSettingsForm({
     watched.name !== currentName ||
     watched.location !== currentLocation ||
     watched.slug !== currentSlug ||
-    watched.isOpen !== isOpen ||
-    watched.isArchived !== isArchived
+    watched.status !== status
 
   const auditionUrl = getAppUrl(`/s/${orgSlug}/${watched.slug || currentSlug}`)
 
@@ -90,8 +87,7 @@ export function ProductionSettingsForm({
           name: v.name,
           location: v.location,
           slug: v.slug,
-          isOpen: v.isOpen,
-          isArchived: v.isArchived,
+          status: v.status,
         }),
       )}
     >
@@ -156,47 +152,41 @@ export function ProductionSettingsForm({
         />
 
         <Controller
-          name="isOpen"
+          name="status"
           control={form.control}
           render={({ field }) => (
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>Open for auditions</FieldTitle>
-                <FieldDescription>
-                  When on, candidates can find and audition for this production.
-                  When off, all audition pages for this production are hidden.
-                </FieldDescription>
-              </FieldContent>
-              <Switch
-                id={field.name}
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                disabled={watched.isArchived}
-              />
-            </Field>
-          )}
-        />
-
-        <Controller
-          name="isArchived"
-          control={form.control}
-          render={({ field }) => (
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>Archive production</FieldTitle>
-                <FieldDescription>
-                  Archived productions are hidden from the Home and Productions
-                  pages. Archiving automatically closes auditions.
-                </FieldDescription>
-              </FieldContent>
-              <Switch
-                id={field.name}
-                checked={field.value}
-                onCheckedChange={(checked) => {
-                  field.onChange(checked)
-                  if (checked) form.setValue("isOpen", false)
-                }}
-              />
+            <Field>
+              <FieldLabel>Status</FieldLabel>
+              <RadioGroup value={field.value} onValueChange={field.onChange}>
+                <Label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-border-brand">
+                  <RadioGroupItem value="open" />
+                  <FieldContent>
+                    <FieldTitle>Open</FieldTitle>
+                    <FieldDescription>
+                      Accepting auditions. Publicly visible.
+                    </FieldDescription>
+                  </FieldContent>
+                </Label>
+                <Label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-border-brand">
+                  <RadioGroupItem value="closed" />
+                  <FieldContent>
+                    <FieldTitle>Closed</FieldTitle>
+                    <FieldDescription>
+                      Not accepting auditions. Visible to your team.
+                    </FieldDescription>
+                  </FieldContent>
+                </Label>
+                <Label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-border-brand">
+                  <RadioGroupItem value="archive" />
+                  <FieldContent>
+                    <FieldTitle>Archived</FieldTitle>
+                    <FieldDescription>
+                      Done casting. Data is kept but this production won't
+                      appear anywhere.
+                    </FieldDescription>
+                  </FieldContent>
+                </Label>
+              </RadioGroup>
             </Field>
           )}
         />

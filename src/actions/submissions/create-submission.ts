@@ -41,7 +41,7 @@ export const createSubmission = publicActionClient
         columns: {
           id: true,
           productionId: true,
-          isOpen: true,
+          status: true,
         },
       })
 
@@ -50,7 +50,7 @@ export const createSubmission = publicActionClient
       }
 
       for (const role of roles) {
-        if (!role.isOpen) {
+        if (role.status !== "open") {
           throw new Error("One or more roles are not open for auditions.")
         }
       }
@@ -60,7 +60,7 @@ export const createSubmission = publicActionClient
         where: (p) => and(eq(p.id, productionId), eq(p.organizationId, orgId)),
         columns: {
           id: true,
-          isOpen: true,
+          status: true,
           submissionFormFields: true,
           systemFieldConfig: true,
           emailTemplates: true,
@@ -71,7 +71,7 @@ export const createSubmission = publicActionClient
         throw new Error("This production is not available for submissions.")
       }
 
-      if (!production.isOpen) {
+      if (production.status !== "open") {
         throw new Error("This production is not accepting auditions right now.")
       }
 

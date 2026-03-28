@@ -11,17 +11,16 @@ export async function getPublicProduction(
     where: (p) => and(eq(p.organizationId, orgId), eq(p.slug, productionSlug)),
     with: {
       roles: {
-        where: (r) => eq(r.isOpen, true),
+        where: (r) => eq(r.status, "open"),
         columns: {
           id: true,
           name: true,
           slug: true,
           description: true,
-          isOpen: true,
         },
       },
     },
   })
-  if (!production || !production.isOpen) return null
+  if (!production || production.status !== "open") return null
   return production
 }

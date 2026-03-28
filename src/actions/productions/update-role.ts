@@ -51,11 +51,7 @@ export const updateRole = secureActionClient
     if (fields.description !== undefined)
       updates.description = fields.description
     if (fields.slug !== undefined) updates.slug = fields.slug
-    if (fields.isOpen !== undefined) updates.isOpen = fields.isOpen
-    if (fields.isArchived !== undefined) {
-      updates.isArchived = fields.isArchived
-      if (fields.isArchived) updates.isOpen = false
-    }
+    if (fields.status !== undefined) updates.status = fields.status
 
     if (Object.keys(updates).length > 0) {
       await db.update(Role).set(updates).where(eq(Role.id, roleId))

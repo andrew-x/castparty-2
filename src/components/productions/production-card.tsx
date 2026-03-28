@@ -17,8 +17,7 @@ interface Props {
   production: {
     id: string
     name: string
-    isOpen: boolean
-    isArchived: boolean
+    status: "open" | "closed" | "archive"
     createdAt: Date
     roleCount: number
     submissionCount: number
@@ -31,7 +30,7 @@ export function ProductionCard({ production }: Props) {
       href={`/productions/${production.id}`}
       className={cn(
         "group relative flex items-start gap-element rounded-lg border px-block py-element transition-colors hover:bg-muted/50",
-        production.isArchived && "opacity-60",
+        production.status === "archive" && "opacity-60",
       )}
     >
       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -53,33 +52,31 @@ export function ProductionCard({ production }: Props) {
           <span
             className={cn(
               "absolute top-element right-block",
-              production.isArchived
-                ? "text-muted-foreground/40"
-                : production.isOpen
-                  ? "text-muted-foreground/60"
-                  : "text-muted-foreground/40",
+              production.status === "open"
+                ? "text-muted-foreground/60"
+                : "text-muted-foreground/40",
             )}
           >
-            {production.isArchived ? (
+            {production.status === "archive" ? (
               <ArchiveIcon className="size-3.5" />
-            ) : production.isOpen ? (
+            ) : production.status === "open" ? (
               <LockOpenIcon className="size-3.5" />
             ) : (
               <LockIcon className="size-3.5" />
             )}
             <span className="sr-only">
-              {production.isArchived
+              {production.status === "archive"
                 ? "Archived"
-                : production.isOpen
+                : production.status === "open"
                   ? "Open"
                   : "Closed"}
             </span>
           </span>
         </TooltipTrigger>
         <TooltipContent>
-          {production.isArchived
+          {production.status === "archive"
             ? "Archived"
-            : production.isOpen
+            : production.status === "open"
               ? "Accepting submissions"
               : "Closed"}
         </TooltipContent>

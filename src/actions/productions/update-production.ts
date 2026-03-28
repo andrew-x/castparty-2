@@ -4,7 +4,7 @@ import { and, eq, not } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
-import { Production, Role } from "@/lib/db/schema"
+import { Production } from "@/lib/db/schema"
 import { updateProductionActionSchema } from "@/lib/schemas/production"
 
 export const updateProduction = secureActionClient
@@ -12,7 +12,7 @@ export const updateProduction = secureActionClient
   .inputSchema(updateProductionActionSchema)
   .action(
     async ({
-      parsedInput: { productionId, name, slug, location, isOpen, isArchived },
+      parsedInput: { productionId, name, slug, location, status },
       ctx: { user },
     }) => {
       const orgId = user.activeOrganizationId
@@ -35,25 +35,15 @@ export const updateProduction = secureActionClient
       })
       if (conflict) throw new Error("This URL ID is already taken.")
 
-      const archiving = isArchived === true
-
       await db
         .update(Production)
         .set({
           name,
           slug,
           location,
-          ...(isOpen !== undefined && { isOpen: archiving ? false : isOpen }),
-          ...(isArchived !== undefined && { isArchived }),
+          ...(status !== undefined && { status }),
         })
         .where(eq(Production.id, productionId))
-
-      if (archiving) {
-        await db
-          .update(Role)
-          .set({ isOpen: false })
-          .where(eq(Role.productionId, productionId))
-      }
 
       revalidatePath("/", "layout")
       return { success: true }

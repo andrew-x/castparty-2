@@ -254,6 +254,12 @@ export const OrganizationProfile = pgTable("organization_profile", {
     .notNull(),
 })
 
+export const productionStatusEnum = pgEnum("production_status", [
+  "open",
+  "closed",
+  "archive",
+])
+
 export const Production = pgTable(
   "production",
   {
@@ -265,8 +271,7 @@ export const Production = pgTable(
     name: text().notNull(),
     slug: text().notNull(),
     description: text().notNull().default(""),
-    isOpen: boolean().default(false).notNull(),
-    isArchived: boolean().default(false).notNull(),
+    status: productionStatusEnum().default("closed").notNull(),
 
     location: text().notNull().default(""),
     submissionFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
@@ -306,8 +311,7 @@ export const Role = pgTable(
     name: text().notNull(),
     slug: text().notNull(),
     description: text().notNull().default(""),
-    isOpen: boolean().default(false).notNull(),
-    isArchived: boolean().default(false).notNull(),
+    status: productionStatusEnum().default("closed").notNull(),
 
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp()

@@ -16,7 +16,8 @@ import {
   FieldTitle,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
-import { Switch } from "@/components/common/switch"
+import { Label } from "@/components/common/label"
+import { RadioGroup, RadioGroupItem } from "@/components/common/radio-group"
 import { Textarea } from "@/components/common/textarea"
 import { formResolver } from "@/lib/schemas/resolve"
 import { updateRoleFormSchema } from "@/lib/schemas/role"
@@ -29,8 +30,7 @@ interface Props {
   currentName: string
   currentSlug: string
   currentDescription: string
-  currentIsOpen: boolean
-  currentIsArchived: boolean
+  currentStatus: "open" | "closed" | "archive"
 }
 
 export function RoleSettingsForm({
@@ -40,8 +40,7 @@ export function RoleSettingsForm({
   currentName,
   currentSlug,
   currentDescription,
-  currentIsOpen,
-  currentIsArchived,
+  currentStatus,
 }: Props) {
   const router = useRouter()
   const { form, action } = useHookFormAction(
@@ -53,8 +52,7 @@ export function RoleSettingsForm({
           name: currentName,
           description: currentDescription,
           slug: currentSlug,
-          isOpen: currentIsOpen,
-          isArchived: currentIsArchived,
+          status: currentStatus,
         },
       },
       actionProps: {
@@ -76,8 +74,7 @@ export function RoleSettingsForm({
     watched.name !== currentName ||
     watched.description !== currentDescription ||
     watched.slug !== currentSlug ||
-    watched.isOpen !== currentIsOpen ||
-    watched.isArchived !== currentIsArchived
+    watched.status !== currentStatus
 
   const auditionUrl = getAppUrl(
     `/s/${orgSlug}/${productionSlug}/${watched.slug || currentSlug}`,
@@ -144,47 +141,41 @@ export function RoleSettingsForm({
         />
 
         <Controller
-          name="isOpen"
+          name="status"
           control={form.control}
           render={({ field }) => (
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>Open for auditions</FieldTitle>
-                <FieldDescription>
-                  When on, candidates can find and audition for this role. When
-                  off, the audition page for this role is hidden.
-                </FieldDescription>
-              </FieldContent>
-              <Switch
-                id={field.name}
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                disabled={watched.isArchived}
-              />
-            </Field>
-          )}
-        />
-
-        <Controller
-          name="isArchived"
-          control={form.control}
-          render={({ field }) => (
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>Archive role</FieldTitle>
-                <FieldDescription>
-                  Archived roles are hidden from the role list. Archiving
-                  automatically closes auditions for this role.
-                </FieldDescription>
-              </FieldContent>
-              <Switch
-                id={field.name}
-                checked={field.value}
-                onCheckedChange={(checked) => {
-                  field.onChange(checked)
-                  if (checked) form.setValue("isOpen", false)
-                }}
-              />
+            <Field>
+              <FieldLabel>Status</FieldLabel>
+              <RadioGroup value={field.value} onValueChange={field.onChange}>
+                <Label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-border-brand">
+                  <RadioGroupItem value="open" />
+                  <FieldContent>
+                    <FieldTitle>Open</FieldTitle>
+                    <FieldDescription>
+                      Accepting auditions. Publicly visible.
+                    </FieldDescription>
+                  </FieldContent>
+                </Label>
+                <Label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-border-brand">
+                  <RadioGroupItem value="closed" />
+                  <FieldContent>
+                    <FieldTitle>Closed</FieldTitle>
+                    <FieldDescription>
+                      Not accepting auditions. Visible to your team.
+                    </FieldDescription>
+                  </FieldContent>
+                </Label>
+                <Label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-border-brand">
+                  <RadioGroupItem value="archive" />
+                  <FieldContent>
+                    <FieldTitle>Archived</FieldTitle>
+                    <FieldDescription>
+                      No longer in use. Data is kept but this role won't appear
+                      anywhere.
+                    </FieldDescription>
+                  </FieldContent>
+                </Label>
+              </RadioGroup>
             </Field>
           )}
         />
