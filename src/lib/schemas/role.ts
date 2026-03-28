@@ -1,12 +1,12 @@
 import { z } from "zod/v4"
+import { productionStatusSchema } from "./production"
 import { slugSchema, slugSchemaStrict } from "./slug"
 
 export const updateRoleFormSchema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100),
   description: z.string().trim(),
   slug: slugSchema,
-  isOpen: z.boolean(),
-  isArchived: z.boolean(),
+  status: productionStatusSchema,
 })
 
 export const updateRoleActionSchema = z.object({
@@ -14,6 +14,5 @@ export const updateRoleActionSchema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100).optional(),
   description: z.string().trim().optional(),
   slug: slugSchemaStrict.optional(),
-  isOpen: z.boolean().optional(),
-  isArchived: z.boolean().optional(),
+  status: productionStatusSchema.optional(),
 })

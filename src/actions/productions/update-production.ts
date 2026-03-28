@@ -12,7 +12,7 @@ export const updateProduction = secureActionClient
   .inputSchema(updateProductionActionSchema)
   .action(
     async ({
-      parsedInput: { productionId, name, slug, location, isOpen, isArchived },
+      parsedInput: { productionId, name, slug, location, status },
       ctx: { user },
     }) => {
       const orgId = user.activeOrganizationId
@@ -35,23 +35,20 @@ export const updateProduction = secureActionClient
       })
       if (conflict) throw new Error("This URL ID is already taken.")
 
-      const archiving = isArchived === true
-
       await db
         .update(Production)
         .set({
           name,
           slug,
           location,
-          ...(isOpen !== undefined && { isOpen: archiving ? false : isOpen }),
-          ...(isArchived !== undefined && { isArchived }),
+          ...(status !== undefined && { status }),
         })
         .where(eq(Production.id, productionId))
 
-      if (archiving) {
+      if (status === "archive") {
         await db
           .update(Role)
-          .set({ isOpen: false })
+          .set({ status: "archive" })
           .where(eq(Role.productionId, productionId))
       }
 

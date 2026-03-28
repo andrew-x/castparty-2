@@ -42,7 +42,7 @@ export const createSubmission = publicActionClient
             columns: {
               id: true,
               organizationId: true,
-              isOpen: true,
+              status: true,
               submissionFormFields: true,
               systemFieldConfig: true,
               emailTemplates: true,
@@ -52,7 +52,7 @@ export const createSubmission = publicActionClient
         columns: {
           id: true,
           productionId: true,
-          isOpen: true,
+          status: true,
         },
       })
 
@@ -64,11 +64,11 @@ export const createSubmission = publicActionClient
         throw new Error("This role is not available for submissions.")
       }
 
-      if (!role.production.isOpen) {
+      if (role.production.status !== "open") {
         throw new Error("This production is not accepting auditions right now.")
       }
 
-      if (!role.isOpen) {
+      if (role.status !== "open") {
         throw new Error("This role is not open for auditions right now.")
       }
 

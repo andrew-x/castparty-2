@@ -11,7 +11,7 @@ export async function getPublicRole(productionId: string, roleSlug: string) {
         columns: {
           id: true,
           name: true,
-          isOpen: true,
+          status: true,
           organizationId: true,
           submissionFormFields: true,
           systemFieldConfig: true,
@@ -19,6 +19,7 @@ export async function getPublicRole(productionId: string, roleSlug: string) {
       },
     },
   })
-  if (!role || !role.isOpen || !role.production.isOpen) return null
+  if (!role || role.status !== "open" || role.production.status !== "open")
+    return null
   return role
 }

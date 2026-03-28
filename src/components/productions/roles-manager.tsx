@@ -22,8 +22,7 @@ interface RoleItem {
   name: string
   slug: string
   description: string
-  isOpen: boolean
-  isArchived: boolean
+  status: "open" | "closed" | "archive"
 }
 
 interface Props {
@@ -44,8 +43,10 @@ export function RolesManager({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
-  const hasArchived = roles.some((r) => r.isArchived)
-  const visibleRoles = showArchived ? roles : roles.filter((r) => !r.isArchived)
+  const hasArchived = roles.some((r) => r.status === "archive")
+  const visibleRoles = showArchived
+    ? roles
+    : roles.filter((r) => r.status !== "archive")
 
   const roleSlug = searchParams.get("role")
   const selectedRole =
@@ -121,13 +122,13 @@ export function RolesManager({
                     isActive
                       ? "border-l-brand bg-muted/50"
                       : "border-l-transparent",
-                    role.isArchived && "opacity-60",
+                    role.status === "archive" && "opacity-60",
                   )}
                 >
                   <span className="min-w-0 flex-1 truncate font-medium text-sm">
                     {role.name}
                   </span>
-                  {role.isArchived ? (
+                  {role.status === "archive" ? (
                     <Badge
                       variant="outline"
                       className="text-[10px] text-muted-foreground"
@@ -137,15 +138,15 @@ export function RolesManager({
                     </Badge>
                   ) : (
                     <Badge
-                      variant={role.isOpen ? "secondary" : "outline"}
+                      variant={role.status === "open" ? "secondary" : "outline"}
                       className={cn(
                         "text-[10px]",
-                        role.isOpen
+                        role.status === "open"
                           ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
                           : "text-muted-foreground",
                       )}
                     >
-                      {role.isOpen ? "Open" : "Closed"}
+                      {role.status === "open" ? "Open" : "Closed"}
                     </Badge>
                   )}
                 </button>
@@ -174,8 +175,7 @@ export function RolesManager({
               currentName={selectedRole.name}
               currentSlug={selectedRole.slug}
               currentDescription={selectedRole.description}
-              currentIsOpen={selectedRole.isOpen}
-              currentIsArchived={selectedRole.isArchived}
+              currentStatus={selectedRole.status}
             />
           )}
         </div>

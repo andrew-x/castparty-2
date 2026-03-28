@@ -47,7 +47,7 @@ export const createRole = secureActionClient
         name,
         slug,
         description: description || "",
-        isOpen: true,
+        status: "open",
       })
 
       revalidatePath("/", "layout")
