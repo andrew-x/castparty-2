@@ -512,6 +512,11 @@ export const Email = pgTable(
     }),
     sentByUserId: text().references(() => User.id, { onDelete: "set null" }),
 
+    direction: text()
+      .$type<"inbound" | "outbound">()
+      .notNull()
+      .default("outbound"),
+    fromEmail: text(),
     toEmail: text().notNull(),
     subject: text().notNull(),
     bodyText: text().notNull(),

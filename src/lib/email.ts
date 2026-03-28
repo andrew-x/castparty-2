@@ -8,6 +8,7 @@ interface SendEmailOptions {
   subject: string
   react: ReactElement
   text: string
+  replyTo?: string
 }
 
 const from =
@@ -18,20 +19,21 @@ export async function sendEmail({
   subject,
   react,
   text,
+  replyTo,
 }: SendEmailOptions): Promise<{ html: string }> {
   try {
     const { render } = await import("@react-email/components")
     const html = await render(react)
 
     if (IS_DEV) {
-      addEmail({ to, subject, html, text })
+      addEmail({ to, subject, html, text, replyTo })
       logger.info(`[Email] To: ${to} | Subject: ${subject}`)
       return { html }
     }
 
     const { Resend } = await import("resend")
     const resend = new Resend(process.env.RESEND_API_KEY)
-    await resend.emails.send({ from, to, subject, html, text })
+    await resend.emails.send({ from, to, subject, html, text, replyTo })
     return { html }
   } catch (error) {
     logger.error("[Email] Failed to send:", error)

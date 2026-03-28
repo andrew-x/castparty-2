@@ -80,11 +80,16 @@ export async function sendSubmissionEmail(
     body = interpolateTemplate(template.body, variables)
   }
 
+  const inboundDomain =
+    process.env.INBOUND_EMAIL_DOMAIN ?? "inbound.joincastparty.com"
+  const replyTo = `reply+${submissionId}@${inboundDomain}`
+
   const { html } = await sendEmail({
     to: submission.email,
     subject,
     react: <TemplateEmail body={body} preview={subject} />,
     text: body,
+    replyTo,
   })
 
   try {
@@ -93,6 +98,7 @@ export async function sendSubmissionEmail(
       organizationId: submission.production.organizationId,
       submissionId,
       sentByUserId: sentByUserId ?? null,
+      direction: "outbound",
       toEmail: submission.email,
       subject,
       bodyText: body,
