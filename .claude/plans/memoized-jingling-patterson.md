@@ -92,9 +92,13 @@ ALTER TABLE "role" DROP COLUMN "is_archived";
 | `s/[orgSlug]/[productionSlug]/page.tsx` | `!production.isOpen` → `production.status !== "open"` |
 | `s/[orgSlug]/[productionSlug]/[roleSlug]/page.tsx` | Same |
 
-### 8. Cascade behavior
+### 8. Remove cascade — make statuses independent
 
-When a production's status changes to `archive`, all its roles also move to `archive`. When un-archiving (→ `closed` or `open`), roles stay as-is — the user decides which roles to reopen individually. This logic lives in `update-production.ts`.
+Remove the cascade in `update-production.ts` that archives all roles when a production is archived. Production and role statuses are fully independent. Public visibility still requires **both** to be `open` (already enforced in `get-public-role.ts`, `get-public-productions.ts`, `get-public-production.ts`, and `create-submission.ts`).
+
+**Changes:**
+- `src/actions/productions/update-production.ts` — delete the `if (status === "archive")` block (lines 48-53) and remove unused `Role` import
+- `src/components/productions/production-settings-form.tsx` — update archive description from "Hidden from all lists. Archiving also archives all roles." to "Hidden from all lists."
 
 ## Implementation order
 
@@ -120,7 +124,7 @@ When a production's status changes to `archive`, all its roles also move to `arc
    - Visit production settings → status radio group renders with correct default
    - Change status to Open → public audition page shows the production
    - Change status to Closed → public page hides production
-   - Change status to Archive → production hidden from home/productions pages; all roles also archived
+   - Change status to Archive → production hidden from home/productions pages; roles remain unchanged
    - Role settings → same radio group, same behavior
    - Submit to an open production + open role → succeeds
    - Submit to active or archived production → rejected
