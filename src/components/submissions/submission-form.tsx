@@ -339,8 +339,8 @@ export function SubmissionForm({
               Roles
               <RequiredMarker />
             </FieldLegend>
-            <FieldDescription>
-              Select the roles you'd like to audition for.
+            <FieldDescription className="pt-0.5">
+              Select the roles you would like to submit for.
             </FieldDescription>
             <div className="flex max-h-[280px] flex-col gap-1.5 overflow-y-auto">
               {availableRoles.map((role) => {
