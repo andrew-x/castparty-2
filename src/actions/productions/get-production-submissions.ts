@@ -135,6 +135,8 @@ export async function getProductionSubmissions(productionId: string) {
         subject: e.subject,
         bodyText: e.bodyText,
         templateType: e.templateType,
+        direction: e.direction,
+        fromEmail: e.fromEmail,
         sentBy: e.sentBy,
         sentAt: e.sentAt,
       }))

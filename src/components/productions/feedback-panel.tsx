@@ -225,22 +225,41 @@ function StageChangeItem({ stageChange }: { stageChange: StageChangeData }) {
 
 function EmailItem({ email }: { email: EmailData }) {
   const [expanded, setExpanded] = useState(false)
-  const senderName = email.sentBy?.name ?? "System"
+  const isInbound = email.direction === "inbound"
+  const senderName = isInbound
+    ? (email.fromEmail ?? "Candidate")
+    : (email.sentBy?.name ?? "System")
+  const headline = isInbound
+    ? `${senderName} replied`
+    : `${senderName} sent an email`
   const isLong = email.bodyText.length > 100
   const preview = isLong ? `${email.bodyText.slice(0, 100)}...` : email.bodyText
 
   return (
-    <div className="flex flex-col gap-element rounded-md border p-block">
+    <div
+      className={cn(
+        "flex flex-col gap-element rounded-md border p-block",
+        isInbound && "border-l-4 border-l-brand-text/40 bg-brand-subtle/30",
+      )}
+    >
       <div className="flex items-center gap-element">
         <MailIcon className="size-3.5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-caption text-foreground">
-            {senderName} sent an email
+            {headline}
           </p>
           <p className="text-caption text-muted-foreground">
             {day(email.sentAt).format("LLL")}
           </p>
         </div>
+        {isInbound && (
+          <Badge
+            variant="outline"
+            className="border-border-brand text-brand-text"
+          >
+            Reply
+          </Badge>
+        )}
       </div>
       <p className="font-medium text-caption text-foreground">
         {email.subject}

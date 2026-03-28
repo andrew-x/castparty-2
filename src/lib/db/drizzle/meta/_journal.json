@@ -29,6 +29,20 @@
       "when": 1774344907761,
       "tag": "0003_even_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774705639440,
+      "tag": "0004_condemned_paladin",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774731260143,
+      "tag": "0005_rare_penance",
+      "breakpoints": true
     }
   ]
 }

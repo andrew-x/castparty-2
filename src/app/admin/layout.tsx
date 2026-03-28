@@ -60,6 +60,12 @@ export default async function AdminLayout({
             >
               Emails
             </Link>
+            <Link
+              href="/admin/simulate-email"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Simulate Email
+            </Link>
           </nav>
         </div>
         {children}

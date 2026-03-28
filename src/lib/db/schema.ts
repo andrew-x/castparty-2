@@ -512,17 +512,24 @@ export const Email = pgTable(
     }),
     sentByUserId: text().references(() => User.id, { onDelete: "set null" }),
 
+    direction: text()
+      .$type<"inbound" | "outbound">()
+      .notNull()
+      .default("outbound"),
+    fromEmail: text(),
     toEmail: text().notNull(),
     subject: text().notNull(),
     bodyText: text().notNull(),
     bodyHtml: text().notNull(),
     templateType: text(),
+    resendEmailId: text(),
 
     sentAt: timestamp().defaultNow().notNull(),
   },
   (table) => [
     index("email_submissionId_idx").on(table.submissionId),
     index("email_organizationId_idx").on(table.organizationId),
+    uniqueIndex("email_resendEmailId_idx").on(table.resendEmailId),
   ],
 )
 
