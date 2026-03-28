@@ -300,6 +300,7 @@ export function SubmissionDetailSheet({
                   <SheetTitle className="text-heading">
                     <Link
                       href={`/candidates/${submission.candidate.id}`}
+                      target="_blank"
                       className="inline-flex items-center gap-1.5 hover:underline"
                     >
                       {submission.firstName} {submission.lastName}

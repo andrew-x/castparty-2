@@ -3,6 +3,7 @@
 import { FileTextIcon, LayersIcon } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useState } from "react"
+import { Button } from "@/components/common/button"
 import { Separator } from "@/components/common/separator"
 import { SocialIcon } from "@/components/common/social-icons"
 import day from "@/lib/dayjs"
@@ -53,13 +54,13 @@ export function SubmissionInfoPanel({
             {otherRoles.map((role, i) => (
               <span key={role.roleId}>
                 {i > 0 && (i === otherRoles.length - 1 ? " and " : ", ")}
-                <button
-                  type="button"
+                <Button
+                  variant="link"
                   onClick={() => onNavigateToSubmission?.(role.submissionId)}
-                  className="font-medium text-foreground underline decoration-border underline-offset-2 hover:decoration-foreground"
+                  className="h-auto p-0 text-foreground"
                 >
                   {role.roleName}
-                </button>
+                </Button>
               </span>
             ))}
           </p>
