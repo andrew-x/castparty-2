@@ -2,6 +2,7 @@
 
 import { FileTextIcon, LayersIcon } from "lucide-react"
 import dynamic from "next/dynamic"
+import Link from "next/link"
 import { useState } from "react"
 import { Separator } from "@/components/common/separator"
 import { SocialIcon } from "@/components/common/social-icons"
@@ -24,16 +25,16 @@ const HeadshotLightbox = dynamic(
 interface SubmissionInfoPanelProps {
   submission: SubmissionWithCandidate
   submissionFormFields: CustomForm[]
+  productionId: string
   otherRoles: OtherRoleSubmission[]
-  onNavigateToSubmission?: (submissionId: string) => void
   onLightboxOpenChange?: (open: boolean) => void
 }
 
 export function SubmissionInfoPanel({
   submission,
   submissionFormFields,
+  productionId,
   otherRoles,
-  onNavigateToSubmission,
   onLightboxOpenChange,
 }: SubmissionInfoPanelProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -53,13 +54,12 @@ export function SubmissionInfoPanel({
             {otherRoles.map((role, i) => (
               <span key={role.roleId}>
                 {i > 0 && (i === otherRoles.length - 1 ? " and " : ", ")}
-                <button
-                  type="button"
-                  onClick={() => onNavigateToSubmission?.(role.submissionId)}
+                <Link
+                  href={`/productions/${productionId}?submission=${role.submissionId}`}
                   className="font-medium text-foreground underline decoration-border underline-offset-2 hover:decoration-foreground"
                 >
                   {role.roleName}
-                </button>
+                </Link>
               </span>
             ))}
           </p>

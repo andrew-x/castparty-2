@@ -633,10 +633,6 @@ export function ProductionSubmissions({
         otherRoleSubmissions={otherRoleSubmissions}
         onClose={() => selectSubmission(null)}
         onStageChange={selectSubmission}
-        onNavigateToSubmission={(submissionId) => {
-          const target = submissions.find((s) => s.id === submissionId)
-          if (target) selectSubmission(target)
-        }}
         onPrev={handlePrev}
         onNext={handleNext}
       />
