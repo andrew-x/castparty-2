@@ -386,6 +386,7 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
             {(
               [
                 { value: "all", icon: ListIcon, label: "All activity" },
+                { value: "email", icon: MailIcon, label: "Emails" },
                 {
                   value: "feedback",
                   icon: MessageSquareIcon,
@@ -396,7 +397,6 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
                   icon: MessageCircleIcon,
                   label: "Comments",
                 },
-                { value: "email", icon: MailIcon, label: "Emails" },
               ] as const
             ).map(({ value, icon: Icon, label }) => (
               <Tooltip key={value}>

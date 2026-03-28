@@ -95,6 +95,7 @@ export interface SubmissionWithCandidate {
 export interface OtherRoleSubmission {
   roleId: string
   roleName: string
+  submissionId: string
 }
 
 export function getStageBadgeProps(stage: PipelineStageData | null): {
