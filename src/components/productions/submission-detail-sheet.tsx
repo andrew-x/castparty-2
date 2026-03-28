@@ -266,6 +266,7 @@ export function SubmissionDetailSheet({
                 variant="ghost"
                 size="icon-sm"
                 tooltip="Close"
+                tooltipSide="right"
                 onClick={onClose}
               >
                 <XIcon />
@@ -275,6 +276,7 @@ export function SubmissionDetailSheet({
                   variant="ghost"
                   size="icon-sm"
                   tooltip="Previous candidate"
+                  tooltipSide="right"
                   onClick={onPrev}
                 >
                   <ChevronLeftIcon />
@@ -285,6 +287,7 @@ export function SubmissionDetailSheet({
                   variant="ghost"
                   size="icon-sm"
                   tooltip="Next candidate"
+                  tooltipSide="right"
                   onClick={onNext}
                 >
                   <ChevronRightIcon />
