@@ -170,7 +170,8 @@ export function RoleSettingsForm({
                   <FieldContent>
                     <FieldTitle>Archived</FieldTitle>
                     <FieldDescription>
-                      Hidden from the role list.
+                      No longer in use. Data is kept but this role won't appear
+                      anywhere.
                     </FieldDescription>
                   </FieldContent>
                 </Label>

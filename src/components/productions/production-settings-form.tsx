@@ -180,7 +180,10 @@ export function ProductionSettingsForm({
                   <RadioGroupItem value="archive" />
                   <FieldContent>
                     <FieldTitle>Archived</FieldTitle>
-                    <FieldDescription>Hidden from all lists.</FieldDescription>
+                    <FieldDescription>
+                      Done casting. Data is kept but this production won't
+                      appear anywhere.
+                    </FieldDescription>
                   </FieldContent>
                 </Label>
               </RadioGroup>
