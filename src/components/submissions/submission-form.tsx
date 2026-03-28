@@ -331,15 +331,18 @@ export function SubmissionForm({
     >
       <FieldGroup>
         {availableRoles.length > 1 && (
-          <FieldSet data-invalid={roleError ? true : undefined}>
-            <FieldLegend variant="label">
+          <FieldSet
+            data-invalid={roleError ? true : undefined}
+            className="gap-2"
+          >
+            <FieldLegend variant="label" className="mb-0">
               Roles
               <RequiredMarker />
             </FieldLegend>
-            <FieldDescription className="!-mt-1">
+            <FieldDescription>
               Select the roles you'd like to audition for.
             </FieldDescription>
-            <div className="flex max-h-[280px] flex-col gap-element overflow-y-auto">
+            <div className="flex max-h-[280px] flex-col gap-1.5 overflow-y-auto">
               {availableRoles.map((role) => {
                 const checked = selectedRoleIds.includes(role.id)
                 return (
