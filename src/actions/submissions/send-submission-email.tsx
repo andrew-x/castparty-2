@@ -87,8 +87,8 @@ export async function sendSubmissionEmail(
   const { html } = await sendEmail({
     to: submission.email,
     subject,
-    react: <TemplateEmail body={body} preview={subject} />,
-    text: body,
+    react: <TemplateEmail body={body} preview={subject} replyTo={replyTo} />,
+    text: `${body}\n\n---\nTo respond, just reply to this email or send a message to ${replyTo}`,
     replyTo,
   })
 
