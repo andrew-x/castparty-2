@@ -62,7 +62,8 @@ export default async function SubmitRolePage({
       <SubmissionForm
         orgId={org.id}
         productionId={production.id}
-        roleId={role.id}
+        initialRoleId={role.id}
+        availableRoles={production.roles}
         orgSlug={orgSlug}
         productionSlug={productionSlug}
         submissionFormFields={role.production.submissionFormFields}

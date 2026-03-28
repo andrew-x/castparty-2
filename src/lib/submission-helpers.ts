@@ -30,6 +30,8 @@ export interface EmailData {
   subject: string
   bodyText: string
   templateType: string | null
+  direction: "inbound" | "outbound"
+  fromEmail: string | null
   sentBy: { name: string } | null
   sentAt: Date | string
 }
@@ -95,6 +97,7 @@ export interface SubmissionWithCandidate {
 export interface OtherRoleSubmission {
   roleId: string
   roleName: string
+  submissionId: string
 }
 
 export function getStageBadgeProps(stage: PipelineStageData | null): {

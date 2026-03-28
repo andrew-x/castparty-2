@@ -122,6 +122,20 @@ All roles in a production share the same pipeline — there is no per-role pipel
 
 ---
 
+## ADR-010: Svix for Resend webhook signature verification
+
+**Context:** The Resend inbound email webhook endpoint (`POST /api/webhooks/resend`) must reject spoofed requests — without verification, anyone who knows the URL could inject arbitrary inbound email records. Resend delivers webhooks via Svix and signs every request with `svix-id`, `svix-timestamp`, and `svix-signature` headers.
+
+**Decision:** Use the `svix` npm package to verify webhook signatures. The single call `new Webhook(secret).verify(rawBody, headers)` handles signature validation, timestamp freshness checking, and payload parsing. The raw request body (not the parsed JSON) is required for HMAC verification, so `req.text()` is called before any other body parsing.
+
+**Consequences:**
+- Signature verification is a one-liner; no custom HMAC implementation needed
+- Replay attacks are blocked by Svix's timestamp freshness window
+- The `svix` package is a direct dependency alongside Resend — both are from the same vendor, so their versioning is aligned
+- If Resend ever moves away from Svix, the verification library would need to change, but the endpoint structure would not
+
+---
+
 ## ADR-008: `unpdf` over `pdf-parse` for server-side PDF text extraction
 
 **Context:** Resume upload requires extracting the text content of a PDF file server-side so it can be stored in `Submission.resumeText` for future search or AI screening. `pdf-parse` is the most common Node.js PDF extraction library, but it references `pdf-parse/build/pdf.worker.entry.js` at module load time — a path that the Next.js bundler cannot resolve in a serverless/edge context, causing a build error.

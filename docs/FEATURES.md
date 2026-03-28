@@ -17,7 +17,8 @@
 | Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/settings/page.tsx` | General settings only (name, slug, description, open/closed); pipeline, forms, and reject reasons are configured at the production level |
 | Reject Reasons | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/reject-reasons/page.tsx` | Configurable list of rejection reason labels at the production level; shown when moving a submission to Rejected stage |
 | Email Templates | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/emails/page.tsx` | Per-production customizable email templates (submission received, rejected, selected) with variable insertion; auto-sends on submission, preview-and-confirm for rejected/selected |
-| Email Storage | `shipped` | `src/lib/db/schema.ts` (`Email` table) | Every outbound submission email is persisted to a dedicated `Email` table and surfaced in the submission activity log alongside comments, feedback, and stage changes |
+| Email Storage | `shipped` | `src/lib/db/schema.ts` (`Email` table) | All submission emails — outbound (sent by Castparty) and inbound (replies from performers) — are persisted to a dedicated `Email` table and surfaced in the activity log |
+| Inbound Email | `shipped` | `src/app/api/webhooks/resend/route.ts` | Performers can reply to any Castparty email; replies are routed back via a Resend inbound webhook, parsed by submission ID from the reply-to address, and stored as inbound `Email` rows |
 | Admin Panel | `shipped` | `src/app/admin/page.tsx` | Internal user management (list, create, change password, delete); bypasses org scope |
 | Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | Paginated grid of candidates with search and filters (production, role); each card shows a headshot thumbnail |
 | Candidate Detail | `shipped` | `src/app/(app)/candidates/[candidateId]/page.tsx` | Individual candidate profile showing personal details and all submissions across roles |
@@ -47,6 +48,7 @@
 | Password Reset | `shipped` | `src/app/auth/reset-password/page.tsx` | Token-based password reset via email link |
 | Admin Organizations | `shipped` | `src/app/admin/organizations/page.tsx` | Admin-level organization management (list, delete) |
 | Email Emulator | `dev-only` | `src/app/admin/emails/page.tsx` | Dev-only inbox that captures outbound emails in memory and renders them as they'd appear in a real email client; replaces console HTML dumps |
+| Admin: Simulate Inbound Email | `dev-only` | `src/app/admin/simulate-email/page.tsx` | Dev-only form that inserts a synthetic inbound `Email` row for a given submission ID, enabling testing of the inbound email activity log without a live Resend webhook |
 | 404 Page | `shipped` | `src/app/not-found.tsx` | Theatrical "didn't make the callback list" copy with decorative 404 display |
 | Route Error Page | `shipped` | `src/app/error.tsx` | "Something went wrong backstage" — try again + back to home; client component |
 | Global Error Page | `shipped` | `src/app/global-error.tsx` | Same content as error page; includes own `<html>/<body>` for root layout failures |
@@ -1062,18 +1064,19 @@ Error handling (rejected/selected):
 
 ## Email Storage
 
-**Overview:** Every outbound submission email — whether auto-sent on submission or manually triggered by a casting director — is persisted to a dedicated `Email` table in the database. Stored emails surface in the submission detail sheet's activity log alongside comments, feedback, and stage changes, giving casting directors a full chronological record of all communication with a performer. Exists because the previous approach (dev-mode in-memory emulator + zero production persistence) meant there was no audit trail of what was sent or when, which is critical when a performer disputes a decision or asks for a resend.
+**Overview:** All submission emails — both outbound (sent by Castparty to performers) and inbound (performer replies) — are persisted to a dedicated `Email` table. Stored emails surface in the submission detail sheet's activity log alongside comments, feedback, and stage changes, giving casting directors a full chronological record of all two-way communication with a performer. Exists because zero production persistence meant there was no audit trail of what was sent or when, and because inbound replies had nowhere to land until the inbound email feature was added.
 
 **Key files:**
 
 | File | Role |
 |------|------|
-| `src/lib/db/schema.ts` (`Email` table) | Schema: id, organizationId, submissionId (nullable), sentByUserId (nullable), toEmail, subject, bodyText, bodyHtml, templateType (nullable), status (`"sent"` / `"failed"`), sentAt |
-| `src/lib/submission-helpers.ts` | `EmailData` interface; `ActivityItem` union type (includes `"email"` variant); `buildActivityList()` merges and sorts emails with other activity by `sentAt` |
-| `src/actions/submissions/send-submission-email.tsx` | Inserts an `Email` row after every send attempt, with `status="failed"` when `sendEmail()` throws; re-throws after recording so callers still receive the error |
-| `src/actions/productions/get-production-submissions.ts` | Includes `emails` in the Submission query via Drizzle `with`; maps to `EmailData[]` before returning |
+| `src/lib/db/schema.ts` (`Email` table) | Schema: id, organizationId, submissionId (nullable), sentByUserId (nullable), direction (`"outbound"` / `"inbound"`), fromEmail (nullable), toEmail, subject, bodyText, bodyHtml, templateType (nullable), sentAt |
+| `src/lib/submission-helpers.ts` | `EmailData` interface (includes `direction` and `fromEmail`); `ActivityItem` union type; `buildActivityList()` merges and sorts all activity by timestamp |
+| `src/actions/submissions/send-submission-email.tsx` | Inserts an outbound `Email` row after every send; `direction` defaults to `"outbound"`, `fromEmail` is `null` for outbound |
+| `src/app/api/webhooks/resend/route.ts` | Inserts inbound `Email` rows via the Resend webhook; sets `direction="inbound"` and `fromEmail` to the sender's address |
+| `src/actions/productions/get-production-submissions.ts` | Includes `emails` in the Submission query via Drizzle `with`; maps to `EmailData[]` |
 | `src/actions/candidates/get-candidate.ts` | Same `emails` inclusion for the candidate detail view |
-| `src/components/productions/feedback-panel.tsx` | Renders `EmailItem` in the activity feed: sender name (falls back to "System"), timestamp, subject, and a 100-character body preview |
+| `src/components/productions/feedback-panel.tsx` | Renders `EmailItem` in the activity feed; inbound items show a blue left border and a "Reply" badge; outbound items show the sender's name or "System" |
 
 **Data model:**
 
@@ -1081,14 +1084,15 @@ Error handling (rejected/selected):
 Email
   id              text PK          (generateId("eml") prefix)
   organizationId  text NOT NULL     FK → Organization (cascade delete)
-  submissionId    text NULL         FK → Submission (cascade delete) — nullable for future manual emails
-  sentByUserId    text NULL         FK → User (set null on delete) — null for system-triggered sends
+  submissionId    text NULL         FK → Submission (cascade delete) — nullable for future org-level emails
+  sentByUserId    text NULL         FK → User (set null on delete) — null for system sends and all inbound
+  direction       text NOT NULL     "outbound" | "inbound"  default "outbound"
+  fromEmail       text NULL         sender address — populated for inbound only
   toEmail         text NOT NULL
   subject         text NOT NULL
   bodyText        text NOT NULL
   bodyHtml        text NOT NULL
-  templateType    text NULL         e.g. "submissionReceived", "rejected", "selected" — null for future free-form emails
-  status          text NOT NULL     "sent" | "failed"
+  templateType    text NULL         e.g. "submissionReceived", "rejected", "selected" — null for inbound and free-form
   sentAt          timestamp         default now()
 ```
 
@@ -1097,32 +1101,109 @@ Indexes: `email_submissionId_idx`, `email_organizationId_idx`.
 **How it works:**
 
 ```
-sendSubmissionEmail(submissionId, templateType, ...)
-  └── fetch submission from DB
-  └── interpolate subject + body (or use customSubject/customBody)
-  └── try { sendEmail(...) → { html }; status = "sent" }
-      catch { status = "failed"; capture error }
-  └── db.insert(Email).values({ ..., status })   ← always runs
-  └── if sendError → rethrow
-        ↑ caller sees the error but the Email row is already committed
+Outbound:
+  sendSubmissionEmail(submissionId, templateType, ...)
+    └── fetch submission + interpolate template (or use customSubject/customBody)
+    └── sendEmail({ to, subject, react, text, replyTo: "reply+{id}@{INBOUND_EMAIL_DOMAIN}" })
+    └── db.insert(Email).values({ direction: "outbound", fromEmail: null, ... })
+
+Inbound (via Resend webhook):
+  POST /api/webhooks/resend
+    └── verify Svix signature (RESEND_WEBHOOK_SECRET)
+    └── filter to "email.received" events only
+    └── parse submissionId from to address: reply+{submissionId}@{domain}
+    └── verify submission exists in DB
+    └── db.insert(Email).values({ direction: "inbound", fromEmail: sender, ... })
 
 Activity log (FeedbackPanel):
   buildActivityList(submission)
     └── merges feedback + comments + stageChanges + emails + submitted
     └── sorted descending by sentAt / createdAt
-    └── EmailItem renders: sender, sentAt, subject, body preview (≤100 chars)
+    └── EmailItem:
+          inbound → blue left border, "Reply" badge, fromEmail as sender name
+          outbound → sentBy.name or "System", no badge
 ```
 
 **Architecture decisions:**
 
-- **Record failures, not just successes.** The Email row is inserted inside a `try/catch` that wraps `sendEmail()`. If delivery fails, `status` is set to `"failed"` and the row is still committed before the error is rethrown. This means the activity log accurately reflects delivery failures rather than silently omitting them — a casting director can see that an email was attempted and failed, rather than wondering if it was ever sent.
+- **`direction` column instead of a separate table.** Inbound and outbound emails share the same `Email` table because they represent the same conceptual thing — a piece of correspondence attached to a submission. A `direction` column is cheaper than a join and keeps the activity log query simple.
 
-- **`sentByUserId` is nullable by design.** System-triggered emails (submission received) have no authenticated user context, so `sentByUserId` is `null`. Manually triggered emails (rejected/selected, via `sendSubmissionEmailAction`) pass `user.id` from the session. The UI falls back to "System" when `sentBy` is null. This distinction also supports future manual free-form emails sent by named team members.
+- **`fromEmail` is nullable and only set for inbound.** For outbound emails, Castparty is always the sender — storing the from address would be redundant and misleading (it would vary by environment). For inbound, `fromEmail` is the performer's address and is the only source of sender identity since there is no `sentByUserId` for incoming mail.
 
-- **`submissionId` and `templateType` are nullable to support future use cases.** The schema is intentionally broader than the current feature. `submissionId` being nullable allows org-level emails (e.g., a broadcast to all applicants for a production) to be stored without a specific submission. `templateType` being nullable leaves room for freeform or custom emails not based on a predefined template.
+- **`sentByUserId` is nullable for inbound rows.** Inbound emails arrive via webhook, not from an authenticated session. The column stays null for all inbound rows. The UI handles this: for inbound, the sender is shown as `fromEmail ?? "Candidate"`.
 
-- **`bodyHtml` is stored even though only `bodyText` is shown in the UI.** The rendered HTML is available for a future "view full email" detail view without needing to re-render. Storing it at send time ensures the preview always matches what was actually sent, even if the template changes later.
+- **`submissionId` and `templateType` are nullable to support future use cases.** `submissionId` being nullable allows org-level emails (e.g., a broadcast to all applicants) to be stored without a specific submission. `templateType` being nullable handles both inbound emails and free-form outbound emails.
 
-**Integration points:** `sendSubmissionEmail()` in `src/actions/submissions/send-submission-email.tsx` is the sole write path. `get-production-submissions.ts` and `get-candidate.ts` are the two read paths. The `Email` table relations are defined in `src/lib/db/schema.ts`: `Organization` has `many(Email)`, `Submission` has `many(Email)`, and `Email` belongs to both. The activity log in `src/lib/submission-helpers.ts` is shared by the production submission board and the candidate detail view. See the Email Templates section above for the send logic; see the Email Emulator section for the dev-mode inbox.
+- **`bodyHtml` is stored even though only `bodyText` is shown in the UI.** The rendered HTML is available for a future "view full email" detail view without re-rendering. Storing it at send/receive time ensures the preview always matches what was actually sent or received, even if the template changes later.
+
+**Integration points:** `sendSubmissionEmail()` in `src/actions/submissions/send-submission-email.tsx` is the outbound write path. The Resend webhook at `src/app/api/webhooks/resend/route.ts` is the inbound write path. `get-production-submissions.ts` and `get-candidate.ts` are the read paths. The `Email` table relations are defined in `src/lib/db/schema.ts`. The activity log in `src/lib/submission-helpers.ts` is shared by the production submission board and the candidate detail view. See the Inbound Email section below for the full inbound flow; see the Email Templates section above for the outbound send logic; see the Email Emulator section for the dev-mode inbox.
 
 *Added: 2026-03-24 — Initial email storage documentation*
+*Updated: 2026-03-28 — Reflect inbound email support: added direction/fromEmail columns, removed status column, updated data model and how-it-works flow*
+
+---
+
+## Inbound Email
+
+**Overview:** Performers can reply directly to any email Castparty sends them. Each outbound email includes a `replyTo` address in the format `reply+{submissionId}@{INBOUND_EMAIL_DOMAIN}`. When a performer replies, Resend receives the message, fires an `email.received` webhook, and Castparty stores the reply as an inbound `Email` row linked to the correct submission. The reply surfaces immediately in the submission activity log alongside outbound emails, comments, and stage changes — giving casting directors a complete two-way conversation thread without leaving the app.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `src/app/api/webhooks/resend/route.ts` | Webhook handler: verifies Svix signature, parses `submissionId` from the `to` address, looks up the submission, and inserts an inbound `Email` row |
+| `src/actions/submissions/send-submission-email.tsx` | Sets `replyTo: "reply+{submissionId}@{INBOUND_EMAIL_DOMAIN}"` on every outbound send |
+| `src/lib/db/schema.ts` (`Email` table) | `direction` and `fromEmail` columns support inbound storage; see Email Storage section |
+| `src/components/productions/feedback-panel.tsx` | `EmailItem` renders inbound rows with a blue left border and a "Reply" badge; `fromEmail ?? "Candidate"` is shown as the sender |
+| `src/actions/admin/simulate-inbound-email.ts` | Dev/admin action to insert a synthetic inbound row — for testing without a live webhook |
+| `src/app/admin/simulate-email/page.tsx` | Admin UI for the simulate action (dev-only) |
+
+**How it works:**
+
+```
+Outbound send:
+  sendSubmissionEmail(submissionId, ...)
+    └── replyTo = "reply+{submissionId}@{INBOUND_EMAIL_DOMAIN}"
+    └── sendEmail({ ..., replyTo })    ← Resend delivers to performer with reply-to set
+
+Performer replies:
+  Resend receives the reply on the inbound domain
+    └── fires POST /api/webhooks/resend with "email.received" payload
+
+POST /api/webhooks/resend:
+  1. Read raw body + svix-id / svix-timestamp / svix-signature headers
+  2. new Webhook(RESEND_WEBHOOK_SECRET).verify(body, headers)   ← Svix
+  3. Filter: payload.type !== "email.received" → 200 OK (ignore)
+  4. Scan payload.data.to[] for /^reply\+([^@]+)@/ → extract submissionId
+  5. db.query.Submission.findFirst({ where: eq(id, submissionId) })
+     └── 404-like: log + 200 OK (do not expose 404 to Resend)
+  6. db.insert(Email).values({
+       direction: "inbound",
+       fromEmail: payload.data.from,
+       toEmail: payload.data.to.join(", "),
+       subject, bodyText, bodyHtml,
+       sentByUserId: null, templateType: null
+     })
+  7. Return 200 OK
+
+Activity log:
+  EmailItem({ email }) where email.direction === "inbound"
+    → blue left border (border-l-4 border-l-blue-400/40 bg-blue-50/30)
+    → "Reply" badge (border-blue-300 text-blue-600)
+    → headline: "{fromEmail ?? 'Candidate'} replied"
+    → collapsible body preview (100-char truncation)
+```
+
+**Architecture decisions:**
+
+- **Submission ID embedded in the reply-to address.** The `reply+{submissionId}@{domain}` scheme lets the webhook handler identify which submission a reply belongs to without any external lookup table or OAuth redirect. The submission ID is extracted from the `to` address with a simple regex (`/^reply\+([^@]+)@/`). This approach is the same pattern used by Intercom, Zendesk, and other tools that route inbound email to application records.
+
+- **Svix for webhook signature verification.** Resend uses Svix under the hood to deliver webhooks. The `svix` npm package provides a single `new Webhook(secret).verify(body, headers)` call that validates the `svix-id`, `svix-timestamp`, and `svix-signature` headers. This prevents spoofed webhook payloads from injecting arbitrary inbound email records. See ADR-010 in `docs/DECISIONS.md`.
+
+- **Return 200 OK on soft failures.** When a submission ID is not found in the `to` addresses, or when the submission doesn't exist in the database, the handler logs an error and returns `200 OK`. Returning a 4xx would cause Resend to retry the webhook indefinitely. Since there is nothing to do with an unroutable email, a quiet 200 is the correct response.
+
+- **`fromEmail` is the only sender identity for inbound.** There is no `sentByUserId` for inbound rows — the email arrives from an unauthenticated performer, not a Castparty user. The `fromEmail` column captures the sender's address; the UI displays it as `fromEmail ?? "Candidate"` as a safe fallback if the header is missing.
+
+**Integration points:** Outbound emails must be sent through `sendSubmissionEmail()` in `src/actions/submissions/send-submission-email.tsx` to get the correct `replyTo` header — any outbound send that bypasses this function will not enable replies. The inbound route at `src/app/api/webhooks/resend/route.ts` shares the `Email` table with the outbound write path; the `direction` column distinguishes the two. The `EmailData` interface in `src/lib/submission-helpers.ts` exposes both `direction` and `fromEmail` to the UI. The dev-only simulate page at `src/app/admin/simulate-email/page.tsx` allows testing without configuring a live Resend inbound domain. Required env vars: `RESEND_WEBHOOK_SECRET`, `INBOUND_EMAIL_DOMAIN`.
+
+*Added: 2026-03-28 — Initial inbound email documentation*

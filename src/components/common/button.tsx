@@ -54,6 +54,7 @@ type ButtonSharedProps = VariantProps<typeof buttonVariants> & {
   leftSection?: React.ReactNode
   rightSection?: React.ReactNode
   tooltip?: string
+  tooltipDirection?: "top" | "right" | "bottom" | "left"
   className?: string
 }
 
@@ -80,6 +81,7 @@ function Button({
   leftSection,
   rightSection,
   tooltip,
+  tooltipDirection,
   children,
   ...rest
 }: ButtonProps) {
@@ -130,7 +132,7 @@ function Button({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>{element}</TooltipTrigger>
-          <TooltipContent>{tooltip}</TooltipContent>
+          <TooltipContent side={tooltipDirection}>{tooltip}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     )

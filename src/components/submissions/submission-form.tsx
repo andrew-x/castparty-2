@@ -9,12 +9,15 @@ import { presignResumeUpload } from "@/actions/submissions/presign-resume-upload
 import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
 import { AutocompleteInput } from "@/components/common/autocomplete-input"
 import { Button } from "@/components/common/button"
+import { Checkbox } from "@/components/common/checkbox"
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldLegend,
+  FieldSet,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { CustomFieldDisplay } from "@/components/submissions/custom-field-display"
@@ -43,10 +46,17 @@ function RequiredMarker() {
   return <span className="text-destructive"> *</span>
 }
 
+interface AvailableRole {
+  id: string
+  name: string
+  description: string
+}
+
 interface Props {
   orgId: string
   productionId: string
-  roleId: string
+  initialRoleId: string
+  availableRoles: AvailableRole[]
   orgSlug: string
   productionSlug: string
   submissionFormFields: CustomForm[]
@@ -56,13 +66,18 @@ interface Props {
 export function SubmissionForm({
   orgId,
   productionId,
-  roleId,
+  initialRoleId,
+  availableRoles,
   orgSlug,
   productionSlug,
   submissionFormFields,
   systemFieldConfig = DEFAULT_SYSTEM_FIELD_CONFIG,
 }: Props) {
   const cityOptions = useCityOptions()
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([
+    initialRoleId,
+  ])
+  const [roleError, setRoleError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [headshots, setHeadshots] = useState<HeadshotFile[]>([])
   const [resume, setResume] = useState<File | null>(null)
@@ -106,12 +121,18 @@ export function SubmissionForm({
   )
 
   if (submitted) {
+    const roleCount = selectedRoleIds.length
     return (
       <div className="flex flex-col gap-group">
         <Alert>
-          <AlertTitle>Submission received</AlertTitle>
+          <AlertTitle>
+            {roleCount > 1
+              ? `${roleCount} submissions received`
+              : "Submission received"}
+          </AlertTitle>
           <AlertDescription>
-            The production team will review your submission and be in touch if
+            The production team will review your{" "}
+            {roleCount > 1 ? "submissions" : "submission"} and be in touch if
             they want to move forward.
           </AlertDescription>
         </Alert>
@@ -132,9 +153,16 @@ export function SubmissionForm({
         form.clearErrors("root")
         setUploadError(null)
         setResumeError(null)
+        setRoleError(null)
+
+        // Validate role selection
+        let hasFieldErrors = false
+        if (selectedRoleIds.length === 0) {
+          setRoleError("Select at least one role.")
+          hasFieldErrors = true
+        }
 
         // Validate required custom fields client-side
-        let hasFieldErrors = false
         for (const formField of submissionFormFields) {
           if (!formField.required) continue
           const value = v.answers[formField.id]
@@ -283,7 +311,7 @@ export function SubmissionForm({
             }
           } catch (err) {
             setUploading(false)
-            setUploadError(
+            setResumeError(
               err instanceof Error ? err.message : "Upload failed. Try again.",
             )
             return
@@ -295,13 +323,61 @@ export function SubmissionForm({
           ...v,
           orgId,
           productionId,
-          roleId,
+          roleIds: selectedRoleIds,
           headshots: headshotMeta,
           resume: resumeMeta,
         })
       })}
     >
       <FieldGroup>
+        {availableRoles.length > 1 && (
+          <FieldSet
+            data-invalid={roleError ? true : undefined}
+            className="gap-2"
+          >
+            <FieldLegend variant="label" className="mb-0">
+              Roles
+              <RequiredMarker />
+            </FieldLegend>
+            <FieldDescription className="pt-0.5">
+              Select the roles you would like to submit for.
+            </FieldDescription>
+            <div className="flex max-h-[280px] flex-col gap-1.5 overflow-y-auto">
+              {availableRoles.map((role) => {
+                const checked = selectedRoleIds.includes(role.id)
+                return (
+                  <FieldLabel
+                    key={role.id}
+                    className="flex items-start gap-2 has-data-[state=checked]:bg-transparent"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => {
+                        setSelectedRoleIds((prev) =>
+                          checked
+                            ? prev.filter((id) => id !== role.id)
+                            : [...prev, role.id],
+                        )
+                        setRoleError(null)
+                      }}
+                      className="mt-0.5"
+                    />
+                    <span className="flex flex-col">
+                      <span className="text-sm leading-snug">{role.name}</span>
+                      {role.description && (
+                        <span className="text-caption text-muted-foreground line-clamp-1">
+                          {role.description}
+                        </span>
+                      )}
+                    </span>
+                  </FieldLabel>
+                )
+              })}
+            </div>
+            {roleError && <FieldError>{roleError}</FieldError>}
+          </FieldSet>
+        )}
+
         <Controller
           name="firstName"
           control={form.control}
@@ -488,7 +564,11 @@ export function SubmissionForm({
           loading={uploading || action.isPending}
           className="w-fit"
         >
-          {uploading ? "Uploading files..." : "Submit"}
+          {uploading
+            ? "Uploading files..."
+            : selectedRoleIds.length > 1
+              ? `Submit for ${selectedRoleIds.length} roles`
+              : "Submit"}
         </Button>
       </FieldGroup>
     </form>

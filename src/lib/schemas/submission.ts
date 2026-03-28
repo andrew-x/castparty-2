@@ -43,7 +43,7 @@ export const submissionFormSchema = z.object({
 export const submissionActionSchema = submissionFormSchema.extend({
   orgId: z.string().min(1),
   productionId: z.string().min(1),
-  roleId: z.string().min(1),
+  roleIds: z.array(z.string().min(1)).min(1, "Select at least one role."),
   headshots: z.array(headShotFileSchema).max(10).default([]),
   resume: resumeFileSchema.optional(),
 })

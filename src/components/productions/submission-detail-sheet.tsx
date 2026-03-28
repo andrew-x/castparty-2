@@ -3,11 +3,13 @@
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  ExternalLinkIcon,
   MailIcon,
   MapPinIcon,
   PhoneIcon,
   XIcon,
 } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
@@ -51,6 +53,7 @@ interface Props {
   otherRoleSubmissions: Record<string, OtherRoleSubmission[]>
   onClose: () => void
   onStageChange?: (submission: SubmissionWithCandidate) => void
+  onNavigateToSubmission?: (submissionId: string) => void
   onPrev: (() => void) | null
   onNext: (() => void) | null
 }
@@ -69,6 +72,7 @@ export function SubmissionDetailSheet({
   otherRoleSubmissions,
   onClose,
   onStageChange,
+  onNavigateToSubmission,
   onPrev,
   onNext,
 }: Props) {
@@ -262,6 +266,7 @@ export function SubmissionDetailSheet({
                 variant="ghost"
                 size="icon-sm"
                 tooltip="Close"
+                tooltipDirection="right"
                 onClick={onClose}
               >
                 <XIcon />
@@ -271,6 +276,7 @@ export function SubmissionDetailSheet({
                   variant="ghost"
                   size="icon-sm"
                   tooltip="Previous candidate"
+                  tooltipDirection="right"
                   onClick={onPrev}
                 >
                   <ChevronLeftIcon />
@@ -281,6 +287,7 @@ export function SubmissionDetailSheet({
                   variant="ghost"
                   size="icon-sm"
                   tooltip="Next candidate"
+                  tooltipDirection="right"
                   onClick={onNext}
                 >
                   <ChevronRightIcon />
@@ -291,7 +298,14 @@ export function SubmissionDetailSheet({
               <div className="flex items-center justify-between gap-group">
                 <div className="min-w-0 flex-1">
                   <SheetTitle className="text-heading">
-                    {submission.firstName} {submission.lastName}
+                    <Link
+                      href={`/candidates/${submission.candidate.id}`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1.5 hover:underline"
+                    >
+                      {submission.firstName} {submission.lastName}
+                      <ExternalLinkIcon className="size-3.5 text-muted-foreground" />
+                    </Link>
                   </SheetTitle>
                   <SheetDescription className="sr-only">
                     Submission details and feedback
@@ -367,10 +381,10 @@ export function SubmissionDetailSheet({
                   <SubmissionInfoPanel
                     submission={submission}
                     submissionFormFields={submissionFormFields}
-                    productionId={productionId}
-                    otherRoles={
+                    otherRoles={(
                       otherRoleSubmissions[submission.candidate.id] ?? []
-                    }
+                    ).filter((r) => r.roleId !== submission.roleId)}
+                    onNavigateToSubmission={onNavigateToSubmission}
                     onLightboxOpenChange={(open) => {
                       lightboxOpen.current = open
                     }}

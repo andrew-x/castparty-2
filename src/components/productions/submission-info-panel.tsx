@@ -2,8 +2,8 @@
 
 import { FileTextIcon, LayersIcon } from "lucide-react"
 import dynamic from "next/dynamic"
-import Link from "next/link"
 import { useState } from "react"
+import { Button } from "@/components/common/button"
 import { Separator } from "@/components/common/separator"
 import { SocialIcon } from "@/components/common/social-icons"
 import day from "@/lib/dayjs"
@@ -25,16 +25,16 @@ const HeadshotLightbox = dynamic(
 interface SubmissionInfoPanelProps {
   submission: SubmissionWithCandidate
   submissionFormFields: CustomForm[]
-  productionId: string
   otherRoles: OtherRoleSubmission[]
+  onNavigateToSubmission?: (submissionId: string) => void
   onLightboxOpenChange?: (open: boolean) => void
 }
 
 export function SubmissionInfoPanel({
   submission,
   submissionFormFields,
-  productionId,
   otherRoles,
+  onNavigateToSubmission,
   onLightboxOpenChange,
 }: SubmissionInfoPanelProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -54,13 +54,13 @@ export function SubmissionInfoPanel({
             {otherRoles.map((role, i) => (
               <span key={role.roleId}>
                 {i > 0 && (i === otherRoles.length - 1 ? " and " : ", ")}
-                <Link
-                  href={`/productions/${productionId}/roles/${role.roleId}`}
-                  target="_blank"
-                  className="font-medium text-foreground underline decoration-border underline-offset-2 hover:decoration-foreground"
+                <Button
+                  variant="link"
+                  onClick={() => onNavigateToSubmission?.(role.submissionId)}
+                  className="h-auto p-0 text-foreground"
                 >
                   {role.roleName}
-                </Link>
+                </Button>
               </span>
             ))}
           </p>

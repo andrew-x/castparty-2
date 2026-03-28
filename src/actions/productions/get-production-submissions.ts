@@ -135,6 +135,8 @@ export async function getProductionSubmissions(productionId: string) {
         subject: e.subject,
         bodyText: e.bodyText,
         templateType: e.templateType,
+        direction: e.direction,
+        fromEmail: e.fromEmail,
         sentBy: e.sentBy,
         sentAt: e.sentAt,
       }))
@@ -167,41 +169,38 @@ export async function getProductionSubmissions(productionId: string) {
   }
 
   // Build cross-role submission lookup keyed by candidateId
-  const candidateIds = [...new Set(submissions.map((s) => s.candidate.id))]
   const otherRoleSubmissions: Record<string, OtherRoleSubmission[]> = {}
 
-  if (candidateIds.length > 0) {
-    // Build a map of candidateId -> set of roleIds they submitted to
-    const candidateRoles = new Map<string, Set<string>>()
-    for (const sub of submissions) {
-      const existing = candidateRoles.get(sub.candidate.id)
-      if (existing) {
-        existing.add(sub.roleId)
-      } else {
-        candidateRoles.set(sub.candidate.id, new Set([sub.roleId]))
-      }
+  // Build a map of candidateId -> list of {roleId, submissionId} they submitted to
+  const candidateRoles = new Map<
+    string,
+    { roleId: string; submissionId: string }[]
+  >()
+  for (const sub of submissions) {
+    const existing = candidateRoles.get(sub.candidate.id)
+    const entry = { roleId: sub.roleId, submissionId: sub.id }
+    if (existing) {
+      existing.push(entry)
+    } else {
+      candidateRoles.set(sub.candidate.id, [entry])
     }
+  }
 
-    // Build a roleId -> roleName lookup
-    const roleNameMap = new Map<string, string>()
-    for (const role of production.roles) {
-      roleNameMap.set(role.id, role.name)
-    }
+  // Build a roleId -> roleName lookup
+  const roleNameMap = new Map<string, string>()
+  for (const role of production.roles) {
+    roleNameMap.set(role.id, role.name)
+  }
 
-    // For each candidate, all roles except the ones we could filter by are "other"
-    // Since this is production-level (all roles visible), every role a candidate
-    // submitted to is listed so consumers can determine cross-role overlap
-    for (const [candidateId, roleIds] of candidateRoles) {
-      if (roleIds.size > 1) {
-        const allRoles: OtherRoleSubmission[] = []
-        for (const rid of roleIds) {
-          allRoles.push({
-            roleId: rid,
-            roleName: roleNameMap.get(rid) ?? "",
-          })
-        }
-        otherRoleSubmissions[candidateId] = allRoles
-      }
+  // For each candidate with multiple role submissions, list all roles
+  // so consumers can determine cross-role overlap and filter as needed
+  for (const [candidateId, entries] of candidateRoles) {
+    if (entries.length > 1) {
+      otherRoleSubmissions[candidateId] = entries.map((e) => ({
+        roleId: e.roleId,
+        roleName: roleNameMap.get(e.roleId) ?? "",
+        submissionId: e.submissionId,
+      }))
     }
   }
 
