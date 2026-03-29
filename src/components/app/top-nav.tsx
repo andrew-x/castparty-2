@@ -109,9 +109,9 @@ export function TopNav({
           size="icon"
           onClick={() => setMobileOpen(true)}
           className="ml-2"
+          tooltip="Open menu"
         >
           <MenuIcon />
-          <span className="sr-only">Open menu</span>
         </Button>
 
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -165,7 +165,7 @@ function NavLink({
     <Link
       href={href}
       className={cn(
-        "rounded-md px-2.5 py-1 font-medium text-[13.5px] transition-colors",
+        "rounded-md px-2.5 py-1 font-medium text-label transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
         isActive ? "text-foreground" : "text-muted-foreground",
       )}

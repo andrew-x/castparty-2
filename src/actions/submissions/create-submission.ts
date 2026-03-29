@@ -111,6 +111,9 @@ export const createSubmission = publicActionClient
         const value = answers[field.id]
         if (field.type === "TOGGLE") {
           if (value !== "true") throw new Error(`${field.label} is required.`)
+        } else if (field.type === "CHECKBOX_GROUP") {
+          const selected = value?.split(",").filter((v) => v.trim().length > 0)
+          if (!selected?.length) throw new Error(`${field.label} is required.`)
         } else if (!value?.trim()) {
           throw new Error(`${field.label} is required.`)
         }

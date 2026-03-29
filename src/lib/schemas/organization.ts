@@ -2,7 +2,7 @@ import { z } from "zod/v4"
 import { slugSchema, slugSchemaStrict } from "./slug"
 
 export const createOrgFormSchema = z.object({
-  name: z.string().trim().min(1, "Organization name is required."),
+  name: z.string().trim().min(1, "Organization name is required.").max(100),
   slug: slugSchema,
 })
 
@@ -26,9 +26,9 @@ export const updateOrgActionSchema = updateOrgFormSchema.extend({
 
 export const inviteFormSchema = z.object({
   email: z.string().trim().email("Enter a valid email."),
+  role: z.enum(["admin", "member"]),
 })
 
 export const inviteActionSchema = inviteFormSchema.extend({
   organizationId: z.string().min(1),
-  role: z.enum(["admin", "member"]),
 })

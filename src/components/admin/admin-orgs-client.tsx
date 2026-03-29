@@ -4,6 +4,7 @@ import { ExternalLinkIcon, Trash2Icon } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { DeleteOrgDialog } from "@/components/admin/delete-org-dialog"
 import { Button } from "@/components/common/button"
 import {
   Table,
@@ -15,7 +16,6 @@ import {
 } from "@/components/common/table"
 import day from "@/lib/dayjs"
 import { cn } from "@/lib/util"
-import { DeleteOrgDialog } from "./delete-org-dialog"
 
 export interface AdminOrg {
   id: string

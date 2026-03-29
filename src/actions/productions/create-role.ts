@@ -2,22 +2,16 @@
 
 import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { z } from "zod/v4"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { Role } from "@/lib/db/schema"
+import { createRoleActionSchema } from "@/lib/schemas/role"
 import { generateUniqueSlug } from "@/lib/slug"
 import { generateId } from "@/lib/util"
 
 export const createRole = secureActionClient
   .metadata({ action: "create-role" })
-  .inputSchema(
-    z.object({
-      productionId: z.string().min(1),
-      name: z.string().trim().min(1, "Role name is required.").max(100),
-      description: z.string().trim().optional(),
-    }),
-  )
+  .inputSchema(createRoleActionSchema)
   .action(
     async ({
       parsedInput: { productionId, name, description },

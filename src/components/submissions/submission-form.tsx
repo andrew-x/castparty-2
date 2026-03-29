@@ -357,7 +357,9 @@ export function SubmissionForm({
                       className="mt-0.5"
                     />
                     <span className="flex flex-col">
-                      <span className="text-sm leading-snug">{role.name}</span>
+                      <span className="text-label leading-snug">
+                        {role.name}
+                      </span>
                       {role.description && (
                         <span className="line-clamp-1 text-caption text-muted-foreground">
                           {role.description}

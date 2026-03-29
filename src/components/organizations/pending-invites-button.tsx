@@ -5,7 +5,7 @@ import { useState } from "react"
 import type { UserInvitation } from "@/actions/organizations/get-user-invitations"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
-import { PendingInvitesDialog } from "./pending-invites-dialog"
+import { PendingInvitesDialog } from "@/components/organizations/pending-invites-dialog"
 
 interface Props {
   invitations: UserInvitation[]
@@ -26,7 +26,7 @@ export function PendingInvitesButton({ invitations }: Props) {
         className="relative"
       >
         <MailIcon />
-        <Badge className="absolute -top-1 -right-1 size-4 p-0 text-[10px]">
+        <Badge className="absolute -top-1 -right-1 size-4 p-0 text-caption">
           {invitations.length}
         </Badge>
       </Button>

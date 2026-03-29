@@ -1,10 +1,8 @@
-import { eq } from "drizzle-orm"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { autoPromoteToAdmin } from "@/actions/admin/auto-promote"
 import { ImpersonationBanner } from "@/components/admin/impersonation-banner"
 import { getSession } from "@/lib/auth"
-import db from "@/lib/db/db"
-import { user } from "@/lib/db/schema"
 import { IS_DEV } from "@/lib/util"
 
 export default async function AdminLayout({
@@ -24,10 +22,7 @@ export default async function AdminLayout({
     !isImpersonating &&
     sessionData.user.role !== "admin"
   ) {
-    await db
-      .update(user)
-      .set({ role: "admin" })
-      .where(eq(user.id, sessionData.user.id))
+    await autoPromoteToAdmin(sessionData.user.id)
   }
 
   return (

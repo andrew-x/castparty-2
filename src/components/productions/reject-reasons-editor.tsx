@@ -8,13 +8,10 @@ import type { updateProductionRejectReasons } from "@/actions/productions/update
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
 
-type RejectReasonsAction = typeof updateProductionRejectReasons
-
 interface Props {
   entityId: string
   reasons: string[]
-  // biome-ignore lint/suspicious/noExplicitAny: union of two safe-action types with different input shapes
-  action: any
+  action: typeof updateProductionRejectReasons
   idField: "productionId" | "roleId"
 }
 
@@ -27,14 +24,17 @@ export function RejectReasonsEditor({
   const router = useRouter()
   const [newReason, setNewReason] = useState("")
 
-  const { execute, isPending } = useAction(action as RejectReasonsAction, {
+  const { execute, isPending } = useAction(action, {
     onSuccess() {
       router.refresh()
     },
   })
 
   function save(updated: string[]) {
-    execute({ [idField]: entityId, rejectReasons: updated } as never)
+    execute({ [idField]: entityId, rejectReasons: updated } as {
+      productionId: string
+      rejectReasons: string[]
+    })
   }
 
   function handleAdd() {

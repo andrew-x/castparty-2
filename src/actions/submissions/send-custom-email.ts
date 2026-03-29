@@ -1,10 +1,10 @@
 "use server"
 
 import { eq } from "drizzle-orm"
+import { sendSubmissionEmail } from "@/actions/submissions/send-submission-email"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { customEmailActionSchema } from "@/lib/schemas/custom-email"
-import { sendSubmissionEmail } from "./send-submission-email"
 
 export const sendCustomEmailAction = secureActionClient
   .metadata({ action: "send-custom-email" })

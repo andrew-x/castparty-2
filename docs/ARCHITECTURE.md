@@ -26,21 +26,16 @@ src/
 │   │   ├── settings/    # Org settings (admin/owner only)
 │   │   └── productions/
 │   │       └── [id]/
-│   │           ├── (production)/  # Route group: shared production layout + sub-nav
-│   │           │   ├── page.tsx   # Production detail (roles list)
-│   │           │   └── settings/
-│   │           │       ├── page.tsx              # General settings (name, slug, open/closed)
-│   │           │       ├── pipeline/page.tsx      # Pipeline editor (all roles in production)
-│   │           │       ├── submission-form/       # Submission form builder
-│   │           │       ├── feedback-form/         # Feedback form builder
-│   │           │       └── reject-reasons/        # Reject reasons editor
-│   │           └── roles/
-│   │               └── [roleId]/
-│   │                   ├── (role)/  # Route group: shared role layout + sub-nav
-│   │                   │   ├── page.tsx           # Role Kanban board
-│   │                   │   └── settings/
-│   │                   │       └── page.tsx       # General settings only (name, slug, description, open/closed)
-│   │                   └── stages/[stageId]/page.tsx  # Stage browse (grid + sort)
+│   │           └── (production)/  # Route group: shared production layout + sub-nav
+│   │               ├── page.tsx   # Production detail (Kanban board — all roles)
+│   │               ├── roles/page.tsx             # Role list + inline role settings (name, description, slug, status)
+│   │               └── settings/
+│   │                   ├── page.tsx               # General settings (name, slug, location, status)
+│   │                   ├── pipeline/page.tsx       # Pipeline editor (all roles in production)
+│   │                   ├── submission-form/        # Submission form builder
+│   │                   ├── feedback-form/          # Feedback form builder
+│   │                   ├── reject-reasons/         # Reject reasons editor
+│   │                   └── emails/                 # Email template editor
 │   ├── accept-invitation/[id]/  # Accept org invitation by link (unauthenticated-ok)
 │   ├── api/             # API route handlers
 │   ├── auth/            # Login / signup / forgot-password / verify-email / reset-password pages
@@ -167,8 +162,8 @@ Schema lives in `src/lib/db/schema.ts`. Drizzle relational API (`db.query`) is t
 |-------|-----------|--------------------------|
 | `UserProfile` | User | `id` (FK → user, PK) — extended user metadata; currently empty (reserved for future fields) |
 | `OrganizationProfile` | Organization | `id` (FK → organization, PK), `websiteUrl`, `description`, `isOrganizationProfileOpen` — public-facing org info |
-| `Production` | Organization | `organizationId`, `name`, `slug` (unique per org), `isOpen`, `location`, `submissionFormFields` (JSONB), `feedbackFormFields` (JSONB), `systemFieldConfig` (JSONB — visibility of system fields: phone, location, headshots, resume, links), `rejectReasons` (JSONB string[]) |
-| `Role` | Production | `productionId`, `name`, `slug` (unique per production), `isOpen`, `description` — no form fields, system field config, or reject reasons; all config lives on the parent `Production` |
+| `Production` | Organization | `organizationId`, `name`, `slug` (unique per org), `status` enum (`"open"/"closed"/"archive"`), `location`, `submissionFormFields` (JSONB), `feedbackFormFields` (JSONB), `systemFieldConfig` (JSONB — visibility of system fields: phone, location, headshots, resume, links), `rejectReasons` (JSONB string[]), `emailTemplates` (JSONB or null) |
+| `Role` | Production | `productionId`, `name`, `slug` (unique per production), `status` enum (`"open"/"closed"/"archive"`), `description` — no form fields, system field config, or reject reasons; all config lives on the parent `Production` |
 | `PipelineStage` | Production | `organizationId`, `productionId`, `name`, `order`, `type` enum (`APPLIED`/`SELECTED`/`REJECTED`/`CUSTOM`) — all stages are production-scoped; no `roleId` column |
 | `Candidate` | Organization | `organizationId`, `firstName`, `lastName`, `email` (unique per org), `phone`, `location` |
 | `Submission` | Role + Candidate | `productionId`, `roleId`, `candidateId`, `stageId` (FK → PipelineStage, `onDelete: "restrict"`), `rejectionReason` (nullable), `firstName`, `lastName`, `email`, `phone`, `location` (denormalized snapshot), `answers` (JSONB), `links` (text[]), `resumeText` (nullable) |
@@ -202,7 +197,7 @@ These were identified in a codebase audit (2026-03-18). They are documented here
 | 5 | ~~`src/actions/productions/remove-pipeline-stage.ts`~~ | ~~Blocks deletion if Submission count > 0, but does not check for Feedback rows~~ **Fixed (2026-03-22):** `removePipelineStage` now checks `Feedback` count. When `feedbackCount > 0` and `force` is not set it returns `{ confirmRequired: true, feedbackCount }`. The UI shows an `AlertDialog`; re-calling with `force: true` cascade-deletes the feedback rows before removing the stage. | ~~Bug~~ |
 | 6 | ~~`src/actions/submissions/create-submission.ts`~~ | ~~`createSubmission` is not wrapped in a transaction. The `Candidate` upsert, `Submission` insert, `File` inserts, and resume-text update are separate statements. A crash mid-way leaves partial state.~~ **Fixed (2026-03-22):** Switched from `neon-http` to `neon-serverless` driver with `Pool`. All 9 multi-mutation actions now use `db.transaction()`. | ~~Data integrity~~ |
 | 7 | ~~`src/actions/productions/reorder-role-stages.ts`~~ | ~~Stage reorder uses `Promise.all` with individual `UPDATE` statements — non-atomic. A partial failure leaves stages in an inconsistent order. Same pattern in `reorder-production-stages.ts`.~~ **Fixed (2026-03-22):** Switched from `neon-http` to `neon-serverless` driver with `Pool`. All 9 multi-mutation actions now use `db.transaction()`. | ~~Data integrity~~ |
-| 8 | `src/actions/submissions/get-public-production.ts` | `getPublicProduction` does not filter by `production.isOpen`. A closed production's page still renders (with open roles filtered). The submission form itself blocks on `!role.production.isOpen`, so no submissions can be made, but the public page is accessible. | UX inconsistency |
+| 8 | ~~`src/actions/submissions/get-public-production.ts`~~ | ~~`getPublicProduction` does not filter by `production.isOpen`.~~ **Fixed (2026-03-29):** `getPublicProduction` now checks `production.status !== "open"` and returns `null` for closed productions. | ~~UX inconsistency~~ |
 | 9 | ~~`src/lib/slug.ts`~~ | ~~`RESERVED_SLUGS` does not include `"s"`, `"onboarding"`, etc.~~ **Fixed (2026-03-22):** `RESERVED_SLUGS` moved to `src/lib/constants/reserved-slugs.ts` and now includes `"settings"`, `"admin"`, `"api"`, `"auth"`, `"home"`, `"new"`, `"create"`, `"edit"`, `"delete"`, `"submit"`. Both `src/lib/slug.ts` and `src/lib/schemas/slug.ts` import from the shared constant. | ~~Data integrity~~ |
 | 10 | Various | `zod` and `zod/v4` are both imported across the codebase. Auth schemas (`src/lib/schemas/auth.ts`) intentionally use bare `"zod"` for Better Auth/hookform resolver compatibility. All other schemas use the canonical `"zod/v4"` import. | Code quality |
 | 11 | ~~`src/lib/db/schema.ts`~~ | ~~`Production.updatedAt` and others do not use `.$onUpdate()`~~ **Fixed (2026-03-22):** All 8 application data tables (`UserProfile`, `OrganizationProfile`, `Production`, `Role`, `PipelineStage`, `Candidate`, `Submission`, `Feedback`) now have `.$onUpdate(() => new Date())` on their `updatedAt` column. | ~~Data quality~~ |
@@ -217,3 +212,4 @@ These were identified in a codebase audit (2026-03-18). They are documented here
 *Updated: 2026-03-22 — Added src/lib/constants/reserved-slugs.ts to key files; updated sendEmail description (now async, errors propagate); updated stage deletion constraint note (force param + feedback cascade); closed Known Issues #4, #5, #9, #11; added TODO notes to #6 and #7 (transaction blocker); clarified zod/zod-v4 status in #10*
 *Updated: 2026-03-22 — Switched database driver from `neon-http` to `neon-serverless` with `Pool`; all 9 multi-mutation actions now wrapped in `db.transaction()`; closed Known Issues #6 and #7; updated src/lib/db/db.ts key file entry*
 *Updated: 2026-03-22 — Production/role config lifted to production level: Role table no longer stores location, submissionFormFields, systemFieldConfig, feedbackFormFields, or rejectReasons; PipelineStage no longer has a roleId column (all stages are production-scoped); role settings sub-routes for pipeline/submission-form/feedback-form/reject-reasons removed; directory layout updated; closed Known Issue #2*
+*Updated: 2026-03-29 — Updated route tree (removed stale per-role routes, added emails/ settings route); updated data model (isOpen boolean → status enum on Production and Role, added emailTemplates column); closed Known Issue #8 (getPublicProduction now filters closed productions)*

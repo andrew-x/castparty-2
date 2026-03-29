@@ -162,7 +162,7 @@ export function ConsiderForRoleDialog({
         type="button"
         onClick={() => selectRole(role.id)}
         className={cn(
-          "flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm transition-colors",
+          "flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-label transition-colors",
           isSelected
             ? "bg-accent text-accent-foreground"
             : "text-foreground hover:bg-muted",
@@ -177,7 +177,7 @@ export function ConsiderForRoleDialog({
   function renderGroup(name: string, groupRoles: RoleOption[]) {
     return (
       <div key={name}>
-        <p className="px-3 py-1.5 text-muted-foreground text-xs">{name}</p>
+        <p className="px-3 py-1.5 text-caption text-muted-foreground">{name}</p>
         {groupRoles.map((r) => renderItem(r))}
       </div>
     )
@@ -218,7 +218,7 @@ export function ConsiderForRoleDialog({
                   </div>
                   <div className="max-h-48 overflow-y-auto rounded-md border">
                     {filteredRoles.length === 0 ? (
-                      <p className="py-4 text-center text-muted-foreground text-sm">
+                      <p className="py-4 text-center text-label text-muted-foreground">
                         No matching roles found
                       </p>
                     ) : (

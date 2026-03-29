@@ -2,8 +2,8 @@
  * This is purely AI generated, so if something breaks... ¯\_(ツ)_/¯
  */
 
-import dayjs from "./dayjs"
-import { IS_DEV } from "./util"
+import dayjs from "@/lib/dayjs"
+import { IS_DEV } from "@/lib/util"
 
 type LogLevel = "info" | "error"
 type LogInput = string | number | boolean | object | Error | unknown

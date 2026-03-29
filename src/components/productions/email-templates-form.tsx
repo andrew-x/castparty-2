@@ -22,7 +22,7 @@ import {
 } from "@/lib/email-template"
 import {
   type UpdateEmailTemplatesInput,
-  updateEmailTemplatesActionSchema,
+  updateEmailTemplatesFormSchema,
 } from "@/lib/schemas/email-template"
 import { formResolver } from "@/lib/schemas/resolve"
 import type { EmailTemplates } from "@/lib/types"
@@ -48,7 +48,7 @@ const TEMPLATES: TemplateConfig[] = [
     key: "submissionReceived",
     label: "Submission Received",
     description:
-      "Sent automatically when a performer submits for a role in this production.",
+      "Sent automatically when a candidate submits for a role in this production.",
   },
   {
     key: "rejected",
@@ -60,7 +60,7 @@ const TEMPLATES: TemplateConfig[] = [
     key: "selected",
     label: "Selected",
     description:
-      "Sent when you select a performer for a role. You'll see a preview before it sends.",
+      "Sent when you select a candidate for a role. You'll see a preview before it sends.",
   },
 ]
 
@@ -102,7 +102,7 @@ export function EmailTemplatesForm({ production }: Props) {
 
   const { form, action } = useHookFormAction(
     updateEmailTemplates,
-    formResolver(updateEmailTemplatesActionSchema),
+    formResolver(updateEmailTemplatesFormSchema),
     {
       formProps: {
         defaultValues: {
@@ -150,7 +150,7 @@ export function EmailTemplatesForm({ production }: Props) {
                     : "border-l-transparent",
                 )}
               >
-                <span className="min-w-0 truncate font-medium text-sm">
+                <span className="min-w-0 truncate font-medium text-label">
                   {template.label}
                 </span>
               </button>
@@ -161,7 +161,7 @@ export function EmailTemplatesForm({ production }: Props) {
 
       {/* Right panel — template editor */}
       <div className="min-w-0 flex-1 overflow-y-auto p-6">
-        <p className="mb-group text-muted-foreground text-sm">
+        <p className="mb-group text-label text-muted-foreground">
           {selected.description}
         </p>
         <TemplateEditor

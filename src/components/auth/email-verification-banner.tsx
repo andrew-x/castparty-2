@@ -51,7 +51,7 @@ export function EmailVerificationBanner({ email }: { email: string }) {
         >
           Resend verification email
         </Button>
-        {error && <p className="text-destructive text-sm">{error}</p>}
+        {error && <p className="text-destructive text-label">{error}</p>}
       </AlertDescription>
     </Alert>
   )

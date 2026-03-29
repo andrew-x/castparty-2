@@ -1,5 +1,3 @@
-"use client"
-
 import { Button } from "@/components/common/button"
 import { Field, FieldGroup, FieldLabel } from "@/components/common/field"
 import { Label } from "@/components/common/label"
@@ -9,10 +7,10 @@ import { CustomFieldDisplay } from "@/components/submissions/custom-field-displa
 import type { CustomForm } from "@/lib/types"
 
 const RATING_LABELS: Record<string, string> = {
-  STRONG_YES: "4 — Strong yes",
-  YES: "3 — Yes",
-  NO: "2 — No",
-  STRONG_NO: "1 — Strong no",
+  STRONG_YES: "4 - Strong yes",
+  YES: "3 - Yes",
+  NO: "2 - No",
+  STRONG_NO: "1 - Strong no",
 }
 
 const RATING_OPTIONS = ["STRONG_YES", "YES", "NO", "STRONG_NO"]

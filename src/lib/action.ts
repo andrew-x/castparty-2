@@ -3,9 +3,9 @@ import {
   DEFAULT_SERVER_ERROR_MESSAGE,
 } from "next-safe-action"
 import { z } from "zod"
+import { checkAuth } from "@/lib/auth/auth-util"
 import logger from "@/lib/logger"
 import { generateId, IS_DEV, IS_MAINTENANCE_MODE } from "@/lib/util"
-import { checkAuth } from "./auth/auth-util"
 
 export const publicActionClient = createSafeActionClient({
   handleServerError(e) {

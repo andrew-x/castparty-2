@@ -11,10 +11,14 @@ export const emailTemplatesSchema = z.object({
   selected: emailTemplateSchema,
 })
 
-export const updateEmailTemplatesActionSchema = z.object({
-  productionId: z.string().min(1),
+export const updateEmailTemplatesFormSchema = z.object({
   emailTemplates: emailTemplatesSchema,
 })
+
+export const updateEmailTemplatesActionSchema =
+  updateEmailTemplatesFormSchema.extend({
+    productionId: z.string().min(1),
+  })
 
 export type UpdateEmailTemplatesInput = z.infer<
   typeof updateEmailTemplatesActionSchema

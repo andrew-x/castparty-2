@@ -65,10 +65,10 @@ interface Props {
 }
 
 const RATING_LABELS: Record<FeedbackData["rating"], string> = {
-  STRONG_YES: "4 — Strong yes",
-  YES: "3 — Yes",
-  NO: "2 — No",
-  STRONG_NO: "1 — Strong no",
+  STRONG_YES: "4 - Strong yes",
+  YES: "3 - Yes",
+  NO: "2 - No",
+  STRONG_NO: "1 - Strong no",
 }
 
 const RATING_OPTIONS: FeedbackData["rating"][] = [
@@ -688,7 +688,7 @@ function CustomFormField({
   error,
 }: {
   field: CustomForm
-  // biome-ignore lint/suspicious/noExplicitAny: dynamic record paths aren't statically typeable
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic `answers.${id}` paths aren't statically typeable with UseFormRegister
   register: (name: any) => any
   value: string
   onChange: (value: string) => void

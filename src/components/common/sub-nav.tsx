@@ -91,7 +91,7 @@ export function SubNav({ items }: Props) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-1.5 font-medium text-[13.5px] transition-colors",
+                "flex items-center gap-2 rounded-md px-3 py-1.5 font-medium text-label transition-colors",
                 "hover:bg-accent hover:text-accent-foreground",
                 active ? "bg-accent text-foreground" : "text-muted-foreground",
               )}
