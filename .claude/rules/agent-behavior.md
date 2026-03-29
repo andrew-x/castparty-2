@@ -41,6 +41,8 @@ Never guess at a library's API — invoke the dev-docs skill to get version-accu
 
 **Post-implementation:** requesting-code-review, finishing-a-development-branch
 
+**Periodic maintenance:** `/audit` (manual codebase quality check + librarian doc sync — run periodically to catch drift, not after every task)
+
 **Meta (disabled by default, enable on demand):** claude-md-management, claude-code-setup, skill-creator
 
 ## Hands-Off Operations
@@ -66,13 +68,14 @@ When multiple skills could apply, use process skills first, then implementation 
 6. **verification-before-completion** — before claiming done
 7. **requesting-code-review** / custom Code Reviewer — after implementation
 
-## Code Review — Three Tools, Different Scopes
+## Code Review & Audit — Four Tools, Different Scopes
 
 | Tool | Scope | When |
 |------|-------|------|
 | `/review-diff` skill | Quick sanity check on current changes | User-invoked when you want a fast second opinion — lightweight, focused on bugs and obvious issues |
 | Code Reviewer agent (`.claude/agents/code-reviewer.md`) | Comprehensive review of uncommitted changes | Agent-spawned after major features — reads all rules, traces dependencies, produces full severity report |
 | `/code-review` plugin | Full PR diff | After creating a PR — runs 5 parallel agents for comprehensive review |
+| `/audit` command | Full codebase audit + doc sync | User-invoked for periodic health checks — 6 parallel domain audits, librarian update, graded report |
 
 ## Plans Must Name Their Subagents
 

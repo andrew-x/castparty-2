@@ -1,12 +1,13 @@
 # Documentation Index
 
-> **Status:** Active development — auth & onboarding, organizations, productions, candidates, public submission flow, configurable production-level pipeline stages, custom form builders (2 contexts: production × submission/feedback), reject reasons, role Kanban board with drag-and-drop / bulk actions / comparison view / search / compact view, stage browse view, submission detail sheet (with edit mode for contact info, links, headshots, and resume), headshot lightbox, candidate detail, comments on submissions, admin, file uploads (headshots + resume with PDF text extraction), feedback (per-stage, with ratings and custom fields), dev-only email emulator, per-production email templates (submission received / rejected / selected, with variable insertion and preview-before-send), email storage (all submission emails persisted to a dedicated `Email` table), and inbound email (performers can reply to Castparty emails; replies are routed back via Resend webhook and stored as inbound `Email` rows in the activity log) are shipped. Known issues tracked in `docs/ARCHITECTURE.md#known-issues`.
-> **Maintained by:** Librarian agent (`.codex/agents/librarian.toml`, `.claude/agents/librarian.md`)
+> **Status:** Active development — all core features shipped. See `docs/features/README.md` for the full feature inventory. Known issues tracked in `docs/ARCHITECTURE.md#known-issues`.
+> **Maintained by:** Librarian agent (`.claude/agents/librarian.md`)
 
 | Document | Read when you need to... |
 |----------|--------------------------|
 | `PRODUCT.md` | Understand what Castparty is, who it's for, and why features exist |
 | `ARCHITECTURE.md` | Understand the tech stack, directory layout, or system design |
-| `FEATURES.md` | Find what's built, its status, and where the code lives |
+| `features/README.md` | Find what's built, its status, and where the code lives |
+| `features/*.md` | Deep-dive into a specific feature (one file per feature domain) |
 | `CONVENTIONS.md` | Know the coding patterns, naming rules, and gotchas |
 | `DECISIONS.md` | Understand why we chose X over Y (ADRs) |

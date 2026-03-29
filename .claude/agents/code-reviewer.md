@@ -20,7 +20,7 @@ Before reviewing any code, load the project's rules and conventions:
    - `docs/CONVENTIONS.md` — always read
    - `docs/ARCHITECTURE.md` — if structural changes, new routes, or component patterns
    - `docs/DECISIONS.md` — if the changes touch areas with prior ADRs
-   - `docs/FEATURES.md` — if modifying or adding features
+   - `docs/features/README.md` + relevant `docs/features/*.md` — if modifying or adding features
 
 ## Phase 2: Change Analysis
 
