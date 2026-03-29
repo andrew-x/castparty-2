@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "find .claude/plans -name '*.md' -mtime +7 -delete 2>/dev/null; true"
+            "command": "find .claude/plans -name '*-agent-*.md' -delete 2>/dev/null; find .claude/plans -name '*.md' -mtime +7 -delete 2>/dev/null; true"
           }
         ]
       }
