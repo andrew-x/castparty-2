@@ -165,7 +165,7 @@ function NavLink({
     <Link
       href={href}
       className={cn(
-        "rounded-md px-2.5 py-1 font-medium text-label transition-colors",
+        "rounded-md px-2.5 py-1 font-medium text-label-sm transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
         isActive ? "text-foreground" : "text-muted-foreground",
       )}

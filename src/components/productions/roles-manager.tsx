@@ -1,6 +1,6 @@
 "use client"
 
-import { ArchiveIcon, PlusIcon, UserIcon } from "lucide-react"
+import { ArchiveIcon, ChevronRightIcon, PlusIcon, UserIcon } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { Badge } from "@/components/common/badge"
@@ -43,14 +43,12 @@ export function RolesManager({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
-  const hasArchived = roles.some((r) => r.status === "archive")
-  const visibleRoles = showArchived
-    ? roles
-    : roles.filter((r) => r.status !== "archive")
+  const activeRoles = roles.filter((r) => r.status !== "archive")
+  const archivedRoles = roles.filter((r) => r.status === "archive")
 
   const roleSlug = searchParams.get("role")
   const selectedRole =
-    roles.find((r) => r.slug === roleSlug) ?? visibleRoles[0] ?? null
+    roles.find((r) => r.slug === roleSlug) ?? activeRoles[0] ?? null
 
   function handleRoleClick(slug: string) {
     router.replace(`?role=${slug}`, { scroll: false })
@@ -110,8 +108,8 @@ export function RolesManager({
             </Button>
           </div>
           <nav className="flex-1 overflow-y-auto">
-            {visibleRoles.map((role) => {
-              const isActive = selectedRole?.slug === role.slug
+            {activeRoles.map((role) => {
+              const isSelected = selectedRole?.slug === role.slug
               return (
                 <button
                   key={role.id}
@@ -119,47 +117,72 @@ export function RolesManager({
                   onClick={() => handleRoleClick(role.slug)}
                   className={cn(
                     "flex w-full items-center gap-2 border-l-2 px-4 py-3 text-left transition-colors hover:bg-muted/50",
-                    isActive
+                    isSelected
                       ? "border-l-brand bg-muted/50"
                       : "border-l-transparent",
-                    role.status === "archive" && "opacity-60",
                   )}
                 >
                   <span className="min-w-0 flex-1 truncate font-medium text-label">
                     {role.name}
                   </span>
-                  {role.status === "archive" ? (
-                    <Badge
-                      variant="outline"
-                      className="text-caption text-muted-foreground"
-                    >
-                      <ArchiveIcon className="mr-1 size-2.5" />
-                      Archived
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant={role.status === "open" ? "secondary" : "outline"}
-                      className={cn(
-                        "text-caption",
-                        role.status === "open"
-                          ? "bg-success-subtle text-success"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {role.status === "open" ? "Open" : "Closed"}
-                    </Badge>
-                  )}
+                  <Badge
+                    variant={role.status === "open" ? "secondary" : "outline"}
+                    className={cn(
+                      "text-caption",
+                      role.status === "open"
+                        ? "bg-success-subtle text-success"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {role.status === "open" ? "Open" : "Closed"}
+                  </Badge>
                 </button>
               )
             })}
-            {hasArchived && (
-              <button
-                type="button"
-                onClick={() => setShowArchived((v) => !v)}
-                className="w-full px-4 py-2 text-caption text-muted-foreground hover:text-foreground"
-              >
-                {showArchived ? "Hide archived" : "Show archived"}
-              </button>
+            {archivedRoles.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowArchived((v) => !v)}
+                  className="flex w-full items-center gap-2 px-4 py-2 text-caption text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronRightIcon
+                    className={cn(
+                      "size-3.5 transition-transform",
+                      showArchived && "rotate-90",
+                    )}
+                  />
+                  <span>Archived ({archivedRoles.length})</span>
+                </button>
+                {showArchived &&
+                  archivedRoles.map((role) => {
+                    const isSelected = selectedRole?.slug === role.slug
+                    return (
+                      <button
+                        key={role.id}
+                        type="button"
+                        onClick={() => handleRoleClick(role.slug)}
+                        className={cn(
+                          "flex w-full items-center gap-2 border-l-2 px-4 py-3 text-left opacity-60 transition-colors hover:bg-muted/50",
+                          isSelected
+                            ? "border-l-brand bg-muted/50"
+                            : "border-l-transparent",
+                        )}
+                      >
+                        <span className="min-w-0 flex-1 truncate font-medium text-label">
+                          {role.name}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="text-caption text-muted-foreground"
+                        >
+                          <ArchiveIcon className="mr-1 size-2.5" />
+                          Archived
+                        </Badge>
+                      </button>
+                    )
+                  })}
+              </>
             )}
           </nav>
         </div>

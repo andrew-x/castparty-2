@@ -19,8 +19,12 @@ export function ProductionSubNav({ productionId }: { productionId: string }) {
     <SubNav
       items={[
         { label: "Submissions", href: basePath, icon: UsersIcon },
-        { label: "Roles", href: `${basePath}/roles`, icon: ListIcon },
-        { label: "General", href: `${basePath}/settings`, icon: SettingsIcon },
+        {
+          label: "Production Settings",
+          href: `${basePath}/settings`,
+          icon: SettingsIcon,
+        },
+        { label: "Role Settings", href: `${basePath}/roles`, icon: ListIcon },
         {
           label: "Pipeline",
           href: `${basePath}/settings/pipeline`,
