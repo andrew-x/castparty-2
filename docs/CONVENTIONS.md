@@ -77,7 +77,7 @@ All UI copy follows the voice and tone rules in `AGENTS.md`. Key points: plain r
 
 ## Design Token Usage
 
-Design tokens live in `src/styles/globals.scss`. The primary layer uses **shadcn's CSS variable naming** (`--primary`, `--background`, `--card`, etc.) with Violet+Stone values, available as Tailwind utilities. Supplementary tokens (`--color-cta-*`, `--color-brand-*`, `--color-success-*`, etc.) are declared alongside them in `@theme inline`. See `docs/FEATURES.md#design-system` for architecture rationale.
+Design tokens live in `src/styles/globals.scss`. The primary layer uses **shadcn's CSS variable naming** (`--primary`, `--background`, `--card`, etc.) with Violet+Stone values, available as Tailwind utilities. Supplementary tokens (`--color-cta-*`, `--color-brand-*`, `--color-success-*`, etc.) are declared alongside them in `@theme inline`. See `docs/features/design-system.md` for architecture rationale.
 
 ### Token quick-reference
 
