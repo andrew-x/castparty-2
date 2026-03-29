@@ -1,5 +1,5 @@
 {
-  "id": "b369f313-55c7-462e-b031-2e63972cbd86",
+  "id": "783fece9-05fb-43ae-a83c-86fb21dbbe87",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -110,8 +110,12 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -213,8 +217,12 @@
           "name": "candidate_organization_id_organization_id_fk",
           "tableFrom": "candidate",
           "tableTo": "organization",
-          "columnsFrom": ["organization_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -305,8 +313,12 @@
           "name": "comment_submission_id_submission_id_fk",
           "tableFrom": "comment",
           "tableTo": "submission",
-          "columnsFrom": ["submission_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "submission_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -314,9 +326,192 @@
           "name": "comment_submitted_by_user_id_user_id_fk",
           "tableFrom": "comment",
           "tableTo": "user",
-          "columnsFrom": ["submitted_by_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "submitted_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.email": {
+      "name": "email",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submission_id": {
+          "name": "submission_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sent_by_user_id": {
+          "name": "sent_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "direction": {
+          "name": "direction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'outbound'"
+        },
+        "from_email": {
+          "name": "from_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_email": {
+          "name": "to_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body_text": {
+          "name": "body_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body_html": {
+          "name": "body_html",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template_type": {
+          "name": "template_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resend_email_id": {
+          "name": "resend_email_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "email_submissionId_idx": {
+          "name": "email_submissionId_idx",
+          "columns": [
+            {
+              "expression": "submission_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "email_organizationId_idx": {
+          "name": "email_organizationId_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "email_resendEmailId_idx": {
+          "name": "email_resendEmailId_idx",
+          "columns": [
+            {
+              "expression": "resend_email_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "email_organization_id_organization_id_fk": {
+          "name": "email_organization_id_organization_id_fk",
+          "tableFrom": "email",
+          "tableTo": "organization",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "email_submission_id_submission_id_fk": {
+          "name": "email_submission_id_submission_id_fk",
+          "tableFrom": "email",
+          "tableTo": "submission",
+          "columnsFrom": [
+            "submission_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "email_sent_by_user_id_user_id_fk": {
+          "name": "email_sent_by_user_id_user_id_fk",
+          "tableFrom": "email",
+          "tableTo": "user",
+          "columnsFrom": [
+            "sent_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -434,8 +629,12 @@
           "name": "feedback_submission_id_submission_id_fk",
           "tableFrom": "feedback",
           "tableTo": "submission",
-          "columnsFrom": ["submission_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "submission_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -443,8 +642,12 @@
           "name": "feedback_submitted_by_user_id_user_id_fk",
           "tableFrom": "feedback",
           "tableTo": "user",
-          "columnsFrom": ["submitted_by_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "submitted_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -452,8 +655,12 @@
           "name": "feedback_stage_id_pipeline_stage_id_fk",
           "tableFrom": "feedback",
           "tableTo": "pipeline_stage",
-          "columnsFrom": ["stage_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "stage_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -581,8 +788,12 @@
           "name": "file_submission_id_submission_id_fk",
           "tableFrom": "file",
           "tableTo": "submission",
-          "columnsFrom": ["submission_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "submission_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -590,8 +801,12 @@
           "name": "file_candidate_id_candidate_id_fk",
           "tableFrom": "file",
           "tableTo": "candidate",
-          "columnsFrom": ["candidate_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "candidate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -694,8 +909,12 @@
           "name": "invitation_organization_id_organization_id_fk",
           "tableFrom": "invitation",
           "tableTo": "organization",
-          "columnsFrom": ["organization_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -703,8 +922,12 @@
           "name": "invitation_inviter_id_user_id_fk",
           "tableFrom": "invitation",
           "tableTo": "user",
-          "columnsFrom": ["inviter_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "inviter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -788,8 +1011,12 @@
           "name": "member_organization_id_organization_id_fk",
           "tableFrom": "member",
           "tableTo": "organization",
-          "columnsFrom": ["organization_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -797,8 +1024,12 @@
           "name": "member_user_id_user_id_fk",
           "tableFrom": "member",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -873,7 +1104,9 @@
         "organization_slug_unique": {
           "name": "organization_slug_unique",
           "nullsNotDistinct": false,
-          "columns": ["slug"]
+          "columns": [
+            "slug"
+          ]
         }
       },
       "policies": {},
@@ -932,8 +1165,12 @@
           "name": "organization_profile_id_organization_id_fk",
           "tableFrom": "organization_profile",
           "tableTo": "organization",
-          "columnsFrom": ["id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1007,8 +1244,12 @@
           "name": "pipeline_stage_organization_id_organization_id_fk",
           "tableFrom": "pipeline_stage",
           "tableTo": "organization",
-          "columnsFrom": ["organization_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1016,8 +1257,12 @@
           "name": "pipeline_stage_production_id_production_id_fk",
           "tableFrom": "pipeline_stage",
           "tableTo": "production",
-          "columnsFrom": ["production_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "production_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1094,8 +1339,12 @@
           "name": "pipeline_update_organization_id_organization_id_fk",
           "tableFrom": "pipeline_update",
           "tableTo": "organization",
-          "columnsFrom": ["organization_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1103,8 +1352,12 @@
           "name": "pipeline_update_production_id_production_id_fk",
           "tableFrom": "pipeline_update",
           "tableTo": "production",
-          "columnsFrom": ["production_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "production_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1112,8 +1365,12 @@
           "name": "pipeline_update_role_id_role_id_fk",
           "tableFrom": "pipeline_update",
           "tableTo": "role",
-          "columnsFrom": ["role_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1121,8 +1378,12 @@
           "name": "pipeline_update_from_stage_pipeline_stage_id_fk",
           "tableFrom": "pipeline_update",
           "tableTo": "pipeline_stage",
-          "columnsFrom": ["from_stage"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "from_stage"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1130,8 +1391,12 @@
           "name": "pipeline_update_to_stage_pipeline_stage_id_fk",
           "tableFrom": "pipeline_update",
           "tableTo": "pipeline_stage",
-          "columnsFrom": ["to_stage"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "to_stage"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1139,8 +1404,12 @@
           "name": "pipeline_update_submission_id_submission_id_fk",
           "tableFrom": "pipeline_update",
           "tableTo": "submission",
-          "columnsFrom": ["submission_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "submission_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1148,8 +1417,12 @@
           "name": "pipeline_update_change_by_user_id_user_id_fk",
           "tableFrom": "pipeline_update",
           "tableTo": "user",
-          "columnsFrom": ["change_by_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "change_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1195,19 +1468,13 @@
           "notNull": true,
           "default": "''"
         },
-        "is_open": {
-          "name": "is_open",
-          "type": "boolean",
+        "status": {
+          "name": "status",
+          "type": "production_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": false
-        },
-        "is_archived": {
-          "name": "is_archived",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "default": "'closed'"
         },
         "location": {
           "name": "location",
@@ -1293,8 +1560,12 @@
           "name": "production_organization_id_organization_id_fk",
           "tableFrom": "production",
           "tableTo": "organization",
-          "columnsFrom": ["organization_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1340,19 +1611,13 @@
           "notNull": true,
           "default": "''"
         },
-        "is_open": {
-          "name": "is_open",
-          "type": "boolean",
+        "status": {
+          "name": "status",
+          "type": "production_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": false
-        },
-        "is_archived": {
-          "name": "is_archived",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "default": "'closed'"
         },
         "created_at": {
           "name": "created_at",
@@ -1397,8 +1662,12 @@
           "name": "role_production_id_production_id_fk",
           "tableFrom": "role",
           "tableTo": "production",
-          "columnsFrom": ["production_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "production_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1497,8 +1766,12 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1508,7 +1781,9 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": ["token"]
+          "columns": [
+            "token"
+          ]
         }
       },
       "policies": {},
@@ -1628,8 +1903,12 @@
           "name": "submission_production_id_production_id_fk",
           "tableFrom": "submission",
           "tableTo": "production",
-          "columnsFrom": ["production_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "production_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1637,8 +1916,12 @@
           "name": "submission_role_id_role_id_fk",
           "tableFrom": "submission",
           "tableTo": "role",
-          "columnsFrom": ["role_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1646,8 +1929,12 @@
           "name": "submission_candidate_id_candidate_id_fk",
           "tableFrom": "submission",
           "tableTo": "candidate",
-          "columnsFrom": ["candidate_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "candidate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1655,8 +1942,12 @@
           "name": "submission_stage_id_pipeline_stage_id_fk",
           "tableFrom": "submission",
           "tableTo": "pipeline_stage",
-          "columnsFrom": ["stage_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "stage_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1748,7 +2039,9 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -1786,8 +2079,12 @@
           "name": "user_profile_id_user_id_fk",
           "tableFrom": "user_profile",
           "tableTo": "user",
-          "columnsFrom": ["id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1870,17 +2167,40 @@
     "public.feedback_rating": {
       "name": "feedback_rating",
       "schema": "public",
-      "values": ["STRONG_NO", "NO", "YES", "STRONG_YES"]
+      "values": [
+        "STRONG_NO",
+        "NO",
+        "YES",
+        "STRONG_YES"
+      ]
     },
     "public.file_type": {
       "name": "file_type",
       "schema": "public",
-      "values": ["HEADSHOT", "RESUME", "VIDEO"]
+      "values": [
+        "HEADSHOT",
+        "RESUME",
+        "VIDEO"
+      ]
     },
     "public.pipeline_stage_type": {
       "name": "pipeline_stage_type",
       "schema": "public",
-      "values": ["APPLIED", "SELECTED", "REJECTED", "CUSTOM"]
+      "values": [
+        "APPLIED",
+        "SELECTED",
+        "REJECTED",
+        "CUSTOM"
+      ]
+    },
+    "public.production_status": {
+      "name": "production_status",
+      "schema": "public",
+      "values": [
+        "open",
+        "closed",
+        "archive"
+      ]
     }
   },
   "schemas": {},

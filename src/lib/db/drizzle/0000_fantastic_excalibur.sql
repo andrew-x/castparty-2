@@ -1,6 +1,7 @@
 CREATE TYPE "public"."feedback_rating" AS ENUM('STRONG_NO', 'NO', 'YES', 'STRONG_YES');--> statement-breakpoint
 CREATE TYPE "public"."file_type" AS ENUM('HEADSHOT', 'RESUME', 'VIDEO');--> statement-breakpoint
 CREATE TYPE "public"."pipeline_stage_type" AS ENUM('APPLIED', 'SELECTED', 'REJECTED', 'CUSTOM');--> statement-breakpoint
+CREATE TYPE "public"."production_status" AS ENUM('open', 'closed', 'archive');--> statement-breakpoint
 CREATE TABLE "account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
@@ -36,6 +37,22 @@ CREATE TABLE "comment" (
 	"content" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "email" (
+	"id" text PRIMARY KEY NOT NULL,
+	"organization_id" text NOT NULL,
+	"submission_id" text,
+	"sent_by_user_id" text,
+	"direction" text DEFAULT 'outbound' NOT NULL,
+	"from_email" text,
+	"to_email" text NOT NULL,
+	"subject" text NOT NULL,
+	"body_text" text NOT NULL,
+	"body_html" text NOT NULL,
+	"template_type" text,
+	"resend_email_id" text,
+	"sent_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "feedback" (
@@ -133,8 +150,7 @@ CREATE TABLE "production" (
 	"name" text NOT NULL,
 	"slug" text NOT NULL,
 	"description" text DEFAULT '' NOT NULL,
-	"is_open" boolean DEFAULT false NOT NULL,
-	"is_archived" boolean DEFAULT false NOT NULL,
+	"status" "production_status" DEFAULT 'closed' NOT NULL,
 	"location" text DEFAULT '' NOT NULL,
 	"submission_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional"}'::jsonb NOT NULL,
@@ -151,8 +167,7 @@ CREATE TABLE "role" (
 	"name" text NOT NULL,
 	"slug" text NOT NULL,
 	"description" text DEFAULT '' NOT NULL,
-	"is_open" boolean DEFAULT false NOT NULL,
-	"is_archived" boolean DEFAULT false NOT NULL,
+	"status" "production_status" DEFAULT 'closed' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -224,6 +239,9 @@ ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("
 ALTER TABLE "candidate" ADD CONSTRAINT "candidate_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "comment" ADD CONSTRAINT "comment_submission_id_submission_id_fk" FOREIGN KEY ("submission_id") REFERENCES "public"."submission"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "comment" ADD CONSTRAINT "comment_submitted_by_user_id_user_id_fk" FOREIGN KEY ("submitted_by_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "email" ADD CONSTRAINT "email_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "email" ADD CONSTRAINT "email_submission_id_submission_id_fk" FOREIGN KEY ("submission_id") REFERENCES "public"."submission"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "email" ADD CONSTRAINT "email_sent_by_user_id_user_id_fk" FOREIGN KEY ("sent_by_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "feedback" ADD CONSTRAINT "feedback_submission_id_submission_id_fk" FOREIGN KEY ("submission_id") REFERENCES "public"."submission"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "feedback" ADD CONSTRAINT "feedback_submitted_by_user_id_user_id_fk" FOREIGN KEY ("submitted_by_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "feedback" ADD CONSTRAINT "feedback_stage_id_pipeline_stage_id_fk" FOREIGN KEY ("stage_id") REFERENCES "public"."pipeline_stage"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -255,6 +273,9 @@ CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> state
 CREATE UNIQUE INDEX "candidate_org_email_uidx" ON "candidate" USING btree ("organization_id","email");--> statement-breakpoint
 CREATE INDEX "comment_submissionId_idx" ON "comment" USING btree ("submission_id");--> statement-breakpoint
 CREATE INDEX "comment_submittedByUserId_idx" ON "comment" USING btree ("submitted_by_user_id");--> statement-breakpoint
+CREATE INDEX "email_submissionId_idx" ON "email" USING btree ("submission_id");--> statement-breakpoint
+CREATE INDEX "email_organizationId_idx" ON "email" USING btree ("organization_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "email_resendEmailId_idx" ON "email" USING btree ("resend_email_id");--> statement-breakpoint
 CREATE INDEX "feedback_submissionId_idx" ON "feedback" USING btree ("submission_id");--> statement-breakpoint
 CREATE INDEX "feedback_submittedByUserId_idx" ON "feedback" USING btree ("submitted_by_user_id");--> statement-breakpoint
 CREATE INDEX "file_submissionId_idx" ON "file" USING btree ("submission_id");--> statement-breakpoint
