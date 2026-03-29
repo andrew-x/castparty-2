@@ -46,7 +46,6 @@ interface Props {
   feedbackFormFields: CustomForm[]
   roleId?: string
   rejectReasons: string[]
-  productionId: string
   productionName: string
   organizationName: string
   emailTemplates: EmailTemplates
@@ -65,7 +64,6 @@ export function SubmissionDetailSheet({
   feedbackFormFields,
   roleId,
   rejectReasons,
-  productionId,
   productionName,
   organizationName,
   emailTemplates,

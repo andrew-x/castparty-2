@@ -166,7 +166,7 @@ export function SubmissionForm({
         for (const formField of submissionFormFields) {
           if (!formField.required) continue
           const value = v.answers[formField.id]
-          if (!value || !value.trim()) {
+          if (!value?.trim()) {
             form.setError(`answers.${formField.id}`, {
               type: "required",
               message: `${formField.label} is required.`,
@@ -176,20 +176,14 @@ export function SubmissionForm({
         }
 
         // Validate required system fields client-side
-        if (
-          systemFieldConfig.phone === "required" &&
-          (!v.phone || !v.phone.trim())
-        ) {
+        if (systemFieldConfig.phone === "required" && !v.phone?.trim()) {
           form.setError("phone", {
             type: "required",
             message: "Phone number is required.",
           })
           hasFieldErrors = true
         }
-        if (
-          systemFieldConfig.location === "required" &&
-          (!v.location || !v.location.trim())
-        ) {
+        if (systemFieldConfig.location === "required" && !v.location?.trim()) {
           form.setError("location", {
             type: "required",
             message: "Location is required.",
@@ -365,7 +359,7 @@ export function SubmissionForm({
                     <span className="flex flex-col">
                       <span className="text-sm leading-snug">{role.name}</span>
                       {role.description && (
-                        <span className="text-caption text-muted-foreground line-clamp-1">
+                        <span className="line-clamp-1 text-caption text-muted-foreground">
                           {role.description}
                         </span>
                       )}

@@ -42,7 +42,6 @@ import { buildColumns } from "@/lib/submission-helpers"
 import type { CustomForm, EmailTemplates } from "@/lib/types"
 
 interface Props {
-  productionId: string
   productionName: string
   organizationName: string
   emailTemplates: EmailTemplates
@@ -56,7 +55,6 @@ interface Props {
 }
 
 export function ProductionSubmissions({
-  productionId,
   productionName,
   organizationName,
   emailTemplates,
@@ -626,7 +624,6 @@ export function ProductionSubmissions({
         feedbackFormFields={feedbackFormFields}
         roleId={selectedSubmission?.roleId ?? ""}
         rejectReasons={rejectReasons}
-        productionId={productionId}
         productionName={productionName}
         organizationName={organizationName}
         emailTemplates={emailTemplates}

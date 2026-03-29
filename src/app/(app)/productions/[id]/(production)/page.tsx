@@ -39,7 +39,6 @@ export default async function ProductionPage({
 
   return (
     <ProductionSubmissions
-      productionId={production.id}
       productionName={production.name}
       organizationName={production.organization.name}
       emailTemplates={

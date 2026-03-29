@@ -584,7 +584,7 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
                 for (const formField of feedbackFormFields) {
                   if (!formField.required) continue
                   const value = values.answers[formField.id]
-                  if (!value || !value.trim()) {
+                  if (!value?.trim()) {
                     form.setError(`answers.${formField.id}`, {
                       type: "required",
                       message: `${formField.label} is required.`,

@@ -141,5 +141,5 @@ function Button({
   return element
 }
 
+export type { ButtonBaseProps, ButtonLinkProps, ButtonProps }
 export { Button, buttonVariants }
-export type { ButtonProps, ButtonBaseProps, ButtonLinkProps }

@@ -88,10 +88,10 @@ export const createSubmission = publicActionClient
 
       // Validate required system fields
       const sfc = production.systemFieldConfig ?? DEFAULT_SYSTEM_FIELD_CONFIG
-      if (sfc.phone === "required" && (!phone || !phone.trim())) {
+      if (sfc.phone === "required" && !phone?.trim()) {
         throw new Error("Phone number is required.")
       }
-      if (sfc.location === "required" && (!location || !location.trim())) {
+      if (sfc.location === "required" && !location?.trim()) {
         throw new Error("Location is required.")
       }
       if (sfc.headshots === "required" && headshots.length === 0) {
@@ -111,7 +111,7 @@ export const createSubmission = publicActionClient
         const value = answers[field.id]
         if (field.type === "TOGGLE") {
           if (value !== "true") throw new Error(`${field.label} is required.`)
-        } else if (!value || !value.trim()) {
+        } else if (!value?.trim()) {
           throw new Error(`${field.label} is required.`)
         }
       }

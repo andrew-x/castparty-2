@@ -146,5 +146,5 @@ function PageBody({
   )
 }
 
-export { Page, PageHeader, PageContent, PageBody }
 export type { PageBreadcrumb }
+export { Page, PageBody, PageContent, PageHeader }
