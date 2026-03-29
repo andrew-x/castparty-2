@@ -50,12 +50,13 @@ export const updateOrganization = secureActionClient
         }
       }
 
-      await Promise.all([
-        db
+      await db.transaction(async (tx) => {
+        await tx
           .update(organization)
           .set({ name, ...(slug ? { slug } : {}) })
-          .where(eq(organization.id, organizationId)),
-        db
+          .where(eq(organization.id, organizationId))
+
+        await tx
           .insert(OrganizationProfile)
           .values({
             id: organizationId,
@@ -71,8 +72,8 @@ export const updateOrganization = secureActionClient
               isOrganizationProfileOpen,
               updatedAt: day().toDate(),
             },
-          }),
-      ])
+          })
+      })
 
       revalidatePath("/", "layout")
       return { success: true }

@@ -268,8 +268,12 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
     setFeedbackFormFields(reordered)
   }
 
-  function handleSubmit(values: FormValues) {
-    const roles = values.roles.filter((r) => r.name.trim().length > 0)
+  // Accepts the action schema's broader type (roles optional) since useHookFormAction
+  // types the submit handler against the action input, not the form schema.
+  function handleSubmit(
+    values: { name: string; roles?: FormValues["roles"] } & Partial<FormValues>,
+  ) {
+    const roles = (values.roles ?? []).filter((r) => r.name.trim().length > 0)
     const slug = values.slug?.trim() || undefined
     const stageNames = customStages.map((s) => s.name)
 
@@ -295,12 +299,7 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
   ]
 
   return (
-    <form
-      onSubmit={form.handleSubmit(
-        // biome-ignore lint/suspicious/noExplicitAny: form validates against createProductionFormSchema
-        handleSubmit as any,
-      )}
-    >
+    <form onSubmit={form.handleSubmit(handleSubmit)}>
       <p className="text-caption text-muted-foreground">
         Step {STEPS.indexOf(step) + 1} of {STEPS.length}
       </p>

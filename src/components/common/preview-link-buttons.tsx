@@ -3,6 +3,7 @@
 import { CheckIcon, CopyIcon, ExternalLinkIcon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { Button } from "@/components/common/button"
 import {
   Tooltip,
   TooltipContent,
@@ -31,17 +32,18 @@ export function PreviewLinkButtons({ url, href }: Props) {
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="inline-flex items-center rounded-md border">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={handleCopy}
               aria-label={copied ? "Copied" : "Copy link"}
               className={cn(
-                "inline-flex size-8 cursor-pointer items-center justify-center rounded-l-md transition-colors hover:bg-accent [&_svg]:size-4",
-                copied && "text-green-600",
+                "rounded-r-none border-none",
+                copied && "text-success",
               )}
             >
               {copied ? <CheckIcon /> : <CopyIcon />}
-            </button>
+            </Button>
             <Link
               href={href}
               target="_blank"

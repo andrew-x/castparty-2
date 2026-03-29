@@ -16,7 +16,7 @@ One file per feature domain. Each doc contains enough detail to recreate the fea
 | Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | [productions.md](./productions.md) |
 | Create Production | `shipped` | `src/app/(app)/productions/new/page.tsx` | [productions.md](./productions.md) |
 | Production Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/page.tsx` | [productions.md](./productions.md) |
-| Role Settings | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/settings/page.tsx` | [productions.md](./productions.md) |
+| Role Settings | `shipped` | `src/app/(app)/productions/[id]/(production)/roles/page.tsx` | [productions.md](./productions.md) |
 | Reject Reasons | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/reject-reasons/page.tsx` | [reject-reasons.md](./reject-reasons.md) |
 | Email Templates | `shipped` | `src/app/(app)/productions/[id]/(production)/settings/emails/page.tsx` | [email.md](./email.md) |
 | Email Storage | `shipped` | `src/lib/db/schema.ts` (`Email` table) | [email.md](./email.md) |
@@ -29,8 +29,7 @@ One file per feature domain. Each doc contains enough detail to recreate the fea
 | URL Slugs | `shipped` | `src/lib/slug.ts` | [submissions.md](./submissions.md) |
 | Pipeline Stages | `shipped` | `src/lib/pipeline.ts` | [pipeline.md](./pipeline.md) |
 | Custom Form Fields | `shipped` | `src/lib/types.ts` | [custom-fields.md](./custom-fields.md) |
-| Role Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/(role)/page.tsx` | [kanban.md](./kanban.md) |
-| Stage Browse | `shipped` | `src/app/(app)/productions/[id]/roles/[roleId]/stages/[stageId]/page.tsx` | [kanban.md](./kanban.md) |
+| Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | [kanban.md](./kanban.md) |
 | Submission Detail Sheet | `shipped` | `src/components/productions/submission-detail-sheet.tsx` | [kanban.md](./kanban.md) |
 | Submission Editing | `shipped` | `src/components/productions/submission-edit-form.tsx` | [submission-editing.md](./submission-editing.md) |
 | Headshot Lightbox | `shipped` | `src/components/productions/headshot-lightbox.tsx` | [kanban.md](./kanban.md) |

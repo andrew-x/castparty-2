@@ -3,7 +3,6 @@
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
 import { Controller } from "react-hook-form"
-import { z } from "zod/v4"
 import { inviteMember } from "@/actions/organizations/invite-member"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -28,12 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/common/select"
+import { inviteFormSchema } from "@/lib/schemas/organization"
 import { formResolver } from "@/lib/schemas/resolve"
-
-const schema = z.object({
-  email: z.string().trim().email("Enter a valid email."),
-  role: z.enum(["admin", "member"]),
-})
 
 interface Props {
   organizationId: string
@@ -49,7 +44,7 @@ export function InviteMemberDialog({
   const router = useRouter()
   const { form, action } = useHookFormAction(
     inviteMember,
-    formResolver(schema),
+    formResolver(inviteFormSchema),
     {
       formProps: { defaultValues: { email: "", role: "member" } },
       actionProps: {

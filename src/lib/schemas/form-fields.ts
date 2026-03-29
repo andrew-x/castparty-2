@@ -14,7 +14,7 @@ export const customFormItemSchema = z.object({
   label: z.string().trim().min(1).max(200),
   description: z.string().trim().max(500),
   required: z.boolean(),
-  options: z.array(z.string().max(200)),
+  options: z.array(z.string().trim().max(200)),
 })
 
 // --- Production form field actions ---

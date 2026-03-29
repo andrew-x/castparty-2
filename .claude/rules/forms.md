@@ -39,28 +39,32 @@ const form = useForm({ resolver: zodResolver(schema), defaultValues: { ... } })
 const { execute, isPending } = useAction(myAction, { onSuccess, onError })
 ```
 
-## Centralized schemas
+## Schema location
 
-Define all Zod schemas in `src/lib/schemas/[feature].ts`. Import into both form
-components and action files. Never define schemas inline in form or action files.
-
-**Form schemas** contain user-input fields only (what the form collects).
-
-**Action schemas** extend form schemas with IDs and server-only refinements via
-`.extend()` and `.refine()`.
+**Shared schemas** — when a schema is used by both a form component and an action,
+or by multiple files, extract it to `src/lib/schemas/[feature].ts`. Split into a
+**form schema** (user-input fields only) and an **action schema** (extends with IDs
+and server-only refinements).
 
 ```ts
 // src/lib/schemas/production.ts
 export const updateProductionFormSchema = z.object({
   name: z.string().trim().min(1).max(100),
   slug: slugSchema,
-  isOpen: z.boolean(),
+  status: productionStatusSchema,
 })
 
 export const updateProductionActionSchema = updateProductionFormSchema.extend({
-  productionId: z.string().uuid(),
+  productionId: z.string().min(1),
 })
 ```
+
+**Single-use schemas** — when a schema is only used in one file (e.g., an action's
+`inputSchema` that no form references, or a dialog's local validation), it's fine
+to define it inline. Extract to `src/lib/schemas/` if it later becomes shared.
+
+**Never duplicate** — if a schema already exists in `src/lib/schemas/`, import it
+rather than redefining the same shape inline.
 
 ## Submit handlers
 

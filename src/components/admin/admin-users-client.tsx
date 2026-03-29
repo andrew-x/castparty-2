@@ -3,6 +3,9 @@
 import { KeyIcon, LogInIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { AddUserDialog } from "@/components/admin/add-user-dialog"
+import { ChangePasswordDialog } from "@/components/admin/change-password-dialog"
+import { DeleteUserDialog } from "@/components/admin/delete-user-dialog"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
 import {
@@ -15,9 +18,6 @@ import {
 } from "@/components/common/table"
 import { authClient } from "@/lib/auth/auth-client"
 import day from "@/lib/dayjs"
-import { AddUserDialog } from "./add-user-dialog"
-import { ChangePasswordDialog } from "./change-password-dialog"
-import { DeleteUserDialog } from "./delete-user-dialog"
 
 export interface AdminUser {
   id: string

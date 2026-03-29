@@ -1,10 +1,8 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
-import { useAction } from "next-safe-action/hooks"
-import { Controller, useForm } from "react-hook-form"
-import { z } from "zod/v4"
+import { Controller } from "react-hook-form"
 import { createRole } from "@/actions/productions/create-role"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -23,11 +21,8 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { Textarea } from "@/components/common/textarea"
-
-const schema = z.object({
-  name: z.string().trim().min(1, "Role name is required.").max(100),
-  description: z.string().trim().optional(),
-})
+import { formResolver } from "@/lib/schemas/resolve"
+import { createRoleFormSchema } from "@/lib/schemas/role"
 
 interface Props {
   productionId: string
@@ -44,26 +39,31 @@ export function CreateRoleDialog({
 }: Props) {
   const router = useRouter()
 
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: "", description: "" },
-  })
-
-  const { execute, isPending } = useAction(createRole, {
-    onSuccess({ data }) {
-      form.reset()
-      onOpenChange(false)
-      router.refresh()
-      if (data?.slug) {
-        onCreated?.(data.slug)
-      }
+  const { form, action } = useHookFormAction(
+    createRole,
+    formResolver(createRoleFormSchema),
+    {
+      formProps: {
+        defaultValues: { name: "", description: "" },
+      },
+      actionProps: {
+        onSuccess({ data }) {
+          form.reset()
+          onOpenChange(false)
+          router.refresh()
+          if (data?.slug) {
+            onCreated?.(data.slug)
+          }
+        },
+        onError({ error }) {
+          form.setError("root", {
+            message:
+              error.serverError ?? "We couldn't create the role. Try again.",
+          })
+        },
+      },
     },
-    onError({ error }) {
-      form.setError("root", {
-        message: error.serverError ?? "We couldn't create the role. Try again.",
-      })
-    },
-  })
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,7 +72,9 @@ export function CreateRoleDialog({
           <DialogTitle>New role</DialogTitle>
         </DialogHeader>
         <form
-          onSubmit={form.handleSubmit((v) => execute({ ...v, productionId }))}
+          onSubmit={form.handleSubmit((v) =>
+            action.execute({ ...v, productionId }),
+          )}
         >
           <FieldGroup>
             <Controller
@@ -124,7 +126,7 @@ export function CreateRoleDialog({
             )}
           </FieldGroup>
           <DialogFooter className="mt-6">
-            <Button type="submit" loading={isPending}>
+            <Button type="submit" loading={action.isPending}>
               Create role
             </Button>
           </DialogFooter>

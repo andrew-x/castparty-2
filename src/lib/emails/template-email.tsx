@@ -1,5 +1,5 @@
 import { Hr, Link, Text } from "@react-email/components"
-import { EmailLayout } from "./components/layout"
+import { EmailLayout } from "@/lib/emails/components/layout"
 
 const paragraph = {
   fontSize: "16px",

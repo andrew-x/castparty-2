@@ -1,5 +1,5 @@
 import { Button, Heading, Text } from "@react-email/components"
-import { EmailLayout } from "./components/layout"
+import { EmailLayout } from "@/lib/emails/components/layout"
 
 export function InvitationEmail({
   inviterName,

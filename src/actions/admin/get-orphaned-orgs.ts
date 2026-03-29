@@ -3,8 +3,10 @@
 import { count, eq } from "drizzle-orm"
 import db from "@/lib/db/db"
 import { member, Organization, Production } from "@/lib/db/schema"
+import { IS_DEV } from "@/lib/util"
 
 export async function getOrganizations() {
+  if (!IS_DEV) throw new Error("Not available in production")
   const memberCountSq = db
     .select({
       organizationId: member.organizationId,

@@ -4,7 +4,7 @@ export type CustomFormFieldType =
   | "SELECT"
   | "CHECKBOX_GROUP"
   | "TOGGLE"
-export type CustomForm = {
+export interface CustomForm {
   id: string
   type: CustomFormFieldType
   label: string
@@ -13,7 +13,7 @@ export type CustomForm = {
   options: string[] // For SELECT and CHECKBOX_GROUP types
 }
 
-export type CustomFormResponse = {
+export interface CustomFormResponse {
   fieldId: string
   textValue: string | null
   booleanValue: boolean | null
@@ -22,7 +22,7 @@ export type CustomFormResponse = {
 
 export type SystemFieldVisibility = "hidden" | "optional" | "required"
 
-export type SystemFieldConfig = {
+export interface SystemFieldConfig {
   phone: SystemFieldVisibility
   location: SystemFieldVisibility
   headshots: SystemFieldVisibility

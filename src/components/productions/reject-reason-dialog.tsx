@@ -135,7 +135,7 @@ export function RejectReasonDialog({
 
         {emailPreview && (
           <div className="flex flex-col gap-group border-t pt-group">
-            <p className="font-medium text-sm">Notification email</p>
+            <p className="font-medium text-label">Notification email</p>
             <Controller
               name="emailSubject"
               control={form.control}

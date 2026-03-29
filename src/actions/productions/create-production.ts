@@ -47,18 +47,12 @@ export const createProduction = secureActionClient
         }
 
         // Check uniqueness within the organization
-        const existing = await db
-          .select({ slug: Production.slug })
-          .from(Production)
-          .where(
-            and(
-              eq(Production.slug, slug),
-              eq(Production.organizationId, orgId),
-            ),
-          )
-          .limit(1)
+        const existing = await db.query.Production.findFirst({
+          where: (p) => and(eq(p.slug, slug), eq(p.organizationId, orgId)),
+          columns: { slug: true },
+        })
 
-        if (existing.length > 0) {
+        if (existing) {
           throw new Error(
             "This URL ID is already taken. Choose a different one.",
           )

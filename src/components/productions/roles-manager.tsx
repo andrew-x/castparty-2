@@ -125,13 +125,13 @@ export function RolesManager({
                     role.status === "archive" && "opacity-60",
                   )}
                 >
-                  <span className="min-w-0 flex-1 truncate font-medium text-sm">
+                  <span className="min-w-0 flex-1 truncate font-medium text-label">
                     {role.name}
                   </span>
                   {role.status === "archive" ? (
                     <Badge
                       variant="outline"
-                      className="text-[10px] text-muted-foreground"
+                      className="text-caption text-muted-foreground"
                     >
                       <ArchiveIcon className="mr-1 size-2.5" />
                       Archived
@@ -140,9 +140,9 @@ export function RolesManager({
                     <Badge
                       variant={role.status === "open" ? "secondary" : "outline"}
                       className={cn(
-                        "text-[10px]",
+                        "text-caption",
                         role.status === "open"
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                          ? "bg-success-subtle text-success"
                           : "text-muted-foreground",
                       )}
                     >

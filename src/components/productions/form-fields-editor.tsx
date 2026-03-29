@@ -104,7 +104,7 @@ function OptionsEditor({
 
 // --- Draft state for the expanded editor ---
 
-type FieldDraft = {
+interface FieldDraft {
   label: string
   description: string
   required: boolean

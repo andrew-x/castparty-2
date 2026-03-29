@@ -14,10 +14,10 @@ import {
   TableRow,
 } from "@/components/common/table"
 
-import { CancelInvitationDialog } from "./cancel-invitation-dialog"
-import { ChangeRoleDialog } from "./change-role-dialog"
-import { InviteMemberDialog } from "./invite-member-dialog"
-import { RemoveMemberDialog } from "./remove-member-dialog"
+import { CancelInvitationDialog } from "@/components/organizations/cancel-invitation-dialog"
+import { ChangeRoleDialog } from "@/components/organizations/change-role-dialog"
+import { InviteMemberDialog } from "@/components/organizations/invite-member-dialog"
+import { RemoveMemberDialog } from "@/components/organizations/remove-member-dialog"
 
 export interface OrgMember {
   id: string

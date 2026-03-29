@@ -18,8 +18,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/common/popover"
+import { CreateOrgDialog } from "@/components/organizations/create-org-dialog"
 import { authClient } from "@/lib/auth/auth-client"
-import { CreateOrgDialog } from "./create-org-dialog"
 
 export interface OrgSwitcherOrg {
   id: string
@@ -92,10 +92,10 @@ export function OrgSwitcher({ user, organizations, activeOrgId }: Props) {
               <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
             </Avatar>
             <div className="hidden text-left leading-tight md:grid">
-              <span className="truncate font-medium text-[13px]">
+              <span className="truncate font-medium text-label">
                 {user.name}
               </span>
-              <span className="truncate text-[11px] text-muted-foreground">
+              <span className="truncate text-caption text-muted-foreground">
                 {activeOrg?.name ?? user.email}
               </span>
             </div>
