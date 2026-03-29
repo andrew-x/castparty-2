@@ -14,7 +14,6 @@ import { ButtonGroup } from "@/components/common/button-group"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -153,37 +152,22 @@ export function ProductionShareControls({ url, href, fileName }: Props) {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Share production link</DialogTitle>
-            <DialogDescription>
-              Scan this code or share the link so candidates can open the public
-              production page.
-            </DialogDescription>
+            <DialogTitle>QR code</DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col items-center gap-group">
-            <div
-              ref={qrContainerRef}
-              className="rounded-xl border bg-background p-4 shadow-xs"
-            >
-              <QRCodeCanvas
-                value={url}
-                size={240}
-                marginSize={4}
-                title={`QR code for ${url}`}
-                className="size-60 max-w-full"
-              />
-            </div>
-
-            <div className="w-full rounded-md border bg-muted px-group py-element">
-              <p className="break-all font-mono text-caption text-foreground">
-                {url}
-              </p>
-            </div>
+          <div ref={qrContainerRef} className="flex justify-center">
+            <QRCodeCanvas
+              value={url}
+              size={240}
+              marginSize={4}
+              title={`QR code for ${url}`}
+              className="size-60 max-w-full"
+            />
           </div>
 
-          <DialogFooter showCloseButton>
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={handleDownload}

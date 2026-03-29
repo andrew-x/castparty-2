@@ -74,7 +74,7 @@ export function InviteMemberDialog({
             action.execute({ ...v, organizationId }),
           )}
         >
-          <FieldGroup>
+          <FieldGroup className="gap-4">
             <Controller
               name="email"
               control={form.control}

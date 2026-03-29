@@ -31,7 +31,7 @@ export function InviteTeamForm({ organizationId, onContinue }: Props) {
     inviteMember,
     formResolver(inviteFormSchema),
     {
-      formProps: { defaultValues: { email: "" } },
+      formProps: { defaultValues: { email: "", role: "member" } },
       actionProps: {
         onSuccess() {
           const email = form.getValues("email")
