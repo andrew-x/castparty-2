@@ -55,7 +55,7 @@ interface AvailableRole {
 interface Props {
   orgId: string
   productionId: string
-  initialRoleId: string
+  initialRoleIds?: string[]
   availableRoles: AvailableRole[]
   orgSlug: string
   productionSlug: string
@@ -66,7 +66,7 @@ interface Props {
 export function SubmissionForm({
   orgId,
   productionId,
-  initialRoleId,
+  initialRoleIds = [],
   availableRoles,
   orgSlug,
   productionSlug,
@@ -74,9 +74,8 @@ export function SubmissionForm({
   systemFieldConfig = DEFAULT_SYSTEM_FIELD_CONFIG,
 }: Props) {
   const cityOptions = useCityOptions()
-  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([
-    initialRoleId,
-  ])
+  const [selectedRoleIds, setSelectedRoleIds] =
+    useState<string[]>(initialRoleIds)
   const [roleError, setRoleError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [headshots, setHeadshots] = useState<HeadshotFile[]>([])
@@ -324,7 +323,7 @@ export function SubmissionForm({
       })}
     >
       <FieldGroup>
-        {availableRoles.length > 1 && (
+        {availableRoles.length > 0 && (
           <FieldSet
             data-invalid={roleError ? true : undefined}
             className="gap-2"
@@ -356,16 +355,7 @@ export function SubmissionForm({
                       }}
                       className="mt-0.5"
                     />
-                    <span className="flex flex-col">
-                      <span className="text-label leading-snug">
-                        {role.name}
-                      </span>
-                      {role.description && (
-                        <span className="line-clamp-1 text-caption text-muted-foreground">
-                          {role.description}
-                        </span>
-                      )}
-                    </span>
+                    <span className="text-label leading-snug">{role.name}</span>
                   </FieldLabel>
                 )
               })}

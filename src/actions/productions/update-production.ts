@@ -12,7 +12,7 @@ export const updateProduction = secureActionClient
   .inputSchema(updateProductionActionSchema)
   .action(
     async ({
-      parsedInput: { productionId, name, slug, location, status },
+      parsedInput: { productionId, name, description, slug, location, status },
       ctx: { user },
     }) => {
       const orgId = user.activeOrganizationId
@@ -39,6 +39,7 @@ export const updateProduction = secureActionClient
         .update(Production)
         .set({
           name,
+          description,
           slug,
           location,
           ...(status !== undefined && { status }),

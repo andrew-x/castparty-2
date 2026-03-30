@@ -36,6 +36,7 @@ export default async function ProductionSettingsPage({
           productionId={production.id}
           orgSlug={production.organization.slug}
           currentName={production.name}
+          currentDescription={production.description}
           currentLocation={production.location}
           currentSlug={production.slug}
           status={production.status}

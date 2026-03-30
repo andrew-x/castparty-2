@@ -34,8 +34,6 @@ export default async function RolesPage({
   return (
     <RolesManager
       productionId={production.id}
-      orgSlug={production.organization.slug}
-      productionSlug={production.slug}
       roles={roles.map((r) => ({
         id: r.id,
         name: r.name,

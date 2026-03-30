@@ -27,17 +27,10 @@ interface RoleItem {
 
 interface Props {
   productionId: string
-  orgSlug: string
-  productionSlug: string
   roles: RoleItem[]
 }
 
-export function RolesManager({
-  productionId,
-  orgSlug,
-  productionSlug,
-  roles,
-}: Props) {
+export function RolesManager({ productionId, roles }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -193,10 +186,7 @@ export function RolesManager({
             <RoleSettingsForm
               key={selectedRole.id}
               roleId={selectedRole.id}
-              orgSlug={orgSlug}
-              productionSlug={productionSlug}
               currentName={selectedRole.name}
-              currentSlug={selectedRole.slug}
               currentDescription={selectedRole.description}
               currentStatus={selectedRole.status}
             />
