@@ -1,6 +1,6 @@
 import day from "@/lib/dayjs"
 import type { Comment, Feedback } from "@/lib/db/schema"
-import type { CustomFormResponse } from "@/lib/types"
+import type { CustomFormResponse, Representation } from "@/lib/types"
 
 export type FeedbackData = Pick<
   typeof Feedback.$inferSelect,
@@ -78,6 +78,8 @@ export interface SubmissionWithCandidate {
   stage: PipelineStageData | null
   answers: CustomFormResponse[]
   links: string[]
+  unionStatus: string[]
+  representation: Representation | null
   headshots: HeadshotData[]
   resume: ResumeData | null
   resumeText: string | null

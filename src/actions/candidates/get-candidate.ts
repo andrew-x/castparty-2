@@ -10,7 +10,7 @@ import type {
   PipelineStageData,
   StageChangeData,
 } from "@/lib/submission-helpers"
-import type { CustomForm } from "@/lib/types"
+import type { CustomForm, Representation } from "@/lib/types"
 
 export async function getCandidate(candidateId: string) {
   const user = await checkAuth()
@@ -158,6 +158,8 @@ export async function getCandidate(candidateId: string) {
           return r ? { id: r.id, url: r.url, filename: r.filename } : null
         })(),
         links: submission.links,
+        unionStatus: submission.unionStatus,
+        representation: submission.representation as Representation | null,
         resumeText: submission.resumeText ?? null,
         feedback,
         comments,

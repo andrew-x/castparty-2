@@ -1,0 +1,3 @@
+ALTER TABLE "production" ALTER COLUMN "system_field_config" SET DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional","unionStatus":"hidden","representation":"hidden"}'::jsonb;--> statement-breakpoint
+ALTER TABLE "submission" ADD COLUMN "union_status" text[] DEFAULT '{}' NOT NULL;--> statement-breakpoint
+ALTER TABLE "submission" ADD COLUMN "representation" jsonb DEFAULT 'null'::jsonb;

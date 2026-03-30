@@ -13,6 +13,7 @@ import type {
   StageChangeData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
+import type { Representation } from "@/lib/types"
 
 export async function getProductionSubmissions(productionId: string) {
   const user = await checkAuth()
@@ -156,6 +157,8 @@ export async function getProductionSubmissions(productionId: string) {
         stage: sub.stage,
         answers: sub.answers,
         links: sub.links,
+        unionStatus: sub.unionStatus,
+        representation: sub.representation as Representation | null,
         headshots,
         resume,
         resumeText: sub.resumeText,

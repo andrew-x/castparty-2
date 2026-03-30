@@ -111,6 +111,12 @@ export function ComparisonView({
   const hasAnyHeadshots = localSubmissions.some((s) => s.headshots.length > 0)
   const hasAnyResume = localSubmissions.some((s) => s.resume)
   const hasAnyLinks = localSubmissions.some((s) => s.links.length > 0)
+  const hasAnyUnionStatus = localSubmissions.some(
+    (s) => s.unionStatus.length > 0,
+  )
+  const hasAnyRepresentation = localSubmissions.some(
+    (s) => s.representation !== null,
+  )
   const hasAnyAnswers = localSubmissions.some((s) => s.answers.length > 0)
   const hasAnyFeedback = localSubmissions.some((s) => s.feedback.length > 0)
 
@@ -343,6 +349,48 @@ export function ComparisonView({
                           </span>
                         </a>
                       ))}
+                    </div>
+                  ) : (
+                    <p className="text-caption text-muted-foreground">—</p>
+                  )}
+                </div>
+              ))}
+
+            {/* Row: Union affiliations */}
+            {hasAnyUnionStatus &&
+              localSubmissions.map((s) => (
+                <div key={s.id} className="pt-group">
+                  <h4 className="mb-block font-medium text-foreground text-label">
+                    Union affiliations
+                  </h4>
+                  {s.unionStatus.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {s.unionStatus.map((union) => (
+                        <Badge key={union} variant="secondary">
+                          {union}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-caption text-muted-foreground">—</p>
+                  )}
+                </div>
+              ))}
+
+            {/* Row: Representation */}
+            {hasAnyRepresentation &&
+              localSubmissions.map((s) => (
+                <div key={s.id} className="pt-group">
+                  <h4 className="mb-block font-medium text-foreground text-label">
+                    Representation
+                  </h4>
+                  {s.representation ? (
+                    <div className="flex flex-col gap-element text-label text-muted-foreground">
+                      <span>{s.representation.name}</span>
+                      <span>{s.representation.email}</span>
+                      {s.representation.phone && (
+                        <span>{s.representation.phone}</span>
+                      )}
                     </div>
                   ) : (
                     <p className="text-caption text-muted-foreground">—</p>

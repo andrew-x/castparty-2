@@ -2,7 +2,10 @@
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/common/toggle-group"
 import type { SystemFieldConfig, SystemFieldVisibility } from "@/lib/types"
-import { SYSTEM_FIELD_LABELS } from "@/lib/types"
+import {
+  SYSTEM_FIELD_ALLOWED_VISIBILITIES,
+  SYSTEM_FIELD_LABELS,
+} from "@/lib/types"
 
 interface Props {
   config: SystemFieldConfig
@@ -46,7 +49,9 @@ export function SystemFieldToggles({ config, onChange }: Props) {
                 value={config[field]}
                 onValueChange={(v) => handleChange(field, v)}
               >
-                {VISIBILITY_OPTIONS.map((opt) => (
+                {VISIBILITY_OPTIONS.filter((opt) =>
+                  SYSTEM_FIELD_ALLOWED_VISIBILITIES[field].includes(opt.value),
+                ).map((opt) => (
                   <ToggleGroupItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </ToggleGroupItem>

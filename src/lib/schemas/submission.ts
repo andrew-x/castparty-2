@@ -22,6 +22,12 @@ export const resumeFileSchema = z.object({
     .max(10 * 1024 * 1024),
 })
 
+export const representationSchema = z.object({
+  name: z.string().trim().min(1, "Name is required.").max(200),
+  email: z.string().trim().email("Enter a valid email."),
+  phone: z.string().trim().max(50).default(""),
+})
+
 export const submissionFormSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required.").max(100),
   lastName: z.string().trim().min(1, "Last name is required.").max(100),
@@ -38,6 +44,8 @@ export const submissionFormSchema = z.object({
       z.array(z.string().trim().url("Enter a valid URL.")),
     )
     .default([]),
+  unionStatus: z.array(z.string().trim().min(1).max(100)).default([]),
+  representation: representationSchema.nullable().default(null),
 })
 
 export const submissionActionSchema = submissionFormSchema.extend({
@@ -75,6 +83,8 @@ export const updateSubmissionFormSchema = z.object({
       z.array(z.string().trim().url("Enter a valid URL.")),
     )
     .default([]),
+  unionStatus: z.array(z.string().trim().min(1).max(100)).default([]),
+  representation: representationSchema.nullable().default(null),
 })
 
 export const updateSubmissionActionSchema = updateSubmissionFormSchema.extend({

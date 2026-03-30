@@ -25,6 +25,8 @@ export const updateSubmission = secureActionClient
         phone,
         location,
         links,
+        unionStatus,
+        representation,
         newHeadshots,
         newResume,
       },
@@ -218,6 +220,8 @@ export const updateSubmission = secureActionClient
             phone: phone ?? "",
             location: location ?? "",
             links,
+            unionStatus,
+            representation,
             updatedAt: day().toDate(),
           })
           .where(eq(Submission.id, submissionId))

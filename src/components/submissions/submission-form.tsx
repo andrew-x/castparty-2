@@ -26,12 +26,15 @@ import {
   HeadshotUploader,
 } from "@/components/submissions/headshot-uploader"
 import { LinksEditor } from "@/components/submissions/links-editor"
+import { RepresentationFields } from "@/components/submissions/representation-fields"
 import { ResumeUploader } from "@/components/submissions/resume-uploader"
+import { UnionStatusSelect } from "@/components/submissions/union-status-select"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { formResolver } from "@/lib/schemas/resolve"
 import { submissionFormSchema } from "@/lib/schemas/submission"
 import type {
   CustomForm,
+  Representation,
   SystemFieldConfig,
   SystemFieldVisibility,
 } from "@/lib/types"
@@ -103,6 +106,8 @@ export function SubmissionForm({
           location: "",
           answers: defaultAnswers,
           links: [],
+          unionStatus: [],
+          representation: null,
         },
       },
       actionProps: {
@@ -199,16 +204,6 @@ export function SubmissionForm({
         }
         if (systemFieldConfig.resume === "required" && !resume) {
           setResumeError("Resume is required.")
-          hasFieldErrors = true
-        }
-        if (
-          systemFieldConfig.links === "required" &&
-          (!v.links || v.links.length === 0)
-        ) {
-          form.setError("links", {
-            type: "required",
-            message: "At least one link is required.",
-          })
           hasFieldErrors = true
         }
         if (hasFieldErrors) return
@@ -480,6 +475,58 @@ export function SubmissionForm({
           />
         )}
 
+        {systemFieldConfig.unionStatus !== "hidden" && (
+          <Controller
+            name="unionStatus"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid || undefined}>
+                <FieldLabel>
+                  {systemFieldLabel(
+                    "Union affiliations",
+                    systemFieldConfig.unionStatus,
+                  )}
+                </FieldLabel>
+                <FieldDescription>
+                  Select your union memberships or type to add unlisted unions.
+                </FieldDescription>
+                <UnionStatusSelect
+                  value={(field.value as string[]) ?? []}
+                  onChange={field.onChange}
+                />
+                {fieldState.error && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        )}
+
+        {systemFieldConfig.representation !== "hidden" && (
+          <Controller
+            name="representation"
+            control={form.control}
+            render={({ field }) => {
+              const repErrors = form.formState.errors.representation as
+                | { name?: { message?: string }; email?: { message?: string } }
+                | undefined
+              return (
+                <Field>
+                  <FieldLabel>
+                    {systemFieldLabel(
+                      "Representation",
+                      systemFieldConfig.representation,
+                    )}
+                  </FieldLabel>
+                  <RepresentationFields
+                    value={field.value as Representation | null}
+                    onChange={field.onChange}
+                    errors={repErrors}
+                  />
+                </Field>
+              )
+            }}
+          />
+        )}
+
         {submissionFormFields.map((formField) => (
           <Controller
             key={formField.id}
@@ -533,7 +580,6 @@ export function SubmissionForm({
               <Field data-invalid={fieldState.invalid || undefined}>
                 <FieldLabel>
                   {systemFieldLabel("Links", systemFieldConfig.links)}
-                  {systemFieldConfig.links === "required" && <RequiredMarker />}
                 </FieldLabel>
                 <FieldDescription>
                   Add links to your portfolio, social media, or demo reels.

@@ -14,6 +14,7 @@ import type {
   CustomForm,
   CustomFormResponse,
   EmailTemplates,
+  Representation,
   SystemFieldConfig,
 } from "@/lib/types"
 
@@ -281,6 +282,8 @@ export const Production = pgTable(
       headshots: "optional",
       resume: "optional",
       links: "optional",
+      unionStatus: "hidden",
+      representation: "hidden",
     }),
     feedbackFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
     rejectReasons: jsonb().$type<string[]>().notNull().default([]),
@@ -427,6 +430,8 @@ export const Submission = pgTable("submission", {
 
   answers: jsonb().$type<CustomFormResponse[]>().notNull().default([]),
   links: text().array().notNull().default([]),
+  unionStatus: text().array().notNull().default([]),
+  representation: jsonb().$type<Representation | null>().default(null),
   resumeText: text(),
 
   createdAt: timestamp().defaultNow().notNull(),
