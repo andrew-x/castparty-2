@@ -3,6 +3,7 @@
 import { FileTextIcon, LayersIcon } from "lucide-react"
 import dynamic from "next/dynamic"
 import { useState } from "react"
+import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
 import { Separator } from "@/components/common/separator"
 import { SocialIcon } from "@/components/common/social-icons"
@@ -134,6 +135,47 @@ export function SubmissionInfoPanel({
                   <span className="min-w-0 truncate">{prettifyUrl(link)}</span>
                 </a>
               ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {submission.unionStatus.length > 0 && (
+        <>
+          <Separator />
+          <div className="flex flex-col gap-block">
+            <h3 className="font-medium text-foreground text-label">
+              Union affiliations
+            </h3>
+            <div className="flex flex-wrap gap-1">
+              {submission.unionStatus.map((union) => (
+                <Badge key={union} variant="secondary">
+                  {union}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {submission.representation && (
+        <>
+          <Separator />
+          <div className="flex flex-col gap-block">
+            <h3 className="font-medium text-foreground text-label">
+              Representation
+            </h3>
+            <div className="flex flex-col gap-element text-label text-muted-foreground">
+              <span>{submission.representation.name}</span>
+              <a
+                href={`mailto:${submission.representation.email}`}
+                className="transition-colors hover:text-foreground"
+              >
+                {submission.representation.email}
+              </a>
+              {submission.representation.phone && (
+                <span>{submission.representation.phone}</span>
+              )}
             </div>
           </div>
         </>

@@ -54,12 +54,16 @@ export const systemFieldVisibilitySchema = z.enum([
   "required",
 ])
 
+export const hiddenOrOptionalSchema = z.enum(["hidden", "optional"])
+
 export const systemFieldConfigSchema = z.object({
   phone: systemFieldVisibilitySchema,
   location: systemFieldVisibilitySchema,
   headshots: systemFieldVisibilitySchema,
   resume: systemFieldVisibilitySchema,
-  links: systemFieldVisibilitySchema,
+  links: hiddenOrOptionalSchema,
+  unionStatus: hiddenOrOptionalSchema,
+  representation: hiddenOrOptionalSchema,
 })
 
 export const updateProductionSystemFieldConfigSchema = z.object({

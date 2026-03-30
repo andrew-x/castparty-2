@@ -6,6 +6,8 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { Label } from "@/components/common/label"
+import { Switch } from "@/components/common/switch"
 import { CustomFieldDisplay } from "@/components/submissions/custom-field-display"
 import type {
   CustomForm,
@@ -83,6 +85,32 @@ export function SubmissionFormPreview({
           />
         ))}
 
+        {systemFieldConfig.unionStatus !== "hidden" && (
+          <Field>
+            <FieldLabel>
+              {fieldLabel("Union affiliations", systemFieldConfig.unionStatus)}
+            </FieldLabel>
+            <FieldDescription>
+              Select your union memberships or type to add unlisted unions.
+            </FieldDescription>
+            <Input type="text" disabled placeholder="e.g. AEA, SAG-AFTRA" />
+          </Field>
+        )}
+
+        {systemFieldConfig.representation !== "hidden" && (
+          <Field>
+            <FieldLabel>
+              {fieldLabel("Representation", systemFieldConfig.representation)}
+            </FieldLabel>
+            <Label className="flex items-center gap-2">
+              <Switch disabled />
+              <span className="text-label text-muted-foreground">
+                I have an agent or manager
+              </span>
+            </Label>
+          </Field>
+        )}
+
         {systemFieldConfig.headshots !== "hidden" && (
           <Field>
             <FieldLabel>
@@ -112,9 +140,6 @@ export function SubmissionFormPreview({
           <Field>
             <FieldLabel>
               {fieldLabel("Links", systemFieldConfig.links)}
-              {systemFieldConfig.links === "required" && (
-                <span className="text-destructive"> *</span>
-              )}
             </FieldLabel>
             <FieldDescription>
               Add links to your portfolio, social media, or demo reels.

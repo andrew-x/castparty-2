@@ -23,11 +23,13 @@ import {
   HeadshotUploader,
 } from "@/components/submissions/headshot-uploader"
 import { LinksEditor } from "@/components/submissions/links-editor"
+import { RepresentationFields } from "@/components/submissions/representation-fields"
 import { ResumeUploader } from "@/components/submissions/resume-uploader"
+import { UnionStatusSelect } from "@/components/submissions/union-status-select"
 import { formResolver } from "@/lib/schemas/resolve"
 import { updateSubmissionFormSchema } from "@/lib/schemas/submission"
 import type { SubmissionWithCandidate } from "@/lib/submission-helpers"
-import type { CustomForm } from "@/lib/types"
+import type { CustomForm, Representation } from "@/lib/types"
 
 interface Props {
   submission: SubmissionWithCandidate
@@ -59,6 +61,8 @@ export function SubmissionEditForm({
           phone: submission.phone ?? "",
           location: submission.location ?? "",
           links: submission.links,
+          unionStatus: submission.unionStatus ?? [],
+          representation: submission.representation ?? null,
         },
       },
       actionProps: {
@@ -294,6 +298,41 @@ export function SubmissionEditForm({
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
+        />
+
+        <Controller
+          name="unionStatus"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel>Union affiliations</FieldLabel>
+              <UnionStatusSelect
+                value={(field.value as string[]) ?? []}
+                onChange={field.onChange}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="representation"
+          control={form.control}
+          render={({ field }) => {
+            const repErrors = form.formState.errors.representation as
+              | { name?: { message?: string }; email?: { message?: string } }
+              | undefined
+            return (
+              <Field>
+                <FieldLabel>Representation</FieldLabel>
+                <RepresentationFields
+                  value={field.value as Representation | null}
+                  onChange={field.onChange}
+                  errors={repErrors}
+                />
+              </Field>
+            )
+          }}
         />
 
         <FieldSeparator />

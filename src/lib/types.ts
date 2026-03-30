@@ -21,13 +21,16 @@ export interface CustomFormResponse {
 }
 
 export type SystemFieldVisibility = "hidden" | "optional" | "required"
+export type RestrictedFieldVisibility = "hidden" | "optional"
 
 export interface SystemFieldConfig {
   phone: SystemFieldVisibility
   location: SystemFieldVisibility
   headshots: SystemFieldVisibility
   resume: SystemFieldVisibility
-  links: SystemFieldVisibility
+  links: RestrictedFieldVisibility
+  unionStatus: RestrictedFieldVisibility
+  representation: RestrictedFieldVisibility
 }
 
 export const DEFAULT_SYSTEM_FIELD_CONFIG: SystemFieldConfig = {
@@ -36,6 +39,8 @@ export const DEFAULT_SYSTEM_FIELD_CONFIG: SystemFieldConfig = {
   headshots: "optional",
   resume: "optional",
   links: "optional",
+  unionStatus: "hidden",
+  representation: "hidden",
 }
 
 export const SYSTEM_FIELD_LABELS: Record<keyof SystemFieldConfig, string> = {
@@ -44,6 +49,37 @@ export const SYSTEM_FIELD_LABELS: Record<keyof SystemFieldConfig, string> = {
   headshots: "Headshots",
   resume: "Resume",
   links: "Links",
+  unionStatus: "Union status",
+  representation: "Representation",
+}
+
+export const SYSTEM_FIELD_ALLOWED_VISIBILITIES: Record<
+  keyof SystemFieldConfig,
+  SystemFieldVisibility[]
+> = {
+  phone: ["hidden", "optional", "required"],
+  location: ["hidden", "optional", "required"],
+  headshots: ["hidden", "optional", "required"],
+  resume: ["hidden", "optional", "required"],
+  links: ["hidden", "optional"],
+  unionStatus: ["hidden", "optional"],
+  representation: ["hidden", "optional"],
+}
+
+export const UNION_OPTIONS = [
+  "AEA",
+  "EMC",
+  "SAG-AFTRA",
+  "CAEA",
+  "ACTRA",
+  "AGMA",
+  "UDA",
+] as const
+
+export interface Representation {
+  name: string
+  email: string
+  phone: string
 }
 
 export interface EmailTemplate {

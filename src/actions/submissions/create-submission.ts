@@ -30,6 +30,8 @@ export const createSubmission = publicActionClient
         location,
         answers,
         links,
+        unionStatus,
+        representation,
         headshots,
         resume,
       },
@@ -87,7 +89,10 @@ export const createSubmission = publicActionClient
       }
 
       // Validate required system fields
-      const sfc = production.systemFieldConfig ?? DEFAULT_SYSTEM_FIELD_CONFIG
+      const sfc = {
+        ...DEFAULT_SYSTEM_FIELD_CONFIG,
+        ...production.systemFieldConfig,
+      }
       if (sfc.phone === "required" && !phone?.trim()) {
         throw new Error("Phone number is required.")
       }
@@ -100,10 +105,6 @@ export const createSubmission = publicActionClient
       if (sfc.resume === "required" && !resume) {
         throw new Error("Resume is required.")
       }
-      if (sfc.links === "required" && (!links || links.length === 0)) {
-        throw new Error("At least one link is required.")
-      }
-
       // Validate required custom fields
       const formFields = production.submissionFormFields ?? []
       for (const field of formFields) {
@@ -252,6 +253,8 @@ export const createSubmission = publicActionClient
             location: location || "",
             answers: formResponses,
             links,
+            unionStatus,
+            representation,
           })),
         )
 
