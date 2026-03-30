@@ -203,6 +203,25 @@ summary:not(:disabled) {
   }
 }
 
+/* Rich description prose — scoped to sanitized Tiptap output */
+.prose-description {
+  p + p {
+    @apply mt-2;
+  }
+  strong {
+    @apply font-semibold;
+  }
+  ul {
+    @apply ml-4 list-disc;
+  }
+  ol {
+    @apply ml-4 list-decimal;
+  }
+  li {
+    @apply mt-1;
+  }
+}
+
 /* Allow lightbox portal to receive clicks above Radix modal overlays */
 .yarl__portal {
   pointer-events: auto;

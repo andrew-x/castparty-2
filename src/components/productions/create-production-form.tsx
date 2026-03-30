@@ -19,7 +19,7 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
-import { Textarea } from "@/components/common/textarea"
+import { RichTextEditor } from "@/components/common/rich-text-editor"
 import {
   type StageData,
   StagesEditor,
@@ -228,11 +228,11 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
                 <FieldLabel htmlFor={field.name}>
                   Description (optional)
                 </FieldLabel>
-                <Textarea
-                  {...field}
+                <RichTextEditor
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
                   id={field.name}
                   placeholder="A brief description of the production"
-                  rows={3}
                   aria-invalid={fieldState.invalid}
                 />
                 {fieldState.error && <FieldError errors={[fieldState.error]} />}
@@ -416,11 +416,11 @@ export function CreateProductionForm({ orgSlug }: { orgSlug: string }) {
                       <FieldLabel htmlFor={f.name}>
                         Description (optional)
                       </FieldLabel>
-                      <Textarea
-                        {...f}
+                      <RichTextEditor
+                        value={f.value ?? ""}
+                        onChange={f.onChange}
                         id={f.name}
                         placeholder="Brief description of this role"
-                        rows={2}
                         aria-invalid={fieldState.invalid}
                       />
                       {fieldState.error && (

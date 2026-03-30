@@ -37,6 +37,7 @@ export const productionStatusSchema = z.enum(["open", "closed", "archive"])
 
 export const updateProductionFormSchema = z.object({
   name: z.string().trim().min(1, "Production name is required.").max(100),
+  description: z.string().trim().optional().default(""),
   location: z.string().trim().max(200),
   slug: slugSchema,
   status: productionStatusSchema,

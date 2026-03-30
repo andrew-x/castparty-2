@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/common/input"
 import { Label } from "@/components/common/label"
 import { RadioGroup, RadioGroupItem } from "@/components/common/radio-group"
+import { RichTextEditor } from "@/components/common/rich-text-editor"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { updateProductionFormSchema } from "@/lib/schemas/production"
 import { formResolver } from "@/lib/schemas/resolve"
@@ -28,6 +29,7 @@ interface Props {
   productionId: string
   orgSlug: string
   currentName: string
+  currentDescription: string
   currentLocation: string
   currentSlug: string
   status: "open" | "closed" | "archive"
@@ -37,6 +39,7 @@ export function ProductionSettingsForm({
   productionId,
   orgSlug,
   currentName,
+  currentDescription,
   currentLocation,
   currentSlug,
   status,
@@ -50,6 +53,7 @@ export function ProductionSettingsForm({
       formProps: {
         defaultValues: {
           name: currentName,
+          description: currentDescription,
           location: currentLocation,
           slug: currentSlug,
           status,
@@ -73,6 +77,7 @@ export function ProductionSettingsForm({
   const watched = form.watch()
   const hasChanges =
     watched.name !== currentName ||
+    watched.description !== currentDescription ||
     watched.location !== currentLocation ||
     watched.slug !== currentSlug ||
     watched.status !== status
@@ -85,6 +90,7 @@ export function ProductionSettingsForm({
         action.execute({
           productionId,
           name: v.name,
+          description: v.description,
           location: v.location,
           slug: v.slug,
           status: v.status,
@@ -102,25 +108,6 @@ export function ProductionSettingsForm({
                 {...field}
                 id={field.name}
                 type="text"
-                aria-invalid={fieldState.invalid}
-              />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        <Controller
-          name="location"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Location</FieldLabel>
-              <AutocompleteInput
-                id={field.name}
-                value={field.value}
-                onChange={field.onChange}
-                options={cityOptions}
-                placeholder="e.g. Toronto, ON"
                 aria-invalid={fieldState.invalid}
               />
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
@@ -187,6 +174,45 @@ export function ProductionSettingsForm({
                   </FieldContent>
                 </Label>
               </RadioGroup>
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="location"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor={field.name}>Location</FieldLabel>
+              <AutocompleteInput
+                id={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                options={cityOptions}
+                placeholder="e.g. Toronto, ON"
+                aria-invalid={fieldState.invalid}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="description"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor={field.name}>
+                Description (optional)
+              </FieldLabel>
+              <RichTextEditor
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                id={field.name}
+                placeholder="A brief description of the production"
+                aria-invalid={fieldState.invalid}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
         />

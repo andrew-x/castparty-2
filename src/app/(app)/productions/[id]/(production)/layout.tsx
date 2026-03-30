@@ -28,7 +28,6 @@ export default async function ProductionLayout({
     <Page>
       <PageHeader
         title={production.name}
-        description={production.description}
         breadcrumbs={[
           { label: "Productions", href: "/productions" },
           { label: production.name },
