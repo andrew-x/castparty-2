@@ -5,12 +5,12 @@ import { slugSchema, slugSchemaStrict } from "./slug"
 
 export const roleItemSchema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100),
-  description: z.string().optional(),
+  description: z.string().trim().optional(),
 })
 
 export const createProductionFormSchema = z.object({
   name: z.string().trim().min(1, "Production name is required.").max(100),
-  description: z.string().optional(),
+  description: z.string().trim().optional(),
   location: z.string().trim().max(200).optional(),
   slug: slugSchemaStrict.optional().or(z.literal("")),
   roles: z.array(roleItemSchema),
@@ -18,7 +18,7 @@ export const createProductionFormSchema = z.object({
 
 export const createProductionActionSchema = z.object({
   name: z.string().trim().min(1, "Production name is required.").max(100),
-  description: z.string().optional(),
+  description: z.string().trim().optional(),
   location: z.string().trim().max(200).optional(),
   slug: slugSchema.optional(),
   customStages: z
@@ -37,7 +37,7 @@ export const productionStatusSchema = z.enum(["open", "closed", "archive"])
 
 export const updateProductionFormSchema = z.object({
   name: z.string().trim().min(1, "Production name is required.").max(100),
-  description: z.string().optional().default(""),
+  description: z.string().trim().optional().default(""),
   location: z.string().trim().max(200),
   slug: slugSchema,
   status: productionStatusSchema,
