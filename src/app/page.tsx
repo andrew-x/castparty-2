@@ -19,6 +19,7 @@ export default function Home() {
             alt="Castparty"
             width={409}
             height={77}
+            className="h-auto"
             priority
           />
           <p className="max-w-sm text-body-lg text-muted-foreground">
