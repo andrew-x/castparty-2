@@ -14,8 +14,9 @@ export const createOrgActionSchema = z.object({
 export const updateOrgFormSchema = z.object({
   name: z.string().trim().min(1, "Organization name is required.").max(100),
   slug: slugSchema,
-  description: z.string().trim().max(500),
+  description: z.string().trim().max(10000),
   websiteUrl: z.string().trim().url().or(z.literal("")),
+  logo: z.string().url().or(z.literal("")).nullable().optional(),
   isOrganizationProfileOpen: z.boolean(),
 })
 

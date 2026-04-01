@@ -22,6 +22,7 @@ interface RoleItem {
   name: string
   slug: string
   description: string
+  referencePhotos: string[]
   status: "open" | "closed" | "archive"
 }
 
@@ -188,6 +189,7 @@ export function RolesManager({ productionId, roles }: Props) {
               roleId={selectedRole.id}
               currentName={selectedRole.name}
               currentDescription={selectedRole.description}
+              currentReferencePhotos={selectedRole.referencePhotos}
               currentStatus={selectedRole.status}
             />
           )}

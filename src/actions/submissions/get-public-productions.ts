@@ -15,6 +15,7 @@ export async function getPublicProductions(orgId: string) {
           name: true,
           slug: true,
           description: true,
+          referencePhotos: true,
         },
       },
     },

@@ -3,6 +3,7 @@
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
 import { Controller } from "react-hook-form"
+import { presignReferencePhotosUpload } from "@/actions/productions/presign-reference-photos-upload"
 import { updateRole } from "@/actions/productions/update-role"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -15,6 +16,7 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@/components/common/field"
+import { MultiImageUploader } from "@/components/common/image-uploader"
 import { Input } from "@/components/common/input"
 import { Label } from "@/components/common/label"
 import { RadioGroup, RadioGroupItem } from "@/components/common/radio-group"
@@ -26,6 +28,7 @@ interface Props {
   roleId: string
   currentName: string
   currentDescription: string
+  currentReferencePhotos: string[]
   currentStatus: "open" | "closed" | "archive"
 }
 
@@ -33,6 +36,7 @@ export function RoleSettingsForm({
   roleId,
   currentName,
   currentDescription,
+  currentReferencePhotos,
   currentStatus,
 }: Props) {
   const router = useRouter()
@@ -45,6 +49,7 @@ export function RoleSettingsForm({
           name: currentName,
           status: currentStatus,
           description: currentDescription,
+          referencePhotos: currentReferencePhotos,
         },
       },
       actionProps: {
@@ -65,10 +70,16 @@ export function RoleSettingsForm({
   const hasChanges =
     watched.name !== currentName ||
     watched.status !== currentStatus ||
-    watched.description !== currentDescription
+    watched.description !== currentDescription ||
+    JSON.stringify(watched.referencePhotos) !==
+      JSON.stringify(currentReferencePhotos)
 
   return (
-    <form onSubmit={form.handleSubmit((v) => action.execute({ ...v, roleId }))}>
+    <form
+      onSubmit={form.handleSubmit((v) =>
+        action.execute({ ...v, roleId, referencePhotos: v.referencePhotos }),
+      )}
+    >
       <FieldGroup>
         <Controller
           name="name"
@@ -142,6 +153,29 @@ export function RoleSettingsForm({
                 aria-invalid={fieldState.invalid}
               />
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="referencePhotos"
+          control={form.control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Reference photos</FieldLabel>
+              <MultiImageUploader
+                value={(field.value ?? []).map((url: string) => ({
+                  url,
+                  key: url,
+                }))}
+                onChange={(items) => field.onChange(items.map((i) => i.url))}
+                presignAction={(input) =>
+                  presignReferencePhotosUpload({ ...input, roleId })
+                }
+                maxFiles={3}
+                maxSizeMb={10}
+                label="Add reference photos"
+              />
             </Field>
           )}
         />

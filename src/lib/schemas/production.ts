@@ -40,6 +40,7 @@ export const updateProductionFormSchema = z.object({
   description: z.string().trim().optional().default(""),
   location: z.string().trim().max(200),
   slug: slugSchema,
+  banner: z.string().url().or(z.literal("")).nullable().optional(),
   status: productionStatusSchema,
 })
 

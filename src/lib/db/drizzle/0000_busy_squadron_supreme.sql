@@ -152,8 +152,9 @@ CREATE TABLE "production" (
 	"description" text DEFAULT '' NOT NULL,
 	"status" "production_status" DEFAULT 'closed' NOT NULL,
 	"location" text DEFAULT '' NOT NULL,
+	"banner" text,
 	"submission_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
-	"system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional"}'::jsonb NOT NULL,
+	"system_field_config" jsonb DEFAULT '{"phone":"optional","location":"optional","headshots":"optional","resume":"optional","links":"optional","unionStatus":"hidden","representation":"hidden"}'::jsonb NOT NULL,
 	"feedback_form_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"reject_reasons" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"email_templates" jsonb,
@@ -167,6 +168,7 @@ CREATE TABLE "role" (
 	"name" text NOT NULL,
 	"slug" text NOT NULL,
 	"description" text DEFAULT '' NOT NULL,
+	"reference_photos" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"status" "production_status" DEFAULT 'closed' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -200,6 +202,8 @@ CREATE TABLE "submission" (
 	"location" text DEFAULT '' NOT NULL,
 	"answers" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"links" text[] DEFAULT '{}' NOT NULL,
+	"union_status" text[] DEFAULT '{}' NOT NULL,
+	"representation" jsonb DEFAULT 'null'::jsonb,
 	"resume_text" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL

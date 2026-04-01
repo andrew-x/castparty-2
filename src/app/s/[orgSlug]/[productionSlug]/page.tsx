@@ -1,5 +1,6 @@
 import { UserIcon } from "lucide-react"
 import type { Metadata } from "next"
+import Image from "next/image"
 import { getPublicOrg } from "@/actions/submissions/get-public-org"
 import { getPublicProduction } from "@/actions/submissions/get-public-production"
 import {
@@ -55,6 +56,20 @@ export default async function SubmitProductionPage({
 
   return (
     <div className="flex flex-col gap-section">
+      {/* Production banner */}
+      {production.banner && (
+        <div className="overflow-hidden rounded-lg">
+          <Image
+            src={production.banner}
+            alt={`${production.name} banner`}
+            width={1200}
+            height={675}
+            className="aspect-video w-full object-cover"
+            priority
+          />
+        </div>
+      )}
+
       {/* Production info */}
       <div>
         <h1 className="font-serif text-title">{production.name}</h1>
@@ -73,22 +88,43 @@ export default async function SubmitProductionPage({
       {hasRoles ? (
         <>
           <Accordion type="multiple">
-            {production.roles.map((role) => (
-              <AccordionItem key={role.id} value={role.id}>
-                <AccordionTrigger>{role.name}</AccordionTrigger>
-                {role.description && (
-                  <AccordionContent>
-                    <div
-                      className="prose-description text-muted-foreground"
-                      // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitize-html allowlist
-                      dangerouslySetInnerHTML={{
-                        __html: sanitizeDescription(role.description),
-                      }}
-                    />
-                  </AccordionContent>
-                )}
-              </AccordionItem>
-            ))}
+            {production.roles.map((role) => {
+              const photos = (role.referencePhotos as string[] | null) ?? []
+              return (
+                <AccordionItem key={role.id} value={role.id}>
+                  <AccordionTrigger>{role.name}</AccordionTrigger>
+                  {(role.description || photos.length > 0) && (
+                    <AccordionContent>
+                      <div className="flex flex-col gap-block">
+                        {role.description && (
+                          <div
+                            className="prose-description text-muted-foreground"
+                            // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitize-html allowlist
+                            dangerouslySetInnerHTML={{
+                              __html: sanitizeDescription(role.description),
+                            }}
+                          />
+                        )}
+                        {photos.length > 0 && (
+                          <div className="flex gap-element">
+                            {photos.map((photo) => (
+                              <Image
+                                key={photo}
+                                src={photo}
+                                alt={`${role.name} reference`}
+                                width={120}
+                                height={120}
+                                className="size-24 rounded-lg object-cover"
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </AccordionContent>
+                  )}
+                </AccordionItem>
+              )
+            })}
           </Accordion>
 
           <Separator />

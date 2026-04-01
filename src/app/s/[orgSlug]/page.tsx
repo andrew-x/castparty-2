@@ -1,5 +1,6 @@
 import { ClapperboardIcon, GlobeIcon, LockIcon, UserIcon } from "lucide-react"
 import type { Metadata } from "next"
+import Image from "next/image"
 import { getPublicOrg } from "@/actions/submissions/get-public-org"
 import { getPublicOrgProfile } from "@/actions/submissions/get-public-org-profile"
 import { getPublicProductions } from "@/actions/submissions/get-public-productions"
@@ -12,6 +13,7 @@ import {
   EmptyTitle,
 } from "@/components/common/empty"
 import { NotFoundEntity } from "@/components/submissions/not-found-entity"
+import { sanitizeDescription } from "@/lib/sanitize"
 
 export async function generateMetadata({
   params,
@@ -66,14 +68,33 @@ export default async function SubmitOrgPage({
   return (
     <div className="flex flex-col gap-section">
       <div className="flex flex-col gap-block">
-        <div>
-          <h1 className="font-serif text-title">{org.name}</h1>
-          <p className="mt-2 text-body text-muted-foreground">Open auditions</p>
+        <div className="flex items-center gap-element">
+          {org.logo && (
+            <Image
+              src={org.logo}
+              alt={`${org.name} logo`}
+              width={48}
+              height={48}
+              className="size-12 rounded-lg object-cover"
+            />
+          )}
+          <div>
+            <h1 className="font-serif text-title">{org.name}</h1>
+            <p className="mt-1 text-body text-muted-foreground">
+              Open auditions
+            </p>
+          </div>
         </div>
         {(description || websiteUrl) && (
           <div className="flex flex-col gap-element">
             {description && (
-              <p className="text-body text-muted-foreground">{description}</p>
+              <div
+                className="prose-description text-body text-muted-foreground"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitize-html allowlist
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeDescription(description),
+                }}
+              />
             )}
             {websiteUrl && (
               <a
@@ -131,33 +152,47 @@ export default async function SubmitOrgPage({
                 </p>
               ) : (
                 <div className="flex flex-col gap-element">
-                  {production.roles.map((role) => (
-                    <div
-                      key={role.id}
-                      className="flex items-center justify-between gap-element rounded-md border p-group"
-                    >
-                      <div className="flex items-center gap-element">
-                        <UserIcon className="size-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground text-label">
-                            {role.name}
-                          </p>
-                          {role.description && (
-                            <p className="text-caption text-muted-foreground">
-                              {role.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        href={`/s/${orgSlug}/${production.slug}/${role.slug}`}
-                        variant="outline"
-                        size="sm"
+                  {production.roles.map((role) => {
+                    const photos =
+                      (role.referencePhotos as string[] | null) ?? []
+                    return (
+                      <div
+                        key={role.id}
+                        className="flex items-center justify-between gap-element rounded-md border p-group"
                       >
-                        Submit
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="flex items-center gap-element">
+                          {photos.length > 0 ? (
+                            <Image
+                              src={photos[0]}
+                              alt={role.name}
+                              width={32}
+                              height={32}
+                              className="size-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <UserIcon className="size-4 text-muted-foreground" />
+                          )}
+                          <div>
+                            <p className="font-medium text-foreground text-label">
+                              {role.name}
+                            </p>
+                            {role.description && (
+                              <p className="text-caption text-muted-foreground">
+                                {role.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          href={`/s/${orgSlug}/${production.slug}/${role.slug}`}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Submit
+                        </Button>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>

@@ -23,6 +23,7 @@ export default async function OrganizationSettingsPage() {
           organizationId={activeOrgId}
           currentName={orgData.organization.name}
           currentSlug={orgData.organization.slug}
+          currentLogo={orgData.organization.logo ?? null}
           currentDescription={profile.description}
           currentWebsiteUrl={profile.websiteUrl}
           currentIsOrganizationProfileOpen={profile.isOrganizationProfileOpen}
