@@ -450,7 +450,12 @@ export const feedbackRatingEnum = pgEnum("feedback_rating", [
   "STRONG_YES",
 ])
 
-export const fileTypeEnum = pgEnum("file_type", ["HEADSHOT", "RESUME", "VIDEO"])
+export const fileTypeEnum = pgEnum("file_type", [
+  "HEADSHOT",
+  "RESUME",
+  "VIDEO",
+  "CUSTOM_FIELD",
+])
 
 export const File = pgTable(
   "file",
@@ -462,6 +467,7 @@ export const File = pgTable(
     candidateId: text().references(() => Candidate.id, {
       onDelete: "cascade",
     }),
+    formFieldId: text(),
 
     type: fileTypeEnum().notNull(),
     url: text().notNull(),
@@ -477,6 +483,7 @@ export const File = pgTable(
   (table) => [
     index("file_submissionId_idx").on(table.submissionId),
     index("file_candidateId_idx").on(table.candidateId),
+    index("file_formFieldId_idx").on(table.formFieldId),
   ],
 )
 

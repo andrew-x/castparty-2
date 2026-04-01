@@ -39,9 +39,18 @@ export function SubmissionInfoPanel({
   onLightboxOpenChange,
 }: SubmissionInfoPanelProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [customFieldLightbox, setCustomFieldLightbox] = useState<{
+    fieldId: string
+    index: number
+  } | null>(null)
 
   function updateLightbox(index: number | null) {
     setLightboxIndex(index)
+    onLightboxOpenChange?.(index !== null)
+  }
+
+  function updateCustomFieldLightbox(fieldId: string, index: number | null) {
+    setCustomFieldLightbox(index !== null ? { fieldId, index } : null)
     onLightboxOpenChange?.(index !== null)
   }
 
@@ -195,8 +204,86 @@ export function SubmissionInfoPanel({
           <h3 className="font-medium text-foreground text-label">
             Form responses
           </h3>
-          <div className="flex flex-col gap-element">
+          <div className="flex flex-col gap-group">
             {submissionFormFields.map((field) => {
+              if (field.type === "IMAGE") {
+                const files = submission.customFieldFiles[field.id] ?? []
+                return (
+                  <div key={field.id}>
+                    <p className="font-medium text-caption text-muted-foreground">
+                      {field.label}
+                    </p>
+                    {files.length > 0 ? (
+                      <>
+                        <div className="mt-1 grid grid-cols-3 gap-element">
+                          {files.map((file, i) => (
+                            <button
+                              key={file.id}
+                              type="button"
+                              onClick={() =>
+                                updateCustomFieldLightbox(field.id, i)
+                              }
+                              className="aspect-square overflow-hidden rounded-lg border border-border"
+                            >
+                              {/* biome-ignore lint/performance/noImgElement: external R2 URLs */}
+                              <img
+                                src={file.url}
+                                alt={file.filename}
+                                className="size-full object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <HeadshotLightbox
+                          open={customFieldLightbox?.fieldId === field.id}
+                          index={customFieldLightbox?.index ?? 0}
+                          onClose={() =>
+                            updateCustomFieldLightbox(field.id, null)
+                          }
+                          slides={files.map((f) => ({
+                            src: f.url,
+                            alt: f.filename,
+                          }))}
+                        />
+                      </>
+                    ) : (
+                      <p className="text-label text-muted-foreground italic">
+                        Not provided
+                      </p>
+                    )}
+                  </div>
+                )
+              }
+
+              if (field.type === "DOCUMENT") {
+                const files = submission.customFieldFiles[field.id] ?? []
+                const doc = files[0]
+                return (
+                  <div key={field.id}>
+                    <p className="font-medium text-caption text-muted-foreground">
+                      {field.label}
+                    </p>
+                    {doc ? (
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 flex items-center gap-element rounded-lg border border-border px-3 py-2 text-foreground text-label transition-colors hover:bg-muted/50"
+                      >
+                        <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 flex-1 truncate">
+                          {doc.filename}
+                        </span>
+                      </a>
+                    ) : (
+                      <p className="text-label text-muted-foreground italic">
+                        Not provided
+                      </p>
+                    )}
+                  </div>
+                )
+              }
+
               const answer = submission.answers.find(
                 (a) => a.fieldId === field.id,
               )

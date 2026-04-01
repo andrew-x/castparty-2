@@ -106,6 +106,7 @@ export const copySubmissionToRole = secureActionClient
               id: generateId("file"),
               submissionId: newSubmissionId,
               type: f.type,
+              formFieldId: f.formFieldId,
               url: f.url,
               key: f.key,
               path: f.path,

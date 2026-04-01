@@ -34,6 +34,7 @@ export const createSubmission = publicActionClient
         representation,
         headshots,
         resume,
+        customFieldFiles,
       },
     }) => {
       // Validate all roles exist and belong to the production
@@ -109,58 +110,130 @@ export const createSubmission = publicActionClient
       const formFields = production.submissionFormFields ?? []
       for (const field of formFields) {
         if (!field.required) continue
-        const value = answers[field.id]
-        if (field.type === "TOGGLE") {
+        if (field.type === "IMAGE" || field.type === "DOCUMENT") {
+          const files = customFieldFiles[field.id]
+          if (!files || files.length === 0) {
+            throw new Error(`${field.label} is required.`)
+          }
+        } else if (field.type === "TOGGLE") {
+          const value = answers[field.id]
           if (value !== "true") throw new Error(`${field.label} is required.`)
         } else if (field.type === "CHECKBOX_GROUP") {
+          const value = answers[field.id]
           const selected = value?.split(",").filter((v) => v.trim().length > 0)
           if (!selected?.length) throw new Error(`${field.label} is required.`)
-        } else if (!value?.trim()) {
+        } else if (!answers[field.id]?.trim()) {
           throw new Error(`${field.label} is required.`)
         }
       }
 
+      // Move custom field files from temp/ to permanent R2 storage
+      type MovedCustomFile = {
+        moved: { url: string; key: string; path: string }
+        meta: { filename: string; contentType: string; size: number }
+      }
+      const movedCustomFieldFiles: Record<string, MovedCustomFile[]> = {}
+
+      for (const [fieldId, files] of Object.entries(customFieldFiles)) {
+        if (!files || files.length === 0) continue
+
+        const tempPrefix = `${r2Root}/temp/custom-fields/`
+        for (const file of files) {
+          if (!file.key.startsWith(tempPrefix)) {
+            throw new Error("Invalid file key.")
+          }
+        }
+
+        await Promise.all(
+          files.map(async (f) => {
+            const exists = await checkFileExists(f.key)
+            if (!exists)
+              throw new Error(
+                "Custom field upload not found. Try uploading again.",
+              )
+          }),
+        )
+
+        movedCustomFieldFiles[fieldId] = await Promise.all(
+          files.map(async (file) => {
+            const moved = await moveFileByKey(file.key, "custom-fields")
+            return {
+              moved,
+              meta: {
+                filename: file.filename,
+                contentType: file.contentType,
+                size: file.size,
+              },
+            }
+          }),
+        )
+      }
+
       // Transform flat answers to CustomFormResponse[]
       const formResponses: CustomFormResponse[] = formFields
-        .filter((field) => field.id in answers)
+        .filter(
+          (field) =>
+            field.id in answers ||
+            field.type === "IMAGE" ||
+            field.type === "DOCUMENT",
+        )
         .map((field) => {
-          const value = answers[field.id] ?? ""
           switch (field.type) {
             case "TEXT":
             case "TEXTAREA":
               return {
                 fieldId: field.id,
-                textValue: value,
+                textValue: answers[field.id] ?? "",
                 booleanValue: null,
                 optionValues: null,
+                fileValues: null,
               }
-            case "SELECT":
+            case "SELECT": {
+              const value = answers[field.id] ?? ""
               return {
                 fieldId: field.id,
                 textValue: null,
                 booleanValue: null,
                 optionValues: value ? [value] : [],
+                fileValues: null,
               }
-            case "CHECKBOX_GROUP":
+            }
+            case "CHECKBOX_GROUP": {
+              const value = answers[field.id] ?? ""
               return {
                 fieldId: field.id,
                 textValue: null,
                 booleanValue: null,
                 optionValues: value ? value.split(",") : [],
+                fileValues: null,
               }
+            }
             case "TOGGLE":
               return {
                 fieldId: field.id,
                 textValue: null,
-                booleanValue: value === "true",
+                booleanValue: (answers[field.id] ?? "") === "true",
                 optionValues: null,
+                fileValues: null,
               }
+            case "IMAGE":
+            case "DOCUMENT": {
+              const movedFiles = movedCustomFieldFiles[field.id]
+              return {
+                fieldId: field.id,
+                textValue: null,
+                booleanValue: null,
+                optionValues: null,
+                fileValues: movedFiles?.map((f) => f.moved.url) ?? null,
+              }
+            }
             default:
               return {
                 fieldId: field.id,
-                textValue: value,
+                textValue: answers[field.id] ?? "",
                 booleanValue: null,
                 optionValues: null,
+                fileValues: null,
               }
           }
         })
@@ -291,6 +364,28 @@ export const createSubmission = publicActionClient
               size: resume.size,
               order: 0,
             })),
+          )
+        }
+
+        // Insert File records for custom field uploads
+        for (const [fieldId, files] of Object.entries(movedCustomFieldFiles)) {
+          if (!files || files.length === 0) continue
+          await tx.insert(File).values(
+            submissionIds.flatMap((subId) =>
+              files.map(({ moved, meta }, index) => ({
+                id: generateId("file"),
+                submissionId: subId,
+                formFieldId: fieldId,
+                type: "CUSTOM_FIELD" as const,
+                url: moved.url,
+                key: moved.key,
+                path: moved.path,
+                filename: meta.filename,
+                contentType: meta.contentType,
+                size: meta.size,
+                order: index,
+              })),
+            ),
           )
         }
       })

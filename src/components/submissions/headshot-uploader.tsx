@@ -28,17 +28,20 @@ interface Props {
   onChange: (files: HeadshotFile[]) => void
   error?: string
   maxFiles?: number
+  showPrimary?: boolean
 }
 
 function SortableThumbnail({
   item,
   index,
   isFirst,
+  showPrimary,
   onRemove,
 }: {
   item: HeadshotFile
   index: number
   isFirst: boolean
+  showPrimary: boolean
   onRemove: () => void
 }) {
   const { ref, isDragSource } = useSortable({
@@ -61,7 +64,7 @@ function SortableThumbnail({
         className="size-full object-cover"
         draggable={false}
       />
-      {isFirst && (
+      {isFirst && showPrimary && (
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="absolute top-1 left-1 rounded-full bg-brand p-1">
@@ -90,6 +93,7 @@ export function HeadshotUploader({
   onChange,
   error,
   maxFiles = DEFAULT_MAX_FILES,
+  showPrimary = true,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [localError, setLocalError] = useState<string | null>(null)
@@ -159,6 +163,7 @@ export function HeadshotUploader({
                 item={item}
                 index={index}
                 isFirst={index === 0}
+                showPrimary={showPrimary}
                 onRemove={() => handleRemove(item.id)}
               />
             ))}
@@ -181,7 +186,9 @@ export function HeadshotUploader({
 
       {files.length > 1 && (
         <p className="text-caption text-muted-foreground">
-          Drag to reorder. First image is your main headshot.
+          {showPrimary
+            ? "Drag to reorder. First image is your main headshot."
+            : "Drag to reorder."}
         </p>
       )}
 

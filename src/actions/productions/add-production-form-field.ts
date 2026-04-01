@@ -30,6 +30,7 @@ export const addProductionFormField = secureActionClient
         description: "",
         required: false,
         options: [],
+        ...(type === "IMAGE" ? { maxFiles: 5 } : {}),
       }
 
       await db

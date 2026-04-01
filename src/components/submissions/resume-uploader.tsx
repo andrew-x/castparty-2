@@ -10,9 +10,15 @@ interface Props {
   file: File | null
   onChange: (file: File | null) => void
   error?: string
+  placeholder?: string
 }
 
-export function ResumeUploader({ file, onChange, error }: Props) {
+export function ResumeUploader({
+  file,
+  onChange,
+  error,
+  placeholder = "Add resume (PDF)",
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -63,7 +69,7 @@ export function ResumeUploader({ file, onChange, error }: Props) {
           className="flex items-center justify-center gap-element rounded-lg border-2 border-border border-dashed px-4 py-6 text-muted-foreground transition-colors hover:border-brand hover:text-foreground"
         >
           <FileTextIcon className="size-5" />
-          <span className="text-label">Add resume (PDF)</span>
+          <span className="text-label">{placeholder}</span>
         </button>
       )}
 

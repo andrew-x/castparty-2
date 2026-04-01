@@ -157,6 +157,28 @@ export async function getCandidate(candidateId: string) {
           const r = (submission.files ?? []).find((f) => f.type === "RESUME")
           return r ? { id: r.id, url: r.url, filename: r.filename } : null
         })(),
+        customFieldFiles: (() => {
+          const result: Record<
+            string,
+            {
+              id: string
+              url: string
+              filename: string
+              contentType: string
+            }[]
+          > = {}
+          for (const f of submission.files ?? []) {
+            if (f.type !== "CUSTOM_FIELD" || !f.formFieldId) continue
+            if (!result[f.formFieldId]) result[f.formFieldId] = []
+            result[f.formFieldId].push({
+              id: f.id,
+              url: f.url,
+              filename: f.filename,
+              contentType: f.contentType,
+            })
+          }
+          return result
+        })(),
         links: submission.links,
         unionStatus: submission.unionStatus,
         representation: submission.representation as Representation | null,

@@ -105,6 +105,23 @@ export async function getProductionSubmissions(productionId: string) {
           }
         : null
 
+      const customFieldFiles: Record<
+        string,
+        { id: string; url: string; filename: string; contentType: string }[]
+      > = {}
+      for (const f of allFiles) {
+        if (f.type !== "CUSTOM_FIELD" || !f.formFieldId) continue
+        if (!customFieldFiles[f.formFieldId]) {
+          customFieldFiles[f.formFieldId] = []
+        }
+        customFieldFiles[f.formFieldId].push({
+          id: f.id,
+          url: f.url,
+          filename: f.filename,
+          contentType: f.contentType,
+        })
+      }
+
       const feedback: FeedbackData[] = sub.feedback.map((fb) => ({
         id: fb.id,
         rating: fb.rating,
@@ -161,6 +178,7 @@ export async function getProductionSubmissions(productionId: string) {
         representation: sub.representation as Representation | null,
         headshots,
         resume,
+        customFieldFiles,
         resumeText: sub.resumeText,
         feedback,
         comments,

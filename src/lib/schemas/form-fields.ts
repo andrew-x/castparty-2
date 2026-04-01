@@ -6,6 +6,8 @@ export const customFormFieldTypeSchema = z.enum([
   "SELECT",
   "CHECKBOX_GROUP",
   "TOGGLE",
+  "IMAGE",
+  "DOCUMENT",
 ])
 
 export const customFormItemSchema = z.object({
@@ -15,6 +17,7 @@ export const customFormItemSchema = z.object({
   description: z.string().trim().max(500),
   required: z.boolean(),
   options: z.array(z.string().trim().max(200)),
+  maxFiles: z.number().int().min(1).max(20).optional(),
 })
 
 // --- Production form field actions ---
@@ -34,6 +37,7 @@ export const updateProductionFormFieldSchema = z.object({
   options: z
     .array(z.string().trim().min(1, "Option text is required.").max(200))
     .optional(),
+  maxFiles: z.number().int().min(1).max(20).optional(),
 })
 
 export const removeProductionFormFieldSchema = z.object({

@@ -82,6 +82,7 @@ export const createFeedback = secureActionClient
                 textValue: value,
                 booleanValue: null,
                 optionValues: null,
+                fileValues: null,
               }
             case "SELECT":
               return {
@@ -89,6 +90,7 @@ export const createFeedback = secureActionClient
                 textValue: null,
                 booleanValue: null,
                 optionValues: value ? [value] : [],
+                fileValues: null,
               }
             case "CHECKBOX_GROUP":
               return {
@@ -96,6 +98,7 @@ export const createFeedback = secureActionClient
                 textValue: null,
                 booleanValue: null,
                 optionValues: value ? value.split(",") : [],
+                fileValues: null,
               }
             case "TOGGLE":
               return {
@@ -103,6 +106,7 @@ export const createFeedback = secureActionClient
                 textValue: null,
                 booleanValue: value === "true",
                 optionValues: null,
+                fileValues: null,
               }
             default:
               return {
@@ -110,6 +114,7 @@ export const createFeedback = secureActionClient
                 textValue: value,
                 booleanValue: null,
                 optionValues: null,
+                fileValues: null,
               }
           }
         })

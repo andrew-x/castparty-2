@@ -37,6 +37,8 @@ const FIELD_TYPE_LABELS: Record<CustomFormFieldType, string> = {
   SELECT: "Select",
   CHECKBOX_GROUP: "Checkbox group",
   TOGGLE: "Toggle",
+  IMAGE: "Image upload",
+  DOCUMENT: "Document upload",
 }
 
 // --- Options editor for SELECT/CHECKBOX_GROUP ---
@@ -109,6 +111,7 @@ interface FieldDraft {
   description: string
   required: boolean
   options: string[]
+  maxFiles?: number
 }
 
 function draftFromField(field: CustomForm): FieldDraft {
@@ -117,6 +120,7 @@ function draftFromField(field: CustomForm): FieldDraft {
     description: field.description,
     required: field.required,
     options: [...field.options],
+    maxFiles: field.maxFiles,
   }
 }
 
@@ -162,6 +166,7 @@ function SortableField({
       description: draft.description,
       required: draft.required,
       options: draft.options,
+      maxFiles: draft.maxFiles,
     })
   }
 
@@ -169,7 +174,8 @@ function SortableField({
     draft.label !== field.label ||
     draft.description !== field.description ||
     draft.required !== field.required ||
-    JSON.stringify(draft.options) !== JSON.stringify(field.options)
+    JSON.stringify(draft.options) !== JSON.stringify(field.options) ||
+    draft.maxFiles !== field.maxFiles
 
   return (
     <div
@@ -201,6 +207,12 @@ function SortableField({
           <span className="shrink-0 text-caption text-muted-foreground">
             {field.options.length}{" "}
             {field.options.length === 1 ? "option" : "options"}
+          </span>
+        )}
+
+        {field.type === "IMAGE" && (
+          <span className="shrink-0 text-caption text-muted-foreground">
+            max {field.maxFiles ?? 5}
           </span>
         )}
 
@@ -270,6 +282,27 @@ function SortableField({
             <span className="text-caption text-muted-foreground">Required</span>
           </div>
 
+          {field.type === "IMAGE" && (
+            <div className="flex flex-col gap-element">
+              <span className="font-medium text-caption text-muted-foreground">
+                Max images
+              </span>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={draft.maxFiles ?? 5}
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    maxFiles: Math.max(1, Math.min(20, Number(e.target.value))),
+                  }))
+                }
+                className="h-7 w-20 text-caption"
+              />
+            </div>
+          )}
+
           {(field.type === "SELECT" || field.type === "CHECKBOX_GROUP") && (
             <OptionsEditor
               options={draft.options}
@@ -309,6 +342,7 @@ interface FormFieldsEditorProps {
   isSaving?: boolean
   removingFieldId?: string | null
   description?: string
+  excludeTypes?: CustomFormFieldType[]
 }
 
 export function FormFieldsEditor({
@@ -321,6 +355,7 @@ export function FormFieldsEditor({
   isSaving,
   removingFieldId,
   description,
+  excludeTypes,
 }: FormFieldsEditorProps) {
   const [newFieldType, setNewFieldType] = useState<CustomFormFieldType>("TEXT")
   const [newFieldLabel, setNewFieldLabel] = useState("")
@@ -386,11 +421,13 @@ export function FormFieldsEditor({
                   CustomFormFieldType,
                   string,
                 ][]
-              ).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
+              )
+                .filter(([value]) => !excludeTypes?.includes(value))
+                .map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
 
