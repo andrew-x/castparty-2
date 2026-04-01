@@ -19,6 +19,11 @@ import {
 } from "@/components/common/select"
 import { Switch } from "@/components/common/switch"
 import { Textarea } from "@/components/common/textarea"
+import {
+  type HeadshotFile,
+  HeadshotUploader,
+} from "@/components/submissions/headshot-uploader"
+import { ResumeUploader } from "@/components/submissions/resume-uploader"
 import type { CustomForm } from "@/lib/types"
 
 interface Props {
@@ -28,6 +33,13 @@ interface Props {
   disabled?: boolean
   error?: { message?: string }
   id?: string
+  // For IMAGE fields
+  files?: HeadshotFile[]
+  onFilesChange?: (files: HeadshotFile[]) => void
+  // For DOCUMENT fields
+  documentFile?: File | null
+  onDocumentChange?: (file: File | null) => void
+  fileError?: string
 }
 
 export function CustomFieldDisplay({
@@ -37,6 +49,11 @@ export function CustomFieldDisplay({
   disabled,
   error,
   id,
+  files,
+  onFilesChange,
+  documentFile,
+  onDocumentChange,
+  fileError,
 }: Props) {
   const noop = () => {}
   const handleChange = onChange ?? noop
@@ -175,6 +192,47 @@ export function CustomFieldDisplay({
               handleChange(checked ? "true" : "false")
             }
             disabled={disabled}
+          />
+          {error && <FieldError errors={[error]} />}
+        </Field>
+      )
+
+    case "IMAGE":
+      return (
+        <Field data-invalid={error || fileError ? true : undefined}>
+          <FieldLabel>
+            {field.label}
+            {field.required && <span className="text-destructive"> *</span>}
+          </FieldLabel>
+          {field.description && (
+            <FieldDescription>{field.description}</FieldDescription>
+          )}
+          <HeadshotUploader
+            files={files ?? []}
+            onChange={onFilesChange ?? noop}
+            error={fileError}
+            maxFiles={field.maxFiles ?? 5}
+            showPrimary={false}
+          />
+          {error && <FieldError errors={[error]} />}
+        </Field>
+      )
+
+    case "DOCUMENT":
+      return (
+        <Field data-invalid={error || fileError ? true : undefined}>
+          <FieldLabel>
+            {field.label}
+            {field.required && <span className="text-destructive"> *</span>}
+          </FieldLabel>
+          {field.description && (
+            <FieldDescription>{field.description}</FieldDescription>
+          )}
+          <ResumeUploader
+            file={documentFile ?? null}
+            onChange={onDocumentChange ?? noop}
+            error={fileError}
+            placeholder={`Add ${field.label.toLowerCase()} (PDF)`}
           />
           {error && <FieldError errors={[error]} />}
         </Field>

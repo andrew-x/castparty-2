@@ -4,6 +4,8 @@ export type CustomFormFieldType =
   | "SELECT"
   | "CHECKBOX_GROUP"
   | "TOGGLE"
+  | "IMAGE"
+  | "DOCUMENT"
 export interface CustomForm {
   id: string
   type: CustomFormFieldType
@@ -11,6 +13,7 @@ export interface CustomForm {
   description: string
   required: boolean
   options: string[] // For SELECT and CHECKBOX_GROUP types
+  maxFiles?: number // For IMAGE fields (default 5)
 }
 
 export interface CustomFormResponse {
@@ -18,6 +21,7 @@ export interface CustomFormResponse {
   textValue: string | null
   booleanValue: boolean | null
   optionValues: string[] | null
+  fileValues: string[] | null
 }
 
 export type SystemFieldVisibility = "hidden" | "optional" | "required"

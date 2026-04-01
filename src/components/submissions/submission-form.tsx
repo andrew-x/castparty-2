@@ -4,6 +4,7 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { useState } from "react"
 import { Controller } from "react-hook-form"
 import { createSubmission } from "@/actions/submissions/create-submission"
+import { presignCustomFieldUpload } from "@/actions/submissions/presign-custom-field-upload"
 import { presignHeadshotUpload } from "@/actions/submissions/presign-headshot-upload"
 import { presignResumeUpload } from "@/actions/submissions/presign-resume-upload"
 import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
@@ -86,9 +87,19 @@ export function SubmissionForm({
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [resumeError, setResumeError] = useState<string | null>(null)
+  const [customFieldImages, setCustomFieldImages] = useState<
+    Record<string, HeadshotFile[]>
+  >({})
+  const [customFieldDocuments, setCustomFieldDocuments] = useState<
+    Record<string, File | null>
+  >({})
+  const [customFieldFileErrors, setCustomFieldFileErrors] = useState<
+    Record<string, string | null>
+  >({})
 
   const defaultAnswers: Record<string, string> = {}
   for (const field of submissionFormFields) {
+    if (field.type === "IMAGE" || field.type === "DOCUMENT") continue
     defaultAnswers[field.id] = field.type === "TOGGLE" ? "false" : ""
   }
 
@@ -158,6 +169,7 @@ export function SubmissionForm({
         setUploadError(null)
         setResumeError(null)
         setRoleError(null)
+        setCustomFieldFileErrors({})
 
         // Validate role selection
         let hasFieldErrors = false
@@ -169,13 +181,33 @@ export function SubmissionForm({
         // Validate required custom fields client-side
         for (const formField of submissionFormFields) {
           if (!formField.required) continue
-          const value = v.answers[formField.id]
-          if (!value?.trim()) {
-            form.setError(`answers.${formField.id}`, {
-              type: "required",
-              message: `${formField.label} is required.`,
-            })
-            hasFieldErrors = true
+          if (formField.type === "IMAGE") {
+            const images = customFieldImages[formField.id]
+            if (!images || images.length === 0) {
+              setCustomFieldFileErrors((prev) => ({
+                ...prev,
+                [formField.id]: `${formField.label} is required.`,
+              }))
+              hasFieldErrors = true
+            }
+          } else if (formField.type === "DOCUMENT") {
+            const doc = customFieldDocuments[formField.id]
+            if (!doc) {
+              setCustomFieldFileErrors((prev) => ({
+                ...prev,
+                [formField.id]: `${formField.label} is required.`,
+              }))
+              hasFieldErrors = true
+            }
+          } else {
+            const value = v.answers[formField.id]
+            if (!value?.trim()) {
+              form.setError(`answers.${formField.id}`, {
+                type: "required",
+                message: `${formField.label} is required.`,
+              })
+              hasFieldErrors = true
+            }
           }
         }
 
@@ -307,6 +339,104 @@ export function SubmissionForm({
           setUploading(false)
         }
 
+        // Upload custom field files (IMAGE and DOCUMENT)
+        const customFieldFileMeta: Record<
+          string,
+          { key: string; filename: string; contentType: string; size: number }[]
+        > = {}
+
+        try {
+          for (const formField of submissionFormFields) {
+            if (formField.type === "IMAGE") {
+              const images = customFieldImages[formField.id]
+              if (!images || images.length === 0) continue
+
+              setUploading(true)
+              const presignResult = await presignCustomFieldUpload({
+                fieldType: "IMAGE",
+                files: images.map((h) => ({
+                  filename: h.file.name,
+                  contentType: h.file.type,
+                  size: h.file.size,
+                })),
+              })
+
+              if (!presignResult?.data?.files) {
+                throw new Error(
+                  presignResult?.serverError ?? "Failed to prepare upload.",
+                )
+              }
+
+              const presigned = presignResult.data.files
+              await Promise.all(
+                presigned.map(async ({ presignedUrl }, i) => {
+                  const res = await fetch(presignedUrl, {
+                    method: "PUT",
+                    body: images[i].file,
+                    headers: { "Content-Type": images[i].file.type },
+                  })
+                  if (!res.ok) throw new Error("Upload failed.")
+                }),
+              )
+
+              customFieldFileMeta[formField.id] = presigned.map(
+                ({ key }, i) => ({
+                  key,
+                  filename: images[i].file.name,
+                  contentType: images[i].file.type,
+                  size: images[i].file.size,
+                }),
+              )
+            } else if (formField.type === "DOCUMENT") {
+              const doc = customFieldDocuments[formField.id]
+              if (!doc) continue
+
+              setUploading(true)
+              const presignResult = await presignCustomFieldUpload({
+                fieldType: "DOCUMENT",
+                files: [
+                  {
+                    filename: doc.name,
+                    contentType: doc.type,
+                    size: doc.size,
+                  },
+                ],
+              })
+
+              if (!presignResult?.data?.files) {
+                throw new Error(
+                  presignResult?.serverError ?? "Failed to prepare upload.",
+                )
+              }
+
+              const { key, presignedUrl } = presignResult.data.files[0]
+              const res = await fetch(presignedUrl, {
+                method: "PUT",
+                body: doc,
+                headers: { "Content-Type": doc.type },
+              })
+              if (!res.ok) throw new Error("Upload failed.")
+
+              customFieldFileMeta[formField.id] = [
+                {
+                  key,
+                  filename: doc.name,
+                  contentType: doc.type,
+                  size: doc.size,
+                },
+              ]
+            }
+          }
+        } catch (err) {
+          setUploading(false)
+          form.setError("root", {
+            message:
+              err instanceof Error ? err.message : "Upload failed. Try again.",
+          })
+          return
+        }
+        setUploading(false)
+
         action.execute({
           ...v,
           orgId,
@@ -314,6 +444,7 @@ export function SubmissionForm({
           roleIds: selectedRoleIds,
           headshots: headshotMeta,
           resume: resumeMeta,
+          customFieldFiles: customFieldFileMeta,
         })
       })}
     >
@@ -517,22 +648,58 @@ export function SubmissionForm({
           />
         )}
 
-        {submissionFormFields.map((formField) => (
-          <Controller
-            key={formField.id}
-            name={`answers.${formField.id}`}
-            control={form.control}
-            render={({ field, fieldState }) => (
+        {submissionFormFields.map((formField) => {
+          if (formField.type === "IMAGE") {
+            return (
               <CustomFieldDisplay
+                key={formField.id}
                 field={formField}
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                error={fieldState.error}
-                id={field.name}
+                value=""
+                files={customFieldImages[formField.id] ?? []}
+                onFilesChange={(files) =>
+                  setCustomFieldImages((prev) => ({
+                    ...prev,
+                    [formField.id]: files,
+                  }))
+                }
+                fileError={customFieldFileErrors[formField.id] ?? undefined}
               />
-            )}
-          />
-        ))}
+            )
+          }
+          if (formField.type === "DOCUMENT") {
+            return (
+              <CustomFieldDisplay
+                key={formField.id}
+                field={formField}
+                value=""
+                documentFile={customFieldDocuments[formField.id] ?? null}
+                onDocumentChange={(file) =>
+                  setCustomFieldDocuments((prev) => ({
+                    ...prev,
+                    [formField.id]: file,
+                  }))
+                }
+                fileError={customFieldFileErrors[formField.id] ?? undefined}
+              />
+            )
+          }
+          return (
+            <Controller
+              key={formField.id}
+              name={`answers.${formField.id}`}
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <CustomFieldDisplay
+                  field={formField}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  error={fieldState.error}
+                  id={field.name}
+                />
+              )}
+            />
+          )
+        })}
 
         {systemFieldConfig.headshots !== "hidden" && (
           <Field>

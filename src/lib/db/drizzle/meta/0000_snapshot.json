@@ -1,5 +1,5 @@
 {
-  "id": "b4b5960a-ec66-457d-9f3f-23abd07a8eb4",
+  "id": "30411055-0dc3-4345-9552-ec2b0dfcbe47",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -653,6 +653,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "form_field_id": {
+          "name": "form_field_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "type": {
           "name": "type",
           "type": "file_type",
@@ -732,6 +738,21 @@
           "columns": [
             {
               "expression": "candidate_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "file_formFieldId_idx": {
+          "name": "file_formFieldId_idx",
+          "columns": [
+            {
+              "expression": "form_field_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2057,7 +2078,7 @@
     "public.file_type": {
       "name": "file_type",
       "schema": "public",
-      "values": ["HEADSHOT", "RESUME", "VIDEO"]
+      "values": ["HEADSHOT", "RESUME", "VIDEO", "CUSTOM_FIELD"]
     },
     "public.pipeline_stage_type": {
       "name": "pipeline_stage_type",

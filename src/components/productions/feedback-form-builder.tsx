@@ -40,6 +40,7 @@ export function FeedbackFormBuilder({
           isSaving={isSaving}
           removingFieldId={removingFieldId}
           description={description}
+          excludeTypes={["IMAGE", "DOCUMENT"]}
         />
       </div>
       <div className="hidden lg:block">

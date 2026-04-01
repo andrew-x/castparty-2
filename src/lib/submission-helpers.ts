@@ -82,6 +82,10 @@ export interface SubmissionWithCandidate {
   representation: Representation | null
   headshots: HeadshotData[]
   resume: ResumeData | null
+  customFieldFiles: Record<
+    string,
+    { id: string; url: string; filename: string; contentType: string }[]
+  >
   resumeText: string | null
   feedback: FeedbackData[]
   comments: CommentData[]

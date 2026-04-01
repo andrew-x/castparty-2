@@ -76,14 +76,51 @@ export function SubmissionFormPreview({
           </Field>
         )}
 
-        {customFields.map((field) => (
-          <CustomFieldDisplay
-            key={field.id}
-            field={field}
-            value={field.type === "TOGGLE" ? "false" : ""}
-            disabled
-          />
-        ))}
+        {customFields.map((field) => {
+          if (field.type === "IMAGE") {
+            return (
+              <Field key={field.id}>
+                <FieldLabel>
+                  {field.label}
+                  {field.required && (
+                    <span className="text-destructive"> *</span>
+                  )}
+                </FieldLabel>
+                {field.description && (
+                  <FieldDescription>{field.description}</FieldDescription>
+                )}
+                <div className="h-16 rounded-md border border-dashed" />
+                <p className="text-caption text-muted-foreground">
+                  Up to {field.maxFiles ?? 5} images
+                </p>
+              </Field>
+            )
+          }
+          if (field.type === "DOCUMENT") {
+            return (
+              <Field key={field.id}>
+                <FieldLabel>
+                  {field.label}
+                  {field.required && (
+                    <span className="text-destructive"> *</span>
+                  )}
+                </FieldLabel>
+                {field.description && (
+                  <FieldDescription>{field.description}</FieldDescription>
+                )}
+                <div className="h-10 rounded-md border border-dashed" />
+              </Field>
+            )
+          }
+          return (
+            <CustomFieldDisplay
+              key={field.id}
+              field={field}
+              value={field.type === "TOGGLE" ? "false" : ""}
+              disabled
+            />
+          )
+        })}
 
         {systemFieldConfig.unionStatus !== "hidden" && (
           <Field>

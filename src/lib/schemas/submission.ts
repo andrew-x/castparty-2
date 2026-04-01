@@ -22,6 +22,17 @@ export const resumeFileSchema = z.object({
     .max(10 * 1024 * 1024),
 })
 
+export const customFieldFileSchema = z.object({
+  key: z.string().min(1),
+  filename: z.string().min(1),
+  contentType: z.string().min(1),
+  size: z
+    .number()
+    .int()
+    .positive()
+    .max(20 * 1024 * 1024),
+})
+
 export const representationSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(200),
   email: z.string().trim().email("Enter a valid email."),
@@ -54,6 +65,9 @@ export const submissionActionSchema = submissionFormSchema.extend({
   roleIds: z.array(z.string().min(1)).min(1, "Select at least one role."),
   headshots: z.array(headShotFileSchema).max(10).default([]),
   resume: resumeFileSchema.optional(),
+  customFieldFiles: z
+    .record(z.string(), z.array(customFieldFileSchema))
+    .default({}),
 })
 
 export const updateSubmissionStatusSchema = z.object({

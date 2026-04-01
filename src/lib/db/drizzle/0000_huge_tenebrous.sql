@@ -1,5 +1,5 @@
 CREATE TYPE "public"."feedback_rating" AS ENUM('STRONG_NO', 'NO', 'YES', 'STRONG_YES');--> statement-breakpoint
-CREATE TYPE "public"."file_type" AS ENUM('HEADSHOT', 'RESUME', 'VIDEO');--> statement-breakpoint
+CREATE TYPE "public"."file_type" AS ENUM('HEADSHOT', 'RESUME', 'VIDEO', 'CUSTOM_FIELD');--> statement-breakpoint
 CREATE TYPE "public"."pipeline_stage_type" AS ENUM('APPLIED', 'SELECTED', 'REJECTED', 'CUSTOM');--> statement-breakpoint
 CREATE TYPE "public"."production_status" AS ENUM('open', 'closed', 'archive');--> statement-breakpoint
 CREATE TABLE "account" (
@@ -72,6 +72,7 @@ CREATE TABLE "file" (
 	"id" text PRIMARY KEY NOT NULL,
 	"submission_id" text,
 	"candidate_id" text,
+	"form_field_id" text,
 	"type" "file_type" NOT NULL,
 	"url" text NOT NULL,
 	"key" text NOT NULL,
@@ -284,6 +285,7 @@ CREATE INDEX "feedback_submissionId_idx" ON "feedback" USING btree ("submission_
 CREATE INDEX "feedback_submittedByUserId_idx" ON "feedback" USING btree ("submitted_by_user_id");--> statement-breakpoint
 CREATE INDEX "file_submissionId_idx" ON "file" USING btree ("submission_id");--> statement-breakpoint
 CREATE INDEX "file_candidateId_idx" ON "file" USING btree ("candidate_id");--> statement-breakpoint
+CREATE INDEX "file_formFieldId_idx" ON "file" USING btree ("form_field_id");--> statement-breakpoint
 CREATE INDEX "invitation_organizationId_idx" ON "invitation" USING btree ("organization_id");--> statement-breakpoint
 CREATE INDEX "invitation_email_idx" ON "invitation" USING btree ("email");--> statement-breakpoint
 CREATE INDEX "member_organizationId_idx" ON "member" USING btree ("organization_id");--> statement-breakpoint
