@@ -3,6 +3,7 @@
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
 import { Controller } from "react-hook-form"
+import { presignLogoUpload } from "@/actions/organizations/presign-logo-upload"
 import { updateOrganization } from "@/actions/organizations/update-organization"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -15,10 +16,11 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@/components/common/field"
+import { ImageUploader } from "@/components/common/image-uploader"
 import { Input } from "@/components/common/input"
+import { RichTextEditor } from "@/components/common/rich-text-editor"
 import { ShareLink } from "@/components/common/share-link"
 import { Switch } from "@/components/common/switch"
-import { Textarea } from "@/components/common/textarea"
 import { updateOrgFormSchema } from "@/lib/schemas/organization"
 import { formResolver } from "@/lib/schemas/resolve"
 import { getAppUrl } from "@/lib/url"
@@ -27,6 +29,7 @@ interface Props {
   organizationId: string
   currentName: string
   currentSlug: string
+  currentLogo: string | null
   currentDescription: string
   currentWebsiteUrl: string
   currentIsOrganizationProfileOpen: boolean
@@ -37,6 +40,7 @@ export function OrgSettingsForm({
   organizationId,
   currentName,
   currentSlug,
+  currentLogo,
   currentDescription,
   currentWebsiteUrl,
   currentIsOrganizationProfileOpen,
@@ -51,6 +55,7 @@ export function OrgSettingsForm({
         defaultValues: {
           name: currentName,
           slug: currentSlug,
+          logo: currentLogo ?? "",
           description: currentDescription,
           websiteUrl: currentWebsiteUrl,
           isOrganizationProfileOpen: currentIsOrganizationProfileOpen,
@@ -75,6 +80,7 @@ export function OrgSettingsForm({
   const hasChanges =
     watched.name !== currentName ||
     watched.slug !== currentSlug ||
+    (watched.logo ?? "") !== (currentLogo ?? "") ||
     watched.description !== currentDescription ||
     watched.websiteUrl !== currentWebsiteUrl ||
     watched.isOrganizationProfileOpen !== currentIsOrganizationProfileOpen
@@ -82,7 +88,7 @@ export function OrgSettingsForm({
   return (
     <form
       onSubmit={form.handleSubmit((v) =>
-        action.execute({ ...v, organizationId }),
+        action.execute({ ...v, organizationId, logo: v.logo || null }),
       )}
     >
       <FieldGroup>
@@ -107,13 +113,35 @@ export function OrgSettingsForm({
         />
 
         <Controller
+          name="logo"
+          control={form.control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Logo</FieldLabel>
+              <ImageUploader
+                value={field.value || null}
+                onChange={(url) => field.onChange(url ?? "")}
+                presignAction={(input) =>
+                  presignLogoUpload({ ...input, organizationId })
+                }
+                maxSizeMb={5}
+                aspectHint="1:1"
+                maxWidth={120}
+                label="Upload logo"
+              />
+            </Field>
+          )}
+        />
+
+        <Controller
           name="description"
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
               <FieldLabel htmlFor={field.name}>About</FieldLabel>
-              <Textarea
-                {...field}
+              <RichTextEditor
+                value={field.value ?? ""}
+                onChange={field.onChange}
                 id={field.name}
                 placeholder="Tell candidates about your organization"
                 aria-invalid={fieldState.invalid}

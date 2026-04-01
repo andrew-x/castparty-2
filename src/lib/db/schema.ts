@@ -275,6 +275,7 @@ export const Production = pgTable(
     status: productionStatusEnum().default("closed").notNull(),
 
     location: text().notNull().default(""),
+    banner: text(),
     submissionFormFields: jsonb().$type<CustomForm[]>().notNull().default([]),
     systemFieldConfig: jsonb().$type<SystemFieldConfig>().notNull().default({
       phone: "optional",
@@ -314,6 +315,7 @@ export const Role = pgTable(
     name: text().notNull(),
     slug: text().notNull(),
     description: text().notNull().default(""),
+    referencePhotos: jsonb().$type<string[]>().notNull().default([]),
     status: productionStatusEnum().default("closed").notNull(),
 
     createdAt: timestamp().defaultNow().notNull(),

@@ -15,6 +15,7 @@ export const updateRoleFormSchema = z.object({
   name: z.string().trim().min(1, "Role name is required.").max(100),
   status: productionStatusSchema,
   description: z.string().trim().optional().default(""),
+  referencePhotos: z.array(z.string().url()).max(3).optional(),
 })
 
 export const updateRoleActionSchema = z.object({
@@ -23,4 +24,5 @@ export const updateRoleActionSchema = z.object({
   description: z.string().trim().optional(),
   slug: slugSchemaStrict.optional(),
   status: productionStatusSchema.optional(),
+  referencePhotos: z.array(z.string().url()).max(3).optional(),
 })

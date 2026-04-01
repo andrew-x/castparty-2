@@ -3,6 +3,7 @@
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useRouter } from "next/navigation"
 import { Controller } from "react-hook-form"
+import { presignBannerUpload } from "@/actions/productions/presign-banner-upload"
 import { updateProduction } from "@/actions/productions/update-production"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { AutocompleteInput } from "@/components/common/autocomplete-input"
@@ -16,6 +17,7 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@/components/common/field"
+import { ImageUploader } from "@/components/common/image-uploader"
 import { Input } from "@/components/common/input"
 import { Label } from "@/components/common/label"
 import { RadioGroup, RadioGroupItem } from "@/components/common/radio-group"
@@ -30,6 +32,7 @@ interface Props {
   orgSlug: string
   currentName: string
   currentDescription: string
+  currentBanner: string | null
   currentLocation: string
   currentSlug: string
   status: "open" | "closed" | "archive"
@@ -40,6 +43,7 @@ export function ProductionSettingsForm({
   orgSlug,
   currentName,
   currentDescription,
+  currentBanner,
   currentLocation,
   currentSlug,
   status,
@@ -54,6 +58,7 @@ export function ProductionSettingsForm({
         defaultValues: {
           name: currentName,
           description: currentDescription,
+          banner: currentBanner ?? "",
           location: currentLocation,
           slug: currentSlug,
           status,
@@ -78,6 +83,7 @@ export function ProductionSettingsForm({
   const hasChanges =
     watched.name !== currentName ||
     watched.description !== currentDescription ||
+    (watched.banner ?? "") !== (currentBanner ?? "") ||
     watched.location !== currentLocation ||
     watched.slug !== currentSlug ||
     watched.status !== status
@@ -91,6 +97,7 @@ export function ProductionSettingsForm({
           productionId,
           name: v.name,
           description: v.description,
+          banner: v.banner || null,
           location: v.location,
           slug: v.slug,
           status: v.status,
@@ -213,6 +220,27 @@ export function ProductionSettingsForm({
                 aria-invalid={fieldState.invalid}
               />
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="banner"
+          control={form.control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Banner image</FieldLabel>
+              <ImageUploader
+                value={field.value || null}
+                onChange={(url) => field.onChange(url ?? "")}
+                presignAction={(input) =>
+                  presignBannerUpload({ ...input, productionId })
+                }
+                maxSizeMb={10}
+                aspectHint="16:9"
+                maxWidth={400}
+                label="Upload banner"
+              />
             </Field>
           )}
         />

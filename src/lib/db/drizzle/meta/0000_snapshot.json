@@ -1,5 +1,5 @@
 {
-  "id": "783fece9-05fb-43ae-a83c-86fb21dbbe87",
+  "id": "b4b5960a-ec66-457d-9f3f-23abd07a8eb4",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1377,6 +1377,12 @@
           "notNull": true,
           "default": "''"
         },
+        "banner": {
+          "name": "banner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "submission_form_fields": {
           "name": "submission_form_fields",
           "type": "jsonb",
@@ -1389,7 +1395,7 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
-          "default": "'{\"phone\":\"optional\",\"location\":\"optional\",\"headshots\":\"optional\",\"resume\":\"optional\",\"links\":\"optional\"}'::jsonb"
+          "default": "'{\"phone\":\"optional\",\"location\":\"optional\",\"headshots\":\"optional\",\"resume\":\"optional\",\"links\":\"optional\",\"unionStatus\":\"hidden\",\"representation\":\"hidden\"}'::jsonb"
         },
         "feedback_form_fields": {
           "name": "feedback_form_fields",
@@ -1500,6 +1506,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "''"
+        },
+        "reference_photos": {
+          "name": "reference_photos",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "status": {
           "name": "status",
@@ -1755,6 +1768,20 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'"
+        },
+        "union_status": {
+          "name": "union_status",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "representation": {
+          "name": "representation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'null'::jsonb"
         },
         "resume_text": {
           "name": "resume_text",

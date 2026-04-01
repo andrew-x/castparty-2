@@ -84,6 +84,7 @@ export const createProduction = secureActionClient
           slug: productionSlug,
           description: description || "",
           location: location || "",
+          banner: null,
           status: "open",
           submissionFormFields: submissionFormFields ?? [],
           feedbackFormFields: feedbackFormFields ?? [],

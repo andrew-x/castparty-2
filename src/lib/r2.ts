@@ -40,6 +40,14 @@ export function getKeyFromUrl(fileUrl: string): string {
   return fileUrl.replace(`${R2_PUBLIC_URL}/`, "")
 }
 
+export function isTempKey(key: string): boolean {
+  return key.includes("/temp/")
+}
+
+export function isR2Url(url: string): boolean {
+  return url.startsWith(R2_PUBLIC_URL)
+}
+
 export async function checkFileExists(key: string): Promise<boolean> {
   try {
     await s3.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }))
@@ -118,6 +126,36 @@ export async function createPresignedUploadUrl(
     ContentType: contentType,
   })
   return getSignedUrl(s3, command, { expiresIn: 600 })
+}
+
+export async function copyFileByKey(
+  sourceKey: string,
+  destFolder: string,
+): Promise<{ url: string; key: string }> {
+  const ext = getExtension(sourceKey)
+  const destKey = `${root}/${destFolder}/${generateId("file")}${ext ? `.${ext}` : ""}`
+
+  await s3.send(
+    new CopyObjectCommand({
+      Bucket: R2_BUCKET,
+      CopySource: `${R2_BUCKET}/${sourceKey}`,
+      Key: destKey,
+    }),
+  )
+
+  return {
+    url: `${R2_PUBLIC_URL}/${destKey}`,
+    key: destKey,
+  }
+}
+
+export async function deleteFileByKey(key: string): Promise<void> {
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+    }),
+  )
 }
 
 export async function moveFileByKey(

@@ -39,6 +39,7 @@ export default async function RolesPage({
         name: r.name,
         slug: r.slug,
         description: r.description,
+        referencePhotos: (r.referencePhotos as string[]) ?? [],
         status: r.status,
       }))}
     />
