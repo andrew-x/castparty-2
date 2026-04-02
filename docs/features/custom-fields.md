@@ -1,6 +1,6 @@
 # Custom Form Fields
 
-> **Last verified:** 2026-03-29
+> **Last verified:** 2026-03-31
 
 ## Overview
 
@@ -58,7 +58,10 @@ type SystemFieldConfig = {
   location: SystemFieldVisibility
   headshots: SystemFieldVisibility
   resume: SystemFieldVisibility
-  links: SystemFieldVisibility
+  video: SystemFieldVisibility
+  links: RestrictedFieldVisibility   // "hidden" | "optional" only
+  unionStatus: RestrictedFieldVisibility
+  representation: RestrictedFieldVisibility
 }
 ```
 
@@ -183,7 +186,10 @@ Custom field values travel as flat `Record<string, string>` in the form. The ser
 | `location` | `hidden` / `optional` / `required` | Controls location field with city autocomplete |
 | `headshots` | `hidden` / `optional` / `required` | Controls headshot uploader |
 | `resume` | `hidden` / `optional` / `required` | Controls resume uploader |
-| `links` | `hidden` / `optional` / `required` | Controls links editor |
+| `video` | `hidden` / `optional` / `required` | Controls video URL input with embed preview. Default: `hidden` |
+| `links` | `hidden` / `optional` | Controls links editor |
+| `unionStatus` | `hidden` / `optional` | Controls union affiliation select |
+| `representation` | `hidden` / `optional` | Controls representation (agent/manager) fields |
 
 First name, last name, and email are always required (not configurable).
 

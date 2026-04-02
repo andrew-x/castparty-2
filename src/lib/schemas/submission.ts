@@ -1,5 +1,15 @@
 import { z } from "zod/v4"
 
+/** URL that must use http: or https: scheme — blocks javascript:, data:, etc. */
+const httpUrl = z
+  .string()
+  .trim()
+  .url("Enter a valid URL.")
+  .refine(
+    (v) => /^https?:\/\//i.test(v),
+    "URL must start with http:// or https://",
+  )
+
 export const headShotFileSchema = z.object({
   key: z.string().min(1),
   filename: z.string().min(1),
@@ -52,7 +62,16 @@ export const submissionFormSchema = z.object({
         Array.isArray(val)
           ? val.filter((v) => typeof v === "string" && v.trim())
           : [],
-      z.array(z.string().trim().url("Enter a valid URL.")),
+      z.array(httpUrl),
+    )
+    .default([]),
+  videoUrls: z
+    .preprocess(
+      (val) =>
+        Array.isArray(val)
+          ? val.filter((v) => typeof v === "string" && v.trim())
+          : [],
+      z.array(httpUrl),
     )
     .default([]),
   unionStatus: z.array(z.string().trim().min(1).max(100)).default([]),
@@ -94,7 +113,16 @@ export const updateSubmissionFormSchema = z.object({
         Array.isArray(val)
           ? val.filter((v) => typeof v === "string" && v.trim())
           : [],
-      z.array(z.string().trim().url("Enter a valid URL.")),
+      z.array(httpUrl),
+    )
+    .default([]),
+  videoUrls: z
+    .preprocess(
+      (val) =>
+        Array.isArray(val)
+          ? val.filter((v) => typeof v === "string" && v.trim())
+          : [],
+      z.array(httpUrl),
     )
     .default([]),
   unionStatus: z.array(z.string().trim().min(1).max(100)).default([]),

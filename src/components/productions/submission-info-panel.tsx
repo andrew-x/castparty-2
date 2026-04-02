@@ -7,6 +7,7 @@ import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
 import { Separator } from "@/components/common/separator"
 import { SocialIcon } from "@/components/common/social-icons"
+import { VideoEmbed } from "@/components/submissions/video-embed"
 import day from "@/lib/dayjs"
 import { prettifyUrl } from "@/lib/social-links"
 import type {
@@ -123,6 +124,17 @@ export function SubmissionInfoPanel({
               {submission.resume.filename}
             </span>
           </a>
+        </div>
+      )}
+
+      {submission.videoUrls.length > 0 && (
+        <div className="flex flex-col gap-block">
+          <h3 className="font-medium text-foreground text-label">Videos</h3>
+          <div className="flex flex-col gap-element">
+            {submission.videoUrls.map((url) => (
+              <VideoEmbed key={url} url={url} />
+            ))}
+          </div>
         </div>
       )}
 

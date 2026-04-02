@@ -32,6 +32,7 @@ export interface SystemFieldConfig {
   location: SystemFieldVisibility
   headshots: SystemFieldVisibility
   resume: SystemFieldVisibility
+  video: SystemFieldVisibility
   links: RestrictedFieldVisibility
   unionStatus: RestrictedFieldVisibility
   representation: RestrictedFieldVisibility
@@ -42,6 +43,7 @@ export const DEFAULT_SYSTEM_FIELD_CONFIG: SystemFieldConfig = {
   location: "optional",
   headshots: "optional",
   resume: "optional",
+  video: "hidden",
   links: "optional",
   unionStatus: "hidden",
   representation: "hidden",
@@ -52,6 +54,7 @@ export const SYSTEM_FIELD_LABELS: Record<keyof SystemFieldConfig, string> = {
   location: "Location",
   headshots: "Headshots",
   resume: "Resume",
+  video: "Video",
   links: "Links",
   unionStatus: "Union status",
   representation: "Representation",
@@ -65,6 +68,7 @@ export const SYSTEM_FIELD_ALLOWED_VISIBILITIES: Record<
   location: ["hidden", "optional", "required"],
   headshots: ["hidden", "optional", "required"],
   resume: ["hidden", "optional", "required"],
+  video: ["hidden", "optional", "required"],
   links: ["hidden", "optional"],
   unionStatus: ["hidden", "optional"],
   representation: ["hidden", "optional"],
