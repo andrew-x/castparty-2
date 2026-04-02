@@ -65,15 +65,7 @@ export const submissionFormSchema = z.object({
       z.array(httpUrl),
     )
     .default([]),
-  videoUrls: z
-    .preprocess(
-      (val) =>
-        Array.isArray(val)
-          ? val.filter((v) => typeof v === "string" && v.trim())
-          : [],
-      z.array(httpUrl),
-    )
-    .default([]),
+  videoUrl: httpUrl.or(z.literal("")).optional(),
   unionStatus: z.array(z.string().trim().min(1).max(100)).default([]),
   representation: representationSchema.nullable().default(null),
 })
@@ -116,15 +108,7 @@ export const updateSubmissionFormSchema = z.object({
       z.array(httpUrl),
     )
     .default([]),
-  videoUrls: z
-    .preprocess(
-      (val) =>
-        Array.isArray(val)
-          ? val.filter((v) => typeof v === "string" && v.trim())
-          : [],
-      z.array(httpUrl),
-    )
-    .default([]),
+  videoUrl: httpUrl.or(z.literal("")).optional(),
   unionStatus: z.array(z.string().trim().min(1).max(100)).default([]),
   representation: representationSchema.nullable().default(null),
 })

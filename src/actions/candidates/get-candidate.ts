@@ -180,7 +180,7 @@ export async function getCandidate(candidateId: string) {
           return result
         })(),
         links: submission.links,
-        videoUrls: submission.videoUrls,
+        videoUrl: submission.videoUrl,
         unionStatus: submission.unionStatus,
         representation: submission.representation as Representation | null,
         resumeText: submission.resumeText ?? null,

@@ -39,6 +39,7 @@ const FIELD_TYPE_LABELS: Record<CustomFormFieldType, string> = {
   TOGGLE: "Toggle",
   IMAGE: "Image upload",
   DOCUMENT: "Document upload",
+  VIDEO: "Video link",
 }
 
 // --- Options editor for SELECT/CHECKBOX_GROUP ---

@@ -8,6 +8,13 @@
       "when": 1775053425634,
       "tag": "0000_fearless_daimon_hellstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775132363426,
+      "tag": "0001_perpetual_nitro",
+      "breakpoints": true
     }
   ]
 }

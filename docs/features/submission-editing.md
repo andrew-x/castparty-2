@@ -1,6 +1,6 @@
 # Submission Editing
 
-> **Last verified:** 2026-03-29
+> **Last verified:** 2026-04-02
 
 ## Overview
 
@@ -20,7 +20,7 @@ Not a separate route -- it is an `isEditing` toggle state within `SubmissionDeta
 
 | Table | Role in editing |
 |-------|-----------------|
-| `Submission` | Updated: firstName, lastName, email, phone, location, links, updatedAt |
+| `Submission` | Updated: firstName, lastName, email, phone, location, links, videoUrl, updatedAt |
 | `Candidate` | Updated in same transaction: firstName, lastName, email, phone, location, updatedAt |
 | `File` | New headshot/resume rows inserted (type: `HEADSHOT` or `RESUME`) |
 
@@ -92,6 +92,7 @@ updateSubmission action:
 | Phone optional | `z.string().trim().max(50).optional().or(z.literal(""))` |
 | Location optional | `z.string().trim().max(200).optional().or(z.literal(""))` |
 | Links must be valid URLs | `z.array(z.string().trim().url())` |
+| Video URL optional | `httpUrl.or(z.literal("")).optional()` |
 | Max 10 headshots total | Server checks existing + new ≤ 10 |
 | Max 20 MB per headshot | Enforced by `headShotFileSchema.size` |
 | Max 10 MB per resume | Enforced by `resumeFileSchema.size` |

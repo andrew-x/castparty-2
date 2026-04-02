@@ -30,7 +30,7 @@ import { LinksEditor } from "@/components/submissions/links-editor"
 import { RepresentationFields } from "@/components/submissions/representation-fields"
 import { ResumeUploader } from "@/components/submissions/resume-uploader"
 import { UnionStatusSelect } from "@/components/submissions/union-status-select"
-import { VideoUrlEditor } from "@/components/submissions/video-url-editor"
+import { VideoEmbed } from "@/components/submissions/video-embed"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { formResolver } from "@/lib/schemas/resolve"
 import { submissionFormSchema } from "@/lib/schemas/submission"
@@ -117,7 +117,7 @@ export function SubmissionForm({
           location: "",
           answers: defaultAnswers,
           links: [],
-          videoUrls: [],
+          videoUrl: "",
           unionStatus: [],
           representation: null,
         },
@@ -239,13 +239,10 @@ export function SubmissionForm({
           setResumeError("Resume is required.")
           hasFieldErrors = true
         }
-        if (
-          systemFieldConfig.video === "required" &&
-          (v.videoUrls as string[]).filter((u) => u.trim()).length === 0
-        ) {
-          form.setError("videoUrls", {
+        if (systemFieldConfig.video === "required" && !v.videoUrl?.trim()) {
+          form.setError("videoUrl", {
             type: "required",
-            message: "At least one video link is required.",
+            message: "A video link is required.",
           })
           hasFieldErrors = true
         }
@@ -743,25 +740,46 @@ export function SubmissionForm({
 
         {systemFieldConfig.video !== "hidden" && (
           <Controller
-            name="videoUrls"
+            name="videoUrl"
             control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid || undefined}>
-                <FieldLabel>
-                  {systemFieldLabel("Video", systemFieldConfig.video)}
-                  {systemFieldConfig.video === "required" && <RequiredMarker />}
-                </FieldLabel>
-                <FieldDescription>
-                  Link a video from YouTube, Vimeo, Google Drive, or Dropbox.
-                  You can also paste any direct video link.
-                </FieldDescription>
-                <VideoUrlEditor
-                  value={(field.value as string[]) ?? []}
-                  onChange={field.onChange}
-                />
-                {fieldState.error && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
+            render={({ field, fieldState }) => {
+              const url = (field.value as string) ?? ""
+              return (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel htmlFor={field.name}>
+                    {systemFieldLabel("Video", systemFieldConfig.video)}
+                    {systemFieldConfig.video === "required" && (
+                      <RequiredMarker />
+                    )}
+                  </FieldLabel>
+                  <FieldDescription>
+                    Link a video from YouTube, Vimeo, Google Drive, or Dropbox.
+                    You can also paste any direct video link.
+                  </FieldDescription>
+                  <Input
+                    id={field.name}
+                    type="url"
+                    value={url}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    onBlur={() => {
+                      if (
+                        url &&
+                        !url.startsWith("http://") &&
+                        !url.startsWith("https://")
+                      ) {
+                        field.onChange(`https://${url}`)
+                      }
+                    }}
+                    placeholder="https://..."
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {url && <VideoEmbed url={url} />}
+                  {fieldState.error && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )
+            }}
           />
         )}
 

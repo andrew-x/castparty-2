@@ -6,6 +6,7 @@ export type CustomFormFieldType =
   | "TOGGLE"
   | "IMAGE"
   | "DOCUMENT"
+  | "VIDEO"
 export interface CustomForm {
   id: string
   type: CustomFormFieldType
