@@ -30,6 +30,7 @@ export const createSubmission = publicActionClient
         location,
         answers,
         links,
+        videoUrls,
         unionStatus,
         representation,
         headshots,
@@ -105,6 +106,9 @@ export const createSubmission = publicActionClient
       }
       if (sfc.resume === "required" && !resume) {
         throw new Error("Resume is required.")
+      }
+      if (sfc.video === "required" && videoUrls.length === 0) {
+        throw new Error("At least one video link is required.")
       }
       // Validate required custom fields
       const formFields = production.submissionFormFields ?? []
@@ -326,6 +330,7 @@ export const createSubmission = publicActionClient
             location: location || "",
             answers: formResponses,
             links,
+            videoUrls,
             unionStatus,
             representation,
           })),

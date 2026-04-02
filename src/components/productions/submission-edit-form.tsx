@@ -26,6 +26,7 @@ import { LinksEditor } from "@/components/submissions/links-editor"
 import { RepresentationFields } from "@/components/submissions/representation-fields"
 import { ResumeUploader } from "@/components/submissions/resume-uploader"
 import { UnionStatusSelect } from "@/components/submissions/union-status-select"
+import { VideoUrlEditor } from "@/components/submissions/video-url-editor"
 import { formResolver } from "@/lib/schemas/resolve"
 import { updateSubmissionFormSchema } from "@/lib/schemas/submission"
 import type { SubmissionWithCandidate } from "@/lib/submission-helpers"
@@ -61,6 +62,7 @@ export function SubmissionEditForm({
           phone: submission.phone ?? "",
           location: submission.location ?? "",
           links: submission.links,
+          videoUrls: submission.videoUrls,
           unionStatus: submission.unionStatus ?? [],
           representation: submission.representation ?? null,
         },
@@ -292,6 +294,21 @@ export function SubmissionEditForm({
             <Field data-invalid={fieldState.invalid || undefined}>
               <FieldLabel>Links</FieldLabel>
               <LinksEditor
+                value={(field.value as string[]) ?? []}
+                onChange={field.onChange}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="videoUrls"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel>Videos</FieldLabel>
+              <VideoUrlEditor
                 value={(field.value as string[]) ?? []}
                 onChange={field.onChange}
               />

@@ -1,10 +1,10 @@
 # Public Submission Flow
 
-> **Last verified:** 2026-03-29
+> **Last verified:** 2026-03-31
 
 ## Overview
 
-The public submission flow lets candidates discover and apply to casting calls without creating an account. Production teams share a clean URL (e.g., `/s/acme-theatre/spring-musical/lead-role`) and anyone can browse open productions, select roles, upload headshots and a resume, and submit. The flow also handles candidate deduplication, presigned file uploads to Cloudflare R2, and PDF text extraction for resumes.
+The public submission flow lets candidates discover and apply to casting calls without creating an account. Production teams share a clean URL (e.g., `/s/acme-theatre/spring-musical/lead-role`) and anyone can browse open productions, select roles, upload headshots and a resume, link audition videos, and submit. The flow also handles candidate deduplication, presigned file uploads to Cloudflare R2, and PDF text extraction for resumes.
 
 **Who it serves:** Performers (candidates) submitting auditions; casting directors who share links and receive submissions.
 
@@ -30,7 +30,7 @@ All three pages are server components. Each resolves its entity by slug via unau
 | `Production` | `id`, `organizationId`, `name`, `slug`, `status`, `location`, `submissionFormFields`, `systemFieldConfig` | Slug unique per org. Status must be `open` to appear publicly |
 | `Role` | `id`, `productionId`, `name`, `slug`, `status` | Slug unique per production. Status must be `open` |
 | `Candidate` | `id`, `organizationId`, `firstName`, `lastName`, `email`, `phone`, `location` | Unique constraint on `(organizationId, email)` for deduplication |
-| `Submission` | `id`, `productionId`, `roleId`, `candidateId`, `stageId`, `firstName`, `lastName`, `email`, `phone`, `location`, `answers`, `links`, `resumeText` | Denormalizes contact info as a point-in-time snapshot |
+| `Submission` | `id`, `productionId`, `roleId`, `candidateId`, `stageId`, `firstName`, `lastName`, `email`, `phone`, `location`, `answers`, `links`, `videoUrls`, `resumeText` | Denormalizes contact info as a point-in-time snapshot |
 | `File` | `id`, `submissionId`, `type` (`HEADSHOT`/`RESUME`), `url`, `key`, `path`, `filename`, `contentType`, `size`, `order` | Shared table; consumers filter by `type` |
 | `PipelineStage` | `id`, `productionId`, `type` (`APPLIED`/`CUSTOM`/`SELECTED`/`REJECTED`) | New submissions land in the `APPLIED` stage |
 
@@ -39,6 +39,7 @@ All three pages are server components. Each resolves its entity by slug via unau
 - `Candidate` is org-scoped and deduplicated by `(organizationId, email)` via upsert.
 - `Submission` denormalizes `firstName`, `lastName`, `email`, `phone`, `location` from the form input (not from `Candidate`) so each submission preserves the data as submitted.
 - `Submission.answers` stores custom form responses as JSONB (`CustomFormResponse[]`).
+- `Submission.videoUrls` is a `text[]` array storing external video URLs (YouTube, Vimeo, Google Drive, Dropbox, or custom). Videos are not hosted — only URLs are stored.
 - `File` rows link to `Submission` via `submissionId`; headshots and resumes share the same table, distinguished by `type`.
 
 ## Key Files
@@ -61,6 +62,9 @@ All three pages are server components. Each resolves its entity by slug via unau
 | `src/components/submissions/resume-uploader.tsx` | Controlled PDF file picker with remove button |
 | `src/components/submissions/custom-field-display.tsx` | Renders a single custom field by type |
 | `src/lib/r2.ts` | R2 utility: presign, upload, move, delete, check existence |
+| `src/components/submissions/video-url-editor.tsx` | Multi-URL input with inline embed previews |
+| `src/components/submissions/video-embed.tsx` | Shared embed component (YouTube, Vimeo, Google Drive, Dropbox, fallback) |
+| `src/lib/video-embed.ts` | Pure utility: URL → platform detection + embed URL |
 | `src/lib/schemas/submission.ts` | Zod schemas: `submissionFormSchema`, `submissionActionSchema`, file schemas |
 | `src/lib/slug.ts` | `nameToSlug`, `validateSlug`, `generateUniqueSlug` |
 | `src/hooks/use-city-options.ts` | Lazy-loads US + Canadian city names for autocomplete |
@@ -86,9 +90,10 @@ Each page validates its entity exists and its status is `open`; otherwise render
 
 ```
 SubmissionForm (client)
-  ├── User fills out: name, email, phone, location, custom fields, links
+  ├── User fills out: name, email, phone, location, custom fields, video URLs, links
   ├── User uploads headshots via HeadshotUploader
-  └── User uploads resume via ResumeUploader
+  ├── User uploads resume via ResumeUploader
+  └── User adds video URLs via VideoUrlEditor (inline embed preview per URL)
         │
         ▼  on form submit
   1. Client-side validation (Zod + required custom field walk)
@@ -111,7 +116,7 @@ SubmissionForm (client)
 
 ### Multi-Role Submission
 
-When a production has multiple open roles, the form shows checkboxes for role selection. The initial role is pre-selected. On submit, one `Submission` row is created per selected role, all sharing the same `Candidate` record and file uploads.
+When a production has multiple open roles, the form shows checkboxes for role selection. The initial role is pre-selected. On submit, one `Submission` row is created per selected role, all sharing the same `Candidate` record, file uploads, and `videoUrls`.
 
 ### R2 File Storage
 
@@ -150,7 +155,9 @@ Slugs are auto-generated from entity names via `nameToSlug()`: lowercase, hyphen
 - **Status checks.** Productions and roles must have `status: "open"` to appear publicly. Server action double-checks.
 - **Candidate deduplication.** `INSERT ... ON CONFLICT (organizationId, email) DO UPDATE` ensures one candidate per email per org.
 - **Submission snapshot.** `Submission` denormalizes contact fields so each submission records what was entered at the time.
-- **System field visibility.** `SystemFieldConfig` controls whether phone, location, headshots, resume, and links are hidden, optional, or required.
+- **System field visibility.** `SystemFieldConfig` controls whether phone, location, headshots, resume, video, links, union status, and representation are hidden, optional, or required. See [Custom Fields](./custom-fields.md) for the full config.
+- **Video URL validation.** Each video URL is validated as a valid URL via Zod. The `VideoEmbed` component detects YouTube, Vimeo, Google Drive, and Dropbox URLs for inline embed previews; unknown URLs get a fallback warning but are still accepted.
+- **Video copy on clone.** `copy-submission-to-role` copies `videoUrls` along with other submission data.
 - **File validation.** Headshots: JPEG/PNG/WebP/HEIC, max 20 MB each, max 10 files. Resume: PDF only, max 10 MB.
 - **Temp key prefix validation.** `create-submission` verifies file keys start with `temp/` before moving.
 
@@ -168,6 +175,7 @@ Slugs are auto-generated from entity names via `nameToSlug()`: lowercase, hyphen
 | Submitting | Button shows loading state |
 | Upload error | Error message below the headshot/resume uploader |
 | Server error | Destructive Alert at bottom of form |
+| Video URL entered | Inline embed preview (YouTube/Vimeo/Google Drive/Dropbox) or fallback warning for unknown platforms |
 | Success | Alert with "Submission received" + link to browse other roles |
 
 ## Integration Points
@@ -186,4 +194,5 @@ Slugs are auto-generated from entity names via `nameToSlug()`: lowercase, hyphen
 - **`files` relation instead of `headshots`.** Named generically so new file types slot in without renames. Consumers filter by `type`.
 - **Candidate deduplication by email.** Same person submitting to multiple roles = one candidate. Contact info updated on each submission.
 - **Free-text location.** Max 200 chars, no foreign key. Non-standard values work without schema changes.
+- **Video URLs stored, not video files.** Videos are hosted externally (YouTube, Vimeo, Google Drive, Dropbox) to avoid storage costs. Only URLs are stored in `videoUrls: text[]`. Embed previews are generated client-side via platform detection.
 - **Module-level city cache.** `useCityOptions` uses a module-level `Promise` instead of React context.

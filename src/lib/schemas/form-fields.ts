@@ -65,6 +65,7 @@ export const systemFieldConfigSchema = z.object({
   location: systemFieldVisibilitySchema,
   headshots: systemFieldVisibilitySchema,
   resume: systemFieldVisibilitySchema,
+  video: systemFieldVisibilitySchema,
   links: hiddenOrOptionalSchema,
   unionStatus: hiddenOrOptionalSchema,
   representation: hiddenOrOptionalSchema,

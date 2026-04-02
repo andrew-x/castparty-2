@@ -78,6 +78,7 @@ export interface SubmissionWithCandidate {
   stage: PipelineStageData | null
   answers: CustomFormResponse[]
   links: string[]
+  videoUrls: string[]
   unionStatus: string[]
   representation: Representation | null
   headshots: HeadshotData[]

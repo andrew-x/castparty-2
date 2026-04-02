@@ -173,6 +173,22 @@ export function SubmissionFormPreview({
           </Field>
         )}
 
+        {systemFieldConfig.video !== "hidden" && (
+          <Field>
+            <FieldLabel>
+              {fieldLabel("Video", systemFieldConfig.video)}
+              {systemFieldConfig.video === "required" && (
+                <span className="text-destructive"> *</span>
+              )}
+            </FieldLabel>
+            <FieldDescription>
+              Link a video from YouTube, Vimeo, Google Drive, or Dropbox. You
+              can also paste any direct video link.
+            </FieldDescription>
+            <Input type="url" disabled placeholder="https://" />
+          </Field>
+        )}
+
         {systemFieldConfig.links !== "hidden" && (
           <Field>
             <FieldLabel>

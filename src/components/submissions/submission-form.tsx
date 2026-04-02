@@ -30,6 +30,7 @@ import { LinksEditor } from "@/components/submissions/links-editor"
 import { RepresentationFields } from "@/components/submissions/representation-fields"
 import { ResumeUploader } from "@/components/submissions/resume-uploader"
 import { UnionStatusSelect } from "@/components/submissions/union-status-select"
+import { VideoUrlEditor } from "@/components/submissions/video-url-editor"
 import { useCityOptions } from "@/hooks/use-city-options"
 import { formResolver } from "@/lib/schemas/resolve"
 import { submissionFormSchema } from "@/lib/schemas/submission"
@@ -116,6 +117,7 @@ export function SubmissionForm({
           location: "",
           answers: defaultAnswers,
           links: [],
+          videoUrls: [],
           unionStatus: [],
           representation: null,
         },
@@ -235,6 +237,16 @@ export function SubmissionForm({
         }
         if (systemFieldConfig.resume === "required" && !resume) {
           setResumeError("Resume is required.")
+          hasFieldErrors = true
+        }
+        if (
+          systemFieldConfig.video === "required" &&
+          (v.videoUrls as string[]).filter((u) => u.trim()).length === 0
+        ) {
+          form.setError("videoUrls", {
+            type: "required",
+            message: "At least one video link is required.",
+          })
           hasFieldErrors = true
         }
         if (hasFieldErrors) return
@@ -727,6 +739,30 @@ export function SubmissionForm({
               error={resumeError ?? undefined}
             />
           </Field>
+        )}
+
+        {systemFieldConfig.video !== "hidden" && (
+          <Controller
+            name="videoUrls"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid || undefined}>
+                <FieldLabel>
+                  {systemFieldLabel("Video", systemFieldConfig.video)}
+                  {systemFieldConfig.video === "required" && <RequiredMarker />}
+                </FieldLabel>
+                <FieldDescription>
+                  Link a video from YouTube, Vimeo, Google Drive, or Dropbox.
+                  You can also paste any direct video link.
+                </FieldDescription>
+                <VideoUrlEditor
+                  value={(field.value as string[]) ?? []}
+                  onChange={field.onChange}
+                />
+                {fieldState.error && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
         )}
 
         {systemFieldConfig.links !== "hidden" && (
