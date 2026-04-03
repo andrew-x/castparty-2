@@ -13,9 +13,9 @@ The public submission flow lets candidates discover and apply to casting calls w
 | Path | Component | Auth | Description |
 |------|-----------|------|-------------|
 | `/s/[orgSlug]` | `src/app/s/[orgSlug]/page.tsx` | None | Lists an org's open productions and their roles |
-| `/s/[orgSlug]/[productionSlug]` | `src/app/s/[orgSlug]/[productionSlug]/page.tsx` | None | Lists open roles for a specific production |
-| `/s/[orgSlug]/[productionSlug]/[roleSlug]` | `src/app/s/[orgSlug]/[productionSlug]/[roleSlug]/page.tsx` | None | Renders the submission form for a specific role |
-| `/s` (layout) | `src/app/s/layout.tsx` | None | Shared layout with Castparty footer branding |
+| `/s/[orgSlug]/[productionSlug]` | `src/app/s/[orgSlug]/[productionSlug]/page.tsx` | None | Two-column production page with roles context (left) + sticky submission form (right) |
+| `/s/[orgSlug]/[productionSlug]/[roleSlug]` | `src/app/s/[orgSlug]/[productionSlug]/[roleSlug]/page.tsx` | None | Redirects to the production page |
+| `/s` (layout) | `src/app/s/layout.tsx` | None | Shared layout with Castparty footer branding; does not constrain content width — each page sets its own max-width |
 
 All three pages are server components. Each resolves its entity by slug via unauthenticated server functions and renders a `NotFoundEntity` fallback if not found.
 
@@ -46,10 +46,10 @@ All three pages are server components. Each resolves its entity by slug via unau
 
 | File | Purpose |
 |------|---------|
-| `src/app/s/layout.tsx` | Shared public layout with Castparty footer |
+| `src/app/s/layout.tsx` | Shared public layout with Castparty footer; no max-width constraint — pages set their own |
 | `src/app/s/[orgSlug]/page.tsx` | Org page: lists productions with open roles |
-| `src/app/s/[orgSlug]/[productionSlug]/page.tsx` | Production page: lists open roles |
-| `src/app/s/[orgSlug]/[productionSlug]/[roleSlug]/page.tsx` | Role page: renders SubmissionForm |
+| `src/app/s/[orgSlug]/[productionSlug]/page.tsx` | Production page: two-column layout with roles context + sticky form card |
+| `src/app/s/[orgSlug]/[productionSlug]/[roleSlug]/page.tsx` | Role page: redirects to production page |
 | `src/actions/submissions/get-public-org.ts` | Fetches org by slug (no auth) |
 | `src/actions/submissions/get-public-org-profile.ts` | Fetches org profile (open status, description, website); auto-creates if missing |
 | `src/actions/submissions/get-public-productions.ts` | Lists open productions for an org |
@@ -58,7 +58,9 @@ All three pages are server components. Each resolves its entity by slug via unau
 | `src/actions/submissions/create-submission.ts` | Core mutation: validates, upserts candidate, creates submissions, moves files, extracts resume text |
 | `src/actions/submissions/presign-headshot-upload.ts` | Presigns R2 URLs for headshot uploads (JPEG/PNG/WebP/HEIC, max 20 MB each, max 10 files) |
 | `src/actions/submissions/presign-resume-upload.ts` | Presigns an R2 URL for resume upload (PDF only, max 10 MB) |
-| `src/components/submissions/submission-form.tsx` | Client component: the full submission form with file uploads |
+| `src/components/submissions/submission-form.tsx` | Client component: the full submission form with file uploads, wrapped in a card with grouped sections |
+| `src/components/submissions/collapsible-description.tsx` | Client component: sanitized HTML description with line-clamp-3 and "Show more/Show less" toggle |
+| `src/components/submissions/floating-apply-button.tsx` | Client component: mobile floating "Go to form" CTA using IntersectionObserver |
 | `src/components/submissions/resume-uploader.tsx` | Controlled PDF file picker with remove button |
 | `src/components/submissions/custom-field-display.tsx` | Renders a single custom field by type |
 | `src/lib/r2.ts` | R2 utility: presign, upload, move, delete, check existence |

@@ -1,6 +1,7 @@
 "use client"
 
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
+import { CheckIcon } from "lucide-react"
 import { useState } from "react"
 import { Controller } from "react-hook-form"
 import { createSubmission } from "@/actions/submissions/create-submission"
@@ -10,7 +11,6 @@ import { presignResumeUpload } from "@/actions/submissions/presign-resume-upload
 import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
 import { AutocompleteInput } from "@/components/common/autocomplete-input"
 import { Button } from "@/components/common/button"
-import { Checkbox } from "@/components/common/checkbox"
 import {
   Field,
   FieldDescription,
@@ -21,6 +21,7 @@ import {
   FieldSet,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { Separator } from "@/components/common/separator"
 import { CustomFieldDisplay } from "@/components/submissions/custom-field-display"
 import {
   type HeadshotFile,
@@ -137,10 +138,22 @@ export function SubmissionForm({
     },
   )
 
+  const hasAdditionalInfo =
+    systemFieldConfig.unionStatus !== "hidden" ||
+    systemFieldConfig.representation !== "hidden"
+
+  const hasMaterials =
+    systemFieldConfig.headshots !== "hidden" ||
+    systemFieldConfig.resume !== "hidden" ||
+    systemFieldConfig.video !== "hidden" ||
+    systemFieldConfig.links !== "hidden"
+
+  const hasCustomFields = submissionFormFields.length > 0
+
   if (submitted) {
     const roleCount = selectedRoleIds.length
     return (
-      <div className="flex flex-col gap-group">
+      <div className="flex flex-col gap-group rounded-lg border bg-background p-6 shadow-sm">
         <Alert>
           <AlertTitle>
             {roleCount > 1
@@ -165,205 +178,113 @@ export function SubmissionForm({
   }
 
   return (
-    <form
-      onSubmit={form.handleSubmit(async (v) => {
-        form.clearErrors("root")
-        setUploadError(null)
-        setResumeError(null)
-        setRoleError(null)
-        setCustomFieldFileErrors({})
+    <div className="rounded-lg border bg-background p-6 shadow-sm">
+      <div className="mb-6">
+        <h2 className="font-serif text-heading">Submit your audition</h2>
+        <p className="mt-1 text-caption text-muted-foreground">
+          Fill out the form below to apply.
+        </p>
+      </div>
 
-        // Validate role selection
-        let hasFieldErrors = false
-        if (selectedRoleIds.length === 0) {
-          setRoleError("Select at least one role.")
-          hasFieldErrors = true
-        }
+      <form
+        onSubmit={form.handleSubmit(async (v) => {
+          form.clearErrors("root")
+          setUploadError(null)
+          setResumeError(null)
+          setRoleError(null)
+          setCustomFieldFileErrors({})
 
-        // Validate required custom fields client-side
-        for (const formField of submissionFormFields) {
-          if (!formField.required) continue
-          if (formField.type === "IMAGE") {
-            const images = customFieldImages[formField.id]
-            if (!images || images.length === 0) {
-              setCustomFieldFileErrors((prev) => ({
-                ...prev,
-                [formField.id]: `${formField.label} is required.`,
-              }))
-              hasFieldErrors = true
-            }
-          } else if (formField.type === "DOCUMENT") {
-            const doc = customFieldDocuments[formField.id]
-            if (!doc) {
-              setCustomFieldFileErrors((prev) => ({
-                ...prev,
-                [formField.id]: `${formField.label} is required.`,
-              }))
-              hasFieldErrors = true
-            }
-          } else {
-            const value = v.answers[formField.id]
-            if (!value?.trim()) {
-              form.setError(`answers.${formField.id}`, {
-                type: "required",
-                message: `${formField.label} is required.`,
-              })
-              hasFieldErrors = true
-            }
+          // Validate role selection
+          let hasFieldErrors = false
+          if (selectedRoleIds.length === 0) {
+            setRoleError("Select at least one role.")
+            hasFieldErrors = true
           }
-        }
 
-        // Validate required system fields client-side
-        if (systemFieldConfig.phone === "required" && !v.phone?.trim()) {
-          form.setError("phone", {
-            type: "required",
-            message: "Phone number is required.",
-          })
-          hasFieldErrors = true
-        }
-        if (systemFieldConfig.location === "required" && !v.location?.trim()) {
-          form.setError("location", {
-            type: "required",
-            message: "Location is required.",
-          })
-          hasFieldErrors = true
-        }
-        if (
-          systemFieldConfig.headshots === "required" &&
-          headshots.length === 0
-        ) {
-          setUploadError("At least one headshot is required.")
-          hasFieldErrors = true
-        }
-        if (systemFieldConfig.resume === "required" && !resume) {
-          setResumeError("Resume is required.")
-          hasFieldErrors = true
-        }
-        if (systemFieldConfig.video === "required" && !v.videoUrl?.trim()) {
-          form.setError("videoUrl", {
-            type: "required",
-            message: "A video link is required.",
-          })
-          hasFieldErrors = true
-        }
-        if (hasFieldErrors) return
-
-        let headshotMeta: {
-          key: string
-          filename: string
-          contentType: string
-          size: number
-        }[] = []
-
-        if (headshots.length > 0) {
-          setUploading(true)
-          try {
-            // 1. Request presigned URLs via server action
-            const presignResult = await presignHeadshotUpload({
-              files: headshots.map((h) => ({
-                filename: h.file.name,
-                contentType: h.file.type,
-                size: h.file.size,
-              })),
-            })
-
-            if (!presignResult?.data?.files) {
-              throw new Error(
-                presignResult?.serverError ?? "Failed to prepare upload.",
-              )
-            }
-
-            const presigned = presignResult.data.files
-
-            // 2. Upload all files to R2 in parallel
-            await Promise.all(
-              presigned.map(async ({ presignedUrl }, i) => {
-                const res = await fetch(presignedUrl, {
-                  method: "PUT",
-                  body: headshots[i].file,
-                  headers: { "Content-Type": headshots[i].file.type },
-                })
-                if (!res.ok) throw new Error("Upload failed.")
-              }),
-            )
-
-            // 3. Build metadata for server action
-            headshotMeta = presigned.map(({ key }, i) => ({
-              key,
-              filename: headshots[i].file.name,
-              contentType: headshots[i].file.type,
-              size: headshots[i].file.size,
-            }))
-          } catch (err) {
-            setUploading(false)
-            setUploadError(
-              err instanceof Error ? err.message : "Upload failed. Try again.",
-            )
-            return
-          }
-          setUploading(false)
-        }
-
-        let resumeMeta:
-          | { key: string; filename: string; contentType: string; size: number }
-          | undefined
-
-        if (resume) {
-          setUploading(true)
-          try {
-            const presignResult = await presignResumeUpload({
-              filename: resume.name,
-              contentType: resume.type,
-              size: resume.size,
-            })
-
-            if (!presignResult?.data) {
-              throw new Error(
-                presignResult?.serverError ?? "Failed to prepare upload.",
-              )
-            }
-
-            const { key, presignedUrl } = presignResult.data
-
-            const res = await fetch(presignedUrl, {
-              method: "PUT",
-              body: resume,
-              headers: { "Content-Type": resume.type },
-            })
-            if (!res.ok) throw new Error("Upload failed.")
-
-            resumeMeta = {
-              key,
-              filename: resume.name,
-              contentType: resume.type,
-              size: resume.size,
-            }
-          } catch (err) {
-            setUploading(false)
-            setResumeError(
-              err instanceof Error ? err.message : "Upload failed. Try again.",
-            )
-            return
-          }
-          setUploading(false)
-        }
-
-        // Upload custom field files (IMAGE and DOCUMENT)
-        const customFieldFileMeta: Record<
-          string,
-          { key: string; filename: string; contentType: string; size: number }[]
-        > = {}
-
-        try {
+          // Validate required custom fields client-side
           for (const formField of submissionFormFields) {
+            if (!formField.required) continue
             if (formField.type === "IMAGE") {
               const images = customFieldImages[formField.id]
-              if (!images || images.length === 0) continue
+              if (!images || images.length === 0) {
+                setCustomFieldFileErrors((prev) => ({
+                  ...prev,
+                  [formField.id]: `${formField.label} is required.`,
+                }))
+                hasFieldErrors = true
+              }
+            } else if (formField.type === "DOCUMENT") {
+              const doc = customFieldDocuments[formField.id]
+              if (!doc) {
+                setCustomFieldFileErrors((prev) => ({
+                  ...prev,
+                  [formField.id]: `${formField.label} is required.`,
+                }))
+                hasFieldErrors = true
+              }
+            } else {
+              const value = v.answers[formField.id]
+              if (!value?.trim()) {
+                form.setError(`answers.${formField.id}`, {
+                  type: "required",
+                  message: `${formField.label} is required.`,
+                })
+                hasFieldErrors = true
+              }
+            }
+          }
 
-              setUploading(true)
-              const presignResult = await presignCustomFieldUpload({
-                fieldType: "IMAGE",
-                files: images.map((h) => ({
+          // Validate required system fields client-side
+          if (systemFieldConfig.phone === "required" && !v.phone?.trim()) {
+            form.setError("phone", {
+              type: "required",
+              message: "Phone number is required.",
+            })
+            hasFieldErrors = true
+          }
+          if (
+            systemFieldConfig.location === "required" &&
+            !v.location?.trim()
+          ) {
+            form.setError("location", {
+              type: "required",
+              message: "Location is required.",
+            })
+            hasFieldErrors = true
+          }
+          if (
+            systemFieldConfig.headshots === "required" &&
+            headshots.length === 0
+          ) {
+            setUploadError("At least one headshot is required.")
+            hasFieldErrors = true
+          }
+          if (systemFieldConfig.resume === "required" && !resume) {
+            setResumeError("Resume is required.")
+            hasFieldErrors = true
+          }
+          if (systemFieldConfig.video === "required" && !v.videoUrl?.trim()) {
+            form.setError("videoUrl", {
+              type: "required",
+              message: "A video link is required.",
+            })
+            hasFieldErrors = true
+          }
+          if (hasFieldErrors) return
+
+          let headshotMeta: {
+            key: string
+            filename: string
+            contentType: string
+            size: number
+          }[] = []
+
+          if (headshots.length > 0) {
+            setUploading(true)
+            try {
+              // 1. Request presigned URLs via server action
+              const presignResult = await presignHeadshotUpload({
+                files: headshots.map((h) => ({
                   filename: h.file.name,
                   contentType: h.file.type,
                   size: h.file.size,
@@ -377,110 +298,227 @@ export function SubmissionForm({
               }
 
               const presigned = presignResult.data.files
+
+              // 2. Upload all files to R2 in parallel
               await Promise.all(
                 presigned.map(async ({ presignedUrl }, i) => {
                   const res = await fetch(presignedUrl, {
                     method: "PUT",
-                    body: images[i].file,
-                    headers: { "Content-Type": images[i].file.type },
+                    body: headshots[i].file,
+                    headers: { "Content-Type": headshots[i].file.type },
                   })
                   if (!res.ok) throw new Error("Upload failed.")
                 }),
               )
 
-              customFieldFileMeta[formField.id] = presigned.map(
-                ({ key }, i) => ({
-                  key,
-                  filename: images[i].file.name,
-                  contentType: images[i].file.type,
-                  size: images[i].file.size,
-                }),
+              // 3. Build metadata for server action
+              headshotMeta = presigned.map(({ key }, i) => ({
+                key,
+                filename: headshots[i].file.name,
+                contentType: headshots[i].file.type,
+                size: headshots[i].file.size,
+              }))
+            } catch (err) {
+              setUploading(false)
+              setUploadError(
+                err instanceof Error
+                  ? err.message
+                  : "Upload failed. Try again.",
               )
-            } else if (formField.type === "DOCUMENT") {
-              const doc = customFieldDocuments[formField.id]
-              if (!doc) continue
+              return
+            }
+            setUploading(false)
+          }
 
-              setUploading(true)
-              const presignResult = await presignCustomFieldUpload({
-                fieldType: "DOCUMENT",
-                files: [
-                  {
-                    filename: doc.name,
-                    contentType: doc.type,
-                    size: doc.size,
-                  },
-                ],
+          let resumeMeta:
+            | {
+                key: string
+                filename: string
+                contentType: string
+                size: number
+              }
+            | undefined
+
+          if (resume) {
+            setUploading(true)
+            try {
+              const presignResult = await presignResumeUpload({
+                filename: resume.name,
+                contentType: resume.type,
+                size: resume.size,
               })
 
-              if (!presignResult?.data?.files) {
+              if (!presignResult?.data) {
                 throw new Error(
                   presignResult?.serverError ?? "Failed to prepare upload.",
                 )
               }
 
-              const { key, presignedUrl } = presignResult.data.files[0]
+              const { key, presignedUrl } = presignResult.data
+
               const res = await fetch(presignedUrl, {
                 method: "PUT",
-                body: doc,
-                headers: { "Content-Type": doc.type },
+                body: resume,
+                headers: { "Content-Type": resume.type },
               })
               if (!res.ok) throw new Error("Upload failed.")
 
-              customFieldFileMeta[formField.id] = [
-                {
-                  key,
-                  filename: doc.name,
-                  contentType: doc.type,
-                  size: doc.size,
-                },
-              ]
+              resumeMeta = {
+                key,
+                filename: resume.name,
+                contentType: resume.type,
+                size: resume.size,
+              }
+            } catch (err) {
+              setUploading(false)
+              setResumeError(
+                err instanceof Error
+                  ? err.message
+                  : "Upload failed. Try again.",
+              )
+              return
             }
+            setUploading(false)
           }
-        } catch (err) {
-          setUploading(false)
-          form.setError("root", {
-            message:
-              err instanceof Error ? err.message : "Upload failed. Try again.",
-          })
-          return
-        }
-        setUploading(false)
 
-        action.execute({
-          ...v,
-          orgId,
-          productionId,
-          roleIds: selectedRoleIds,
-          headshots: headshotMeta,
-          resume: resumeMeta,
-          customFieldFiles: customFieldFileMeta,
-        })
-      })}
-    >
-      <FieldGroup>
-        {availableRoles.length > 0 && (
-          <FieldSet
-            data-invalid={roleError ? true : undefined}
-            className="gap-2"
-          >
-            <FieldLegend variant="label" className="mb-0">
-              Roles
-              <RequiredMarker />
-            </FieldLegend>
-            <FieldDescription className="pt-0.5">
-              Select the roles you would like to submit for.
-            </FieldDescription>
-            <div className="flex max-h-[280px] flex-col gap-1.5 overflow-y-auto">
-              {availableRoles.map((role) => {
-                const checked = selectedRoleIds.includes(role.id)
-                return (
-                  <FieldLabel
-                    key={role.id}
-                    className="flex items-start gap-2 has-data-[state=checked]:bg-transparent"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={() => {
+          // Upload custom field files (IMAGE and DOCUMENT)
+          const customFieldFileMeta: Record<
+            string,
+            {
+              key: string
+              filename: string
+              contentType: string
+              size: number
+            }[]
+          > = {}
+
+          try {
+            for (const formField of submissionFormFields) {
+              if (formField.type === "IMAGE") {
+                const images = customFieldImages[formField.id]
+                if (!images || images.length === 0) continue
+
+                setUploading(true)
+                const presignResult = await presignCustomFieldUpload({
+                  fieldType: "IMAGE",
+                  files: images.map((h) => ({
+                    filename: h.file.name,
+                    contentType: h.file.type,
+                    size: h.file.size,
+                  })),
+                })
+
+                if (!presignResult?.data?.files) {
+                  throw new Error(
+                    presignResult?.serverError ?? "Failed to prepare upload.",
+                  )
+                }
+
+                const presigned = presignResult.data.files
+                await Promise.all(
+                  presigned.map(async ({ presignedUrl }, i) => {
+                    const res = await fetch(presignedUrl, {
+                      method: "PUT",
+                      body: images[i].file,
+                      headers: { "Content-Type": images[i].file.type },
+                    })
+                    if (!res.ok) throw new Error("Upload failed.")
+                  }),
+                )
+
+                customFieldFileMeta[formField.id] = presigned.map(
+                  ({ key }, i) => ({
+                    key,
+                    filename: images[i].file.name,
+                    contentType: images[i].file.type,
+                    size: images[i].file.size,
+                  }),
+                )
+              } else if (formField.type === "DOCUMENT") {
+                const doc = customFieldDocuments[formField.id]
+                if (!doc) continue
+
+                setUploading(true)
+                const presignResult = await presignCustomFieldUpload({
+                  fieldType: "DOCUMENT",
+                  files: [
+                    {
+                      filename: doc.name,
+                      contentType: doc.type,
+                      size: doc.size,
+                    },
+                  ],
+                })
+
+                if (!presignResult?.data?.files) {
+                  throw new Error(
+                    presignResult?.serverError ?? "Failed to prepare upload.",
+                  )
+                }
+
+                const { key, presignedUrl } = presignResult.data.files[0]
+                const res = await fetch(presignedUrl, {
+                  method: "PUT",
+                  body: doc,
+                  headers: { "Content-Type": doc.type },
+                })
+                if (!res.ok) throw new Error("Upload failed.")
+
+                customFieldFileMeta[formField.id] = [
+                  {
+                    key,
+                    filename: doc.name,
+                    contentType: doc.type,
+                    size: doc.size,
+                  },
+                ]
+              }
+            }
+          } catch (err) {
+            setUploading(false)
+            form.setError("root", {
+              message:
+                err instanceof Error
+                  ? err.message
+                  : "Upload failed. Try again.",
+            })
+            return
+          }
+          setUploading(false)
+
+          action.execute({
+            ...v,
+            orgId,
+            productionId,
+            roleIds: selectedRoleIds,
+            headshots: headshotMeta,
+            resume: resumeMeta,
+            customFieldFiles: customFieldFileMeta,
+          })
+        })}
+      >
+        <FieldGroup>
+          {/* Section: Roles */}
+          {availableRoles.length > 0 && (
+            <FieldSet
+              data-invalid={roleError ? true : undefined}
+              className="gap-2"
+            >
+              <FieldLegend variant="label" className="mb-0">
+                Roles
+                <RequiredMarker />
+              </FieldLegend>
+              <FieldDescription className="pt-0.5">
+                Select the roles you would like to submit for.
+              </FieldDescription>
+              <div className="flex flex-wrap gap-2">
+                {availableRoles.map((role) => {
+                  const checked = selectedRoleIds.includes(role.id)
+                  return (
+                    <button
+                      key={role.id}
+                      type="button"
+                      onClick={() => {
                         setSelectedRoleIds((prev) =>
                           checked
                             ? prev.filter((id) => id !== role.id)
@@ -488,342 +526,437 @@ export function SubmissionForm({
                         )
                         setRoleError(null)
                       }}
-                      className="mt-0.5"
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-label font-medium transition-colors ${
+                        checked
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      {checked && <CheckIcon className="size-3.5" />}
+                      {role.name}
+                    </button>
+                  )
+                })}
+              </div>
+              {roleError && <FieldError>{roleError}</FieldError>}
+            </FieldSet>
+          )}
+
+          {/* Section: Contact info */}
+          <Separator />
+          <div className="flex flex-col gap-block">
+            <h3 className="border-brand/40 border-l-2 pl-2 font-semibold text-caption text-muted-foreground uppercase tracking-wide">
+              Contact info
+            </h3>
+            <FieldGroup>
+              <Controller
+                name="firstName"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid || undefined}>
+                    <FieldLabel htmlFor={field.name}>
+                      First name
+                      <RequiredMarker />
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id={field.name}
+                      type="text"
+                      aria-invalid={fieldState.invalid}
                     />
-                    <span className="text-label leading-snug">{role.name}</span>
-                  </FieldLabel>
-                )
-              })}
-            </div>
-            {roleError && <FieldError>{roleError}</FieldError>}
-          </FieldSet>
-        )}
-
-        <Controller
-          name="firstName"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>
-                First name
-                <RequiredMarker />
-              </FieldLabel>
-              <Input
-                {...field}
-                id={field.name}
-                type="text"
-                aria-invalid={fieldState.invalid}
-              />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-        <Controller
-          name="lastName"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>
-                Last name
-                <RequiredMarker />
-              </FieldLabel>
-              <Input
-                {...field}
-                id={field.name}
-                type="text"
-                aria-invalid={fieldState.invalid}
-              />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-        <Controller
-          name="email"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>
-                Email
-                <RequiredMarker />
-              </FieldLabel>
-              <Input
-                {...field}
-                id={field.name}
-                type="email"
-                aria-invalid={fieldState.invalid}
-              />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        {systemFieldConfig.phone !== "hidden" && (
-          <Controller
-            name="phone"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid || undefined}>
-                <FieldLabel htmlFor={field.name}>
-                  {systemFieldLabel("Phone", systemFieldConfig.phone)}
-                  {systemFieldConfig.phone === "required" && <RequiredMarker />}
-                </FieldLabel>
-                <Input
-                  {...field}
-                  id={field.name}
-                  type="tel"
-                  aria-invalid={fieldState.invalid}
-                />
-                {fieldState.error && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        )}
-
-        {systemFieldConfig.location !== "hidden" && (
-          <Controller
-            name="location"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid || undefined}>
-                <FieldLabel htmlFor={field.name}>
-                  {systemFieldLabel("Location", systemFieldConfig.location)}
-                  {systemFieldConfig.location === "required" && (
-                    <RequiredMarker />
-                  )}
-                </FieldLabel>
-                <AutocompleteInput
-                  id={field.name}
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  options={cityOptions}
-                  placeholder="e.g. Toronto, ON"
-                  aria-invalid={fieldState.invalid}
-                />
-                {fieldState.error && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        )}
-
-        {systemFieldConfig.unionStatus !== "hidden" && (
-          <Controller
-            name="unionStatus"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid || undefined}>
-                <FieldLabel>
-                  {systemFieldLabel(
-                    "Union affiliations",
-                    systemFieldConfig.unionStatus,
-                  )}
-                </FieldLabel>
-                <FieldDescription>
-                  Select your union memberships or type to add unlisted unions.
-                </FieldDescription>
-                <UnionStatusSelect
-                  value={(field.value as string[]) ?? []}
-                  onChange={field.onChange}
-                />
-                {fieldState.error && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        )}
-
-        {systemFieldConfig.representation !== "hidden" && (
-          <Controller
-            name="representation"
-            control={form.control}
-            render={({ field }) => {
-              const repErrors = form.formState.errors.representation as
-                | { name?: { message?: string }; email?: { message?: string } }
-                | undefined
-              return (
-                <Field>
-                  <FieldLabel>
-                    {systemFieldLabel(
-                      "Representation",
-                      systemFieldConfig.representation,
+                    {fieldState.error && (
+                      <FieldError errors={[fieldState.error]} />
                     )}
-                  </FieldLabel>
-                  <RepresentationFields
-                    value={field.value as Representation | null}
-                    onChange={field.onChange}
-                    errors={repErrors}
-                  />
-                </Field>
-              )
-            }}
-          />
-        )}
+                  </Field>
+                )}
+              />
+              <Controller
+                name="lastName"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid || undefined}>
+                    <FieldLabel htmlFor={field.name}>
+                      Last name
+                      <RequiredMarker />
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id={field.name}
+                      type="text"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    {fieldState.error && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+              <Controller
+                name="email"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid || undefined}>
+                    <FieldLabel htmlFor={field.name}>
+                      Email
+                      <RequiredMarker />
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id={field.name}
+                      type="email"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    {fieldState.error && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
 
-        {submissionFormFields.map((formField) => {
-          if (formField.type === "IMAGE") {
-            return (
-              <CustomFieldDisplay
-                key={formField.id}
-                field={formField}
-                value=""
-                files={customFieldImages[formField.id] ?? []}
-                onFilesChange={(files) =>
-                  setCustomFieldImages((prev) => ({
-                    ...prev,
-                    [formField.id]: files,
-                  }))
-                }
-                fileError={customFieldFileErrors[formField.id] ?? undefined}
-              />
-            )
-          }
-          if (formField.type === "DOCUMENT") {
-            return (
-              <CustomFieldDisplay
-                key={formField.id}
-                field={formField}
-                value=""
-                documentFile={customFieldDocuments[formField.id] ?? null}
-                onDocumentChange={(file) =>
-                  setCustomFieldDocuments((prev) => ({
-                    ...prev,
-                    [formField.id]: file,
-                  }))
-                }
-                fileError={customFieldFileErrors[formField.id] ?? undefined}
-              />
-            )
-          }
-          return (
-            <Controller
-              key={formField.id}
-              name={`answers.${formField.id}`}
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <CustomFieldDisplay
-                  field={formField}
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  error={fieldState.error}
-                  id={field.name}
+              {systemFieldConfig.phone !== "hidden" && (
+                <Controller
+                  name="phone"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid || undefined}>
+                      <FieldLabel htmlFor={field.name}>
+                        {systemFieldLabel("Phone", systemFieldConfig.phone)}
+                        {systemFieldConfig.phone === "required" && (
+                          <RequiredMarker />
+                        )}
+                      </FieldLabel>
+                      <Input
+                        {...field}
+                        id={field.name}
+                        type="tel"
+                        aria-invalid={fieldState.invalid}
+                      />
+                      {fieldState.error && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
                 />
               )}
-            />
-          )
-        })}
 
-        {systemFieldConfig.headshots !== "hidden" && (
-          <Field>
-            <FieldLabel>
-              {systemFieldLabel("Headshots", systemFieldConfig.headshots)}
-              {systemFieldConfig.headshots === "required" && <RequiredMarker />}
-            </FieldLabel>
-            <HeadshotUploader
-              files={headshots}
-              onChange={setHeadshots}
-              error={uploadError ?? undefined}
-            />
-          </Field>
-        )}
-
-        {systemFieldConfig.resume !== "hidden" && (
-          <Field>
-            <FieldLabel>
-              {systemFieldLabel("Resume", systemFieldConfig.resume)}
-              {systemFieldConfig.resume === "required" && <RequiredMarker />}
-            </FieldLabel>
-            <ResumeUploader
-              file={resume}
-              onChange={setResume}
-              error={resumeError ?? undefined}
-            />
-          </Field>
-        )}
-
-        {systemFieldConfig.video !== "hidden" && (
-          <Controller
-            name="videoUrl"
-            control={form.control}
-            render={({ field, fieldState }) => {
-              const url = (field.value as string) ?? ""
-              return (
-                <Field data-invalid={fieldState.invalid || undefined}>
-                  <FieldLabel htmlFor={field.name}>
-                    {systemFieldLabel("Video", systemFieldConfig.video)}
-                    {systemFieldConfig.video === "required" && (
-                      <RequiredMarker />
-                    )}
-                  </FieldLabel>
-                  <FieldDescription>
-                    Link a video from YouTube, Vimeo, Google Drive, or Dropbox.
-                    You can also paste any direct video link.
-                  </FieldDescription>
-                  <Input
-                    id={field.name}
-                    type="url"
-                    value={url}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    onBlur={() => {
-                      if (
-                        url &&
-                        !url.startsWith("http://") &&
-                        !url.startsWith("https://")
-                      ) {
-                        field.onChange(`https://${url}`)
-                      }
-                    }}
-                    placeholder="https://..."
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {url && <VideoEmbed url={url} />}
-                  {fieldState.error && (
-                    <FieldError errors={[fieldState.error]} />
+              {systemFieldConfig.location !== "hidden" && (
+                <Controller
+                  name="location"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid || undefined}>
+                      <FieldLabel htmlFor={field.name}>
+                        {systemFieldLabel(
+                          "Location",
+                          systemFieldConfig.location,
+                        )}
+                        {systemFieldConfig.location === "required" && (
+                          <RequiredMarker />
+                        )}
+                      </FieldLabel>
+                      <AutocompleteInput
+                        id={field.name}
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                        options={cityOptions}
+                        placeholder="e.g. Toronto, ON"
+                        aria-invalid={fieldState.invalid}
+                      />
+                      {fieldState.error && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
                   )}
-                </Field>
-              )
-            }}
-          />
-        )}
-
-        {systemFieldConfig.links !== "hidden" && (
-          <Controller
-            name="links"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid || undefined}>
-                <FieldLabel>
-                  {systemFieldLabel("Links", systemFieldConfig.links)}
-                </FieldLabel>
-                <FieldDescription>
-                  Add links to your portfolio, social media, or demo reels.
-                </FieldDescription>
-                <LinksEditor
-                  value={(field.value as string[]) ?? []}
-                  onChange={field.onChange}
                 />
-                {fieldState.error && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        )}
+              )}
+            </FieldGroup>
+          </div>
 
-        {form.formState.errors.root && (
-          <Alert variant="destructive">
-            <AlertDescription>
-              {form.formState.errors.root.message}
-            </AlertDescription>
-          </Alert>
-        )}
-        <Button
-          type="submit"
-          loading={uploading || action.isPending}
-          className="w-fit"
-        >
-          {uploading
-            ? "Uploading files..."
-            : selectedRoleIds.length > 1
-              ? `Submit for ${selectedRoleIds.length} roles`
-              : "Submit"}
-        </Button>
-      </FieldGroup>
-    </form>
+          {/* Section: Additional info */}
+          {hasAdditionalInfo && (
+            <>
+              <Separator />
+              <div className="flex flex-col gap-block">
+                <h3 className="border-brand/40 border-l-2 pl-2 font-semibold text-caption text-muted-foreground uppercase tracking-wide">
+                  Additional info
+                </h3>
+                <FieldGroup>
+                  {systemFieldConfig.unionStatus !== "hidden" && (
+                    <Controller
+                      name="unionStatus"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid || undefined}>
+                          <FieldLabel>
+                            {systemFieldLabel(
+                              "Union affiliations",
+                              systemFieldConfig.unionStatus,
+                            )}
+                          </FieldLabel>
+                          <FieldDescription>
+                            Select your union memberships or type to add
+                            unlisted unions.
+                          </FieldDescription>
+                          <UnionStatusSelect
+                            value={(field.value as string[]) ?? []}
+                            onChange={field.onChange}
+                          />
+                          {fieldState.error && (
+                            <FieldError errors={[fieldState.error]} />
+                          )}
+                        </Field>
+                      )}
+                    />
+                  )}
+
+                  {systemFieldConfig.representation !== "hidden" && (
+                    <Controller
+                      name="representation"
+                      control={form.control}
+                      render={({ field }) => {
+                        const repErrors = form.formState.errors
+                          .representation as
+                          | {
+                              name?: { message?: string }
+                              email?: { message?: string }
+                            }
+                          | undefined
+                        return (
+                          <Field>
+                            <FieldLabel>
+                              {systemFieldLabel(
+                                "Representation",
+                                systemFieldConfig.representation,
+                              )}
+                            </FieldLabel>
+                            <RepresentationFields
+                              value={field.value as Representation | null}
+                              onChange={field.onChange}
+                              errors={repErrors}
+                            />
+                          </Field>
+                        )
+                      }}
+                    />
+                  )}
+                </FieldGroup>
+              </div>
+            </>
+          )}
+
+          {/* Section: Materials */}
+          {hasMaterials && (
+            <>
+              <Separator />
+              <div className="flex flex-col gap-block">
+                <h3 className="border-brand/40 border-l-2 pl-2 font-semibold text-caption text-muted-foreground uppercase tracking-wide">
+                  Materials
+                </h3>
+                <FieldGroup>
+                  {systemFieldConfig.headshots !== "hidden" && (
+                    <Field>
+                      <FieldLabel>
+                        {systemFieldLabel(
+                          "Headshots",
+                          systemFieldConfig.headshots,
+                        )}
+                        {systemFieldConfig.headshots === "required" && (
+                          <RequiredMarker />
+                        )}
+                      </FieldLabel>
+                      <HeadshotUploader
+                        files={headshots}
+                        onChange={setHeadshots}
+                        error={uploadError ?? undefined}
+                      />
+                    </Field>
+                  )}
+
+                  {systemFieldConfig.resume !== "hidden" && (
+                    <Field>
+                      <FieldLabel>
+                        {systemFieldLabel("Resume", systemFieldConfig.resume)}
+                        {systemFieldConfig.resume === "required" && (
+                          <RequiredMarker />
+                        )}
+                      </FieldLabel>
+                      <ResumeUploader
+                        file={resume}
+                        onChange={setResume}
+                        error={resumeError ?? undefined}
+                      />
+                    </Field>
+                  )}
+
+                  {systemFieldConfig.video !== "hidden" && (
+                    <Controller
+                      name="videoUrl"
+                      control={form.control}
+                      render={({ field, fieldState }) => {
+                        const url = (field.value as string) ?? ""
+                        return (
+                          <Field data-invalid={fieldState.invalid || undefined}>
+                            <FieldLabel htmlFor={field.name}>
+                              {systemFieldLabel(
+                                "Video",
+                                systemFieldConfig.video,
+                              )}
+                              {systemFieldConfig.video === "required" && (
+                                <RequiredMarker />
+                              )}
+                            </FieldLabel>
+                            <FieldDescription>
+                              Link a video from YouTube, Vimeo, Google Drive, or
+                              Dropbox. You can also paste any direct video link.
+                            </FieldDescription>
+                            <Input
+                              id={field.name}
+                              type="url"
+                              value={url}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              onBlur={() => {
+                                if (
+                                  url &&
+                                  !url.startsWith("http://") &&
+                                  !url.startsWith("https://")
+                                ) {
+                                  field.onChange(`https://${url}`)
+                                }
+                              }}
+                              placeholder="https://..."
+                              aria-invalid={fieldState.invalid}
+                            />
+                            {url && <VideoEmbed url={url} />}
+                            {fieldState.error && (
+                              <FieldError errors={[fieldState.error]} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+                  )}
+
+                  {systemFieldConfig.links !== "hidden" && (
+                    <Controller
+                      name="links"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid || undefined}>
+                          <FieldLabel>
+                            {systemFieldLabel("Links", systemFieldConfig.links)}
+                          </FieldLabel>
+                          <FieldDescription>
+                            Add links to your portfolio, social media, or demo
+                            reels.
+                          </FieldDescription>
+                          <LinksEditor
+                            value={(field.value as string[]) ?? []}
+                            onChange={field.onChange}
+                          />
+                          {fieldState.error && (
+                            <FieldError errors={[fieldState.error]} />
+                          )}
+                        </Field>
+                      )}
+                    />
+                  )}
+                </FieldGroup>
+              </div>
+            </>
+          )}
+
+          {/* Section: Custom fields */}
+          {hasCustomFields && (
+            <>
+              <Separator />
+              <div className="flex flex-col gap-block">
+                <h3 className="border-brand/40 border-l-2 pl-2 font-semibold text-caption text-muted-foreground uppercase tracking-wide">
+                  Additional questions
+                </h3>
+                <FieldGroup>
+                  {submissionFormFields.map((formField) => {
+                    if (formField.type === "IMAGE") {
+                      return (
+                        <CustomFieldDisplay
+                          key={formField.id}
+                          field={formField}
+                          value=""
+                          files={customFieldImages[formField.id] ?? []}
+                          onFilesChange={(files) =>
+                            setCustomFieldImages((prev) => ({
+                              ...prev,
+                              [formField.id]: files,
+                            }))
+                          }
+                          fileError={
+                            customFieldFileErrors[formField.id] ?? undefined
+                          }
+                        />
+                      )
+                    }
+                    if (formField.type === "DOCUMENT") {
+                      return (
+                        <CustomFieldDisplay
+                          key={formField.id}
+                          field={formField}
+                          value=""
+                          documentFile={
+                            customFieldDocuments[formField.id] ?? null
+                          }
+                          onDocumentChange={(file) =>
+                            setCustomFieldDocuments((prev) => ({
+                              ...prev,
+                              [formField.id]: file,
+                            }))
+                          }
+                          fileError={
+                            customFieldFileErrors[formField.id] ?? undefined
+                          }
+                        />
+                      )
+                    }
+                    return (
+                      <Controller
+                        key={formField.id}
+                        name={`answers.${formField.id}`}
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                          <CustomFieldDisplay
+                            field={formField}
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                            error={fieldState.error}
+                            id={field.name}
+                          />
+                        )}
+                      />
+                    )
+                  })}
+                </FieldGroup>
+              </div>
+            </>
+          )}
+
+          {form.formState.errors.root && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {form.formState.errors.root.message}
+              </AlertDescription>
+            </Alert>
+          )}
+          <Button
+            type="submit"
+            loading={uploading || action.isPending}
+            className="w-full"
+          >
+            {uploading
+              ? "Uploading files..."
+              : selectedRoleIds.length > 1
+                ? `Submit for ${selectedRoleIds.length} roles`
+                : "Submit"}
+          </Button>
+        </FieldGroup>
+      </form>
+    </div>
   )
 }

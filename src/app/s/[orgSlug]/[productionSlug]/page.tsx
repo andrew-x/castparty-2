@@ -1,7 +1,8 @@
-import { UserIcon } from "lucide-react"
+import { GlobeIcon, UserIcon } from "lucide-react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import { getPublicOrg } from "@/actions/submissions/get-public-org"
+import { getPublicOrgProfile } from "@/actions/submissions/get-public-org-profile"
 import { getPublicProduction } from "@/actions/submissions/get-public-production"
 import {
   Accordion,
@@ -17,6 +18,8 @@ import {
   EmptyTitle,
 } from "@/components/common/empty"
 import { Separator } from "@/components/common/separator"
+import { CollapsibleDescription } from "@/components/submissions/collapsible-description"
+import { FloatingApplyButton } from "@/components/submissions/floating-apply-button"
 import { NotFoundEntity } from "@/components/submissions/not-found-entity"
 import { SubmissionForm } from "@/components/submissions/submission-form"
 import { sanitizeDescription } from "@/lib/sanitize"
@@ -47,16 +50,30 @@ export default async function SubmitProductionPage({
   const org = await getPublicOrg(orgSlug)
   if (!org) return <NotFoundEntity entity="organization" />
 
-  const production = await getPublicProduction(org.id, productionSlug)
+  const [production, orgProfile] = await Promise.all([
+    getPublicProduction(org.id, productionSlug),
+    getPublicOrgProfile(org.id),
+  ])
   if (!production) return <NotFoundEntity entity="production" />
   if (production.status !== "open")
     return <NotFoundEntity entity="production" />
 
   const hasRoles = production.roles.length > 0
+  const hasOrgInfo = orgProfile.description || orgProfile.websiteUrl
+
+  const expandableRoles = production.roles.filter((role) => {
+    const photos = (role.referencePhotos as string[] | null) ?? []
+    return role.description || photos.length > 0
+  })
+
+  const staticRoles = production.roles.filter((role) => {
+    const photos = (role.referencePhotos as string[] | null) ?? []
+    return !role.description && photos.length === 0
+  })
 
   return (
-    <div className="flex flex-col gap-section">
-      {/* Production banner */}
+    <div className="mx-auto flex w-full max-w-page-wide flex-col gap-section">
+      {/* Full-width banner */}
       {production.banner && (
         <div className="overflow-hidden rounded-lg">
           <Image
@@ -70,75 +87,159 @@ export default async function SubmitProductionPage({
         </div>
       )}
 
-      {/* Production info */}
-      <div>
-        <h1 className="font-serif text-title">{production.name}</h1>
-        {production.description && (
-          <div
-            className="prose-description mt-2 text-body text-muted-foreground"
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitize-html allowlist
-            dangerouslySetInnerHTML={{
-              __html: sanitizeDescription(production.description),
-            }}
-          />
-        )}
-      </div>
-
-      {/* Roles accordion */}
       {hasRoles ? (
         <>
-          <Accordion type="multiple">
-            {production.roles.map((role) => {
-              const photos = (role.referencePhotos as string[] | null) ?? []
-              return (
-                <AccordionItem key={role.id} value={role.id}>
-                  <AccordionTrigger>{role.name}</AccordionTrigger>
-                  {(role.description || photos.length > 0) && (
-                    <AccordionContent>
-                      <div className="flex flex-col gap-block">
-                        {role.description && (
-                          <div
-                            className="prose-description text-muted-foreground"
-                            // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitize-html allowlist
-                            dangerouslySetInnerHTML={{
-                              __html: sanitizeDescription(role.description),
-                            }}
-                          />
-                        )}
-                        {photos.length > 0 && (
-                          <div className="flex gap-element">
-                            {photos.map((photo) => (
-                              <Image
-                                key={photo}
-                                src={photo}
-                                alt={`${role.name} reference`}
-                                width={120}
-                                height={120}
-                                className="size-24 rounded-lg object-cover"
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </AccordionContent>
+          {/* Two-column layout */}
+          <div className="grid gap-section md:grid-cols-[1fr_minmax(340px,0.75fr)]">
+            {/* Left column — production context */}
+            <div className="flex flex-col gap-section">
+              {/* Production header */}
+              <div>
+                <h1 className="font-serif text-title">{production.name}</h1>
+                <div className="mt-1 flex items-center gap-1.5">
+                  {org.logo && (
+                    <Image
+                      src={org.logo}
+                      alt={`${org.name} logo`}
+                      width={20}
+                      height={20}
+                      className="size-5 rounded object-cover"
+                    />
                   )}
-                </AccordionItem>
-              )
-            })}
-          </Accordion>
+                  <span className="text-caption text-muted-foreground">
+                    by {org.name}
+                  </span>
+                </div>
+              </div>
 
-          <Separator />
+              {/* Collapsible description */}
+              {production.description && (
+                <CollapsibleDescription
+                  html={sanitizeDescription(production.description)}
+                />
+              )}
 
-          {/* Submission form */}
-          <SubmissionForm
-            orgId={org.id}
-            productionId={production.id}
-            availableRoles={production.roles}
-            orgSlug={orgSlug}
-            productionSlug={productionSlug}
-            submissionFormFields={production.submissionFormFields}
-            systemFieldConfig={production.systemFieldConfig}
-          />
+              {/* Roles */}
+              <div className="flex flex-col gap-block">
+                <h2 className="font-semibold text-caption text-muted-foreground uppercase tracking-wide">
+                  Roles
+                </h2>
+
+                {/* Expandable roles in accordion */}
+                {expandableRoles.length > 0 && (
+                  <Accordion type="multiple">
+                    {expandableRoles.map((role) => {
+                      const photos =
+                        (role.referencePhotos as string[] | null) ?? []
+                      return (
+                        <AccordionItem key={role.id} value={role.id}>
+                          <AccordionTrigger>{role.name}</AccordionTrigger>
+                          <AccordionContent>
+                            <div className="flex flex-col gap-block">
+                              {role.description && (
+                                <div
+                                  className="prose-description text-muted-foreground"
+                                  // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitize-html allowlist
+                                  dangerouslySetInnerHTML={{
+                                    __html: sanitizeDescription(
+                                      role.description,
+                                    ),
+                                  }}
+                                />
+                              )}
+                              {photos.length > 0 && (
+                                <div className="flex gap-element">
+                                  {photos.map((photo) => (
+                                    <Image
+                                      key={photo}
+                                      src={photo}
+                                      alt={`${role.name} reference`}
+                                      width={120}
+                                      height={120}
+                                      className="size-24 rounded-lg object-cover"
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )
+                    })}
+                  </Accordion>
+                )}
+
+                {/* Static roles (no description or photos) */}
+                {staticRoles.map((role) => (
+                  <div
+                    key={role.id}
+                    className="rounded-lg border px-4 py-3 font-medium text-label"
+                  >
+                    {role.name}
+                  </div>
+                ))}
+              </div>
+
+              {/* Organization info */}
+              {hasOrgInfo && (
+                <>
+                  <Separator />
+                  <div className="flex flex-col gap-block">
+                    <div className="flex items-center gap-2">
+                      {org.logo && (
+                        <Image
+                          src={org.logo}
+                          alt={`${org.name} logo`}
+                          width={32}
+                          height={32}
+                          className="size-8 rounded-lg object-cover"
+                        />
+                      )}
+                      <h2 className="font-medium text-body">{org.name}</h2>
+                    </div>
+                    {orgProfile.description && (
+                      <div
+                        className="prose-description text-muted-foreground"
+                        // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via sanitize-html allowlist
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeDescription(orgProfile.description),
+                        }}
+                      />
+                    )}
+                    {orgProfile.websiteUrl && (
+                      <a
+                        href={orgProfile.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-label text-muted-foreground hover:text-foreground"
+                      >
+                        <GlobeIcon className="size-3.5" />
+                        {orgProfile.websiteUrl.replace(/^https?:\/\//, "")}
+                      </a>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Right column — sticky form */}
+            <div className="md:sticky md:top-page md:self-start">
+              <div id="submission-form">
+                <SubmissionForm
+                  orgId={org.id}
+                  productionId={production.id}
+                  availableRoles={production.roles}
+                  orgSlug={orgSlug}
+                  productionSlug={productionSlug}
+                  submissionFormFields={production.submissionFormFields}
+                  systemFieldConfig={production.systemFieldConfig}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile floating CTA */}
+          <FloatingApplyButton targetId="submission-form" />
         </>
       ) : (
         <Empty>

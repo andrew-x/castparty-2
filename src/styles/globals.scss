@@ -75,6 +75,7 @@
 
   /* === Layout constraints === */
   --spacing-page-content: 48rem; /* 768px — max content width for settings/form pages */
+  --spacing-page-wide: 72rem; /* 1152px — max content width for two-column layouts */
 
   /* === shadcn variable → Tailwind utility mappings === */
   --color-background: var(--background);
