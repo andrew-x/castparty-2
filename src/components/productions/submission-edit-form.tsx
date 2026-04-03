@@ -443,7 +443,7 @@ export function SubmissionEditForm({
                           {field.label}
                         </p>
                         {url ? (
-                          <VideoEmbed url={url} />
+                          <VideoEmbed url={url} size="sm" showHint />
                         ) : (
                           <p className="text-label text-muted-foreground italic">
                             Not provided

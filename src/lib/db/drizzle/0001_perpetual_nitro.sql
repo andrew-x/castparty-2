@@ -1,1 +1,0 @@
-ALTER TABLE "submission" RENAME COLUMN "video_urls" TO "video_url";

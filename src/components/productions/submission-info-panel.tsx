@@ -130,7 +130,7 @@ export function SubmissionInfoPanel({
       {submission.videoUrl && (
         <div className="flex flex-col gap-block">
           <h3 className="font-medium text-foreground text-label">Video</h3>
-          <VideoEmbed url={submission.videoUrl} />
+          <VideoEmbed url={submission.videoUrl} size="sm" showHint />
         </div>
       )}
 
@@ -304,7 +304,7 @@ export function SubmissionInfoPanel({
                       {field.label}
                     </p>
                     {url ? (
-                      <VideoEmbed url={url} />
+                      <VideoEmbed url={url} size="sm" showHint />
                     ) : (
                       <p className="text-label text-muted-foreground italic">
                         Not provided
