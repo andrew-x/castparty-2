@@ -1,8 +1,16 @@
 "use client"
 
-import { KeyIcon, LogInIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import {
+  DatabaseIcon,
+  KeyIcon,
+  LogInIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useAction } from "next-safe-action/hooks"
 import { useState } from "react"
+import { seedDataAction } from "@/actions/admin/seed-data"
 import { AddUserDialog } from "@/components/admin/add-user-dialog"
 import { ChangePasswordDialog } from "@/components/admin/change-password-dialog"
 import { DeleteUserDialog } from "@/components/admin/delete-user-dialog"
@@ -38,6 +46,11 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
   const [passwordTarget, setPasswordTarget] = useState<AdminUser | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null)
+  const seedAction = useAction(seedDataAction, {
+    onSuccess() {
+      router.refresh()
+    },
+  })
 
   function refresh() {
     router.refresh()
@@ -57,13 +70,24 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
     <div className="flex flex-col gap-section">
       <div className="flex items-center justify-between">
         <p className="text-label text-muted-foreground">{users.length} users</p>
-        <Button
-          size="sm"
-          leftSection={<PlusIcon />}
-          onClick={() => setAddOpen(true)}
-        >
-          Add user
-        </Button>
+        <div className="flex items-center gap-element">
+          <Button
+            size="sm"
+            variant="outline"
+            leftSection={<DatabaseIcon />}
+            onClick={() => seedAction.execute()}
+            loading={seedAction.isPending}
+          >
+            Seed data
+          </Button>
+          <Button
+            size="sm"
+            leftSection={<PlusIcon />}
+            onClick={() => setAddOpen(true)}
+          >
+            Add user
+          </Button>
+        </div>
       </div>
 
       <Table>
