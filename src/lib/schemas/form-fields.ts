@@ -8,6 +8,7 @@ export const customFormFieldTypeSchema = z.enum([
   "TOGGLE",
   "IMAGE",
   "DOCUMENT",
+  "VIDEO",
 ])
 
 export const customFormItemSchema = z.object({

@@ -433,7 +433,7 @@ export const Submission = pgTable("submission", {
 
   answers: jsonb().$type<CustomFormResponse[]>().notNull().default([]),
   links: text().array().notNull().default([]),
-  videoUrls: text().array().notNull().default([]),
+  videoUrl: text(),
   unionStatus: text().array().notNull().default([]),
   representation: jsonb().$type<Representation | null>().default(null),
   resumeText: text(),

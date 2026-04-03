@@ -1,6 +1,6 @@
 # Custom Form Fields
 
-> **Last verified:** 2026-03-31
+> **Last verified:** 2026-04-02
 
 ## Overview
 
@@ -33,7 +33,7 @@ Custom fields are stored as JSONB directly on the `Production` table -- no separ
 ### Type Definitions (`src/lib/types.ts`)
 
 ```ts
-type CustomFormFieldType = "TEXT" | "TEXTAREA" | "SELECT" | "CHECKBOX_GROUP" | "TOGGLE"
+type CustomFormFieldType = "TEXT" | "TEXTAREA" | "SELECT" | "CHECKBOX_GROUP" | "TOGGLE" | "IMAGE" | "DOCUMENT" | "VIDEO"
 
 type CustomForm = {
   id: string          // Generated ID (prefix "ff")
@@ -42,6 +42,7 @@ type CustomForm = {
   description: string
   required: boolean
   options: string[]   // For SELECT and CHECKBOX_GROUP
+  maxFiles?: number   // For IMAGE (default 5)
 }
 
 type CustomFormResponse = {
@@ -49,6 +50,7 @@ type CustomFormResponse = {
   textValue: string | null
   booleanValue: boolean | null
   optionValues: string[] | null
+  fileValues: string[] | null   // For IMAGE and DOCUMENT uploads
 }
 
 type SystemFieldVisibility = "hidden" | "optional" | "required"
@@ -81,7 +83,10 @@ type SystemFieldConfig = {
 | `TEXTAREA` | `Textarea` | `textValue` | Long multi-line answers |
 | `SELECT` | `Select` (shadcn) | `optionValues: [selected]` | Pick one from a list |
 | `CHECKBOX_GROUP` | `Checkbox` group | `optionValues: [selected...]` | Pick multiple from a list |
-| `TOGGLE` | `Switch` | `booleanValue` | Yes/no boolean |
+| `TOGGLE` | `Switch` | `booleanValue` | Yes/no boolean. Switch renders to the left of the label/description |
+| `IMAGE` | `HeadshotUploader` | `fileValues: [urls...]` | Photo uploads (up to `maxFiles`, default 5) |
+| `DOCUMENT` | `ResumeUploader` | `fileValues: [url]` | PDF document upload |
+| `VIDEO` | `Input` (URL) + `VideoEmbed` preview | `textValue` | External video link (YouTube, Vimeo, etc.) |
 
 ## Key Files
 
@@ -169,6 +174,8 @@ Custom field values travel as flat `Record<string, string>` in the form. The ser
 | SELECT | Selected option string | `{ optionValues: [value] }` |
 | CHECKBOX_GROUP | Comma-separated string | `{ optionValues: value.split(",") }` |
 | TOGGLE | `"true"` or `"false"` | `{ booleanValue: value === "true" }` |
+| VIDEO | URL string | `{ textValue: value }` |
+| IMAGE, DOCUMENT | Uploaded file URLs | `{ fileValues: [url, ...] }` |
 
 ## Business Logic
 
@@ -186,7 +193,7 @@ Custom field values travel as flat `Record<string, string>` in the form. The ser
 | `location` | `hidden` / `optional` / `required` | Controls location field with city autocomplete |
 | `headshots` | `hidden` / `optional` / `required` | Controls headshot uploader |
 | `resume` | `hidden` / `optional` / `required` | Controls resume uploader |
-| `video` | `hidden` / `optional` / `required` | Controls video URL input with embed preview. Default: `hidden` |
+| `video` | `hidden` / `optional` / `required` | Controls a single video URL input with embed preview. Default: `hidden` |
 | `links` | `hidden` / `optional` | Controls links editor |
 | `unionStatus` | `hidden` / `optional` | Controls union affiliation select |
 | `representation` | `hidden` / `optional` | Controls representation (agent/manager) fields |

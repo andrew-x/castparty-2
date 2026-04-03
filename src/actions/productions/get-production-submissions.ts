@@ -174,7 +174,7 @@ export async function getProductionSubmissions(productionId: string) {
         stage: sub.stage,
         answers: sub.answers,
         links: sub.links,
-        videoUrls: sub.videoUrls,
+        videoUrl: sub.videoUrl,
         unionStatus: sub.unionStatus,
         representation: sub.representation as Representation | null,
         headshots,

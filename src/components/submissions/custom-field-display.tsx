@@ -24,6 +24,7 @@ import {
   HeadshotUploader,
 } from "@/components/submissions/headshot-uploader"
 import { ResumeUploader } from "@/components/submissions/resume-uploader"
+import { VideoEmbed } from "@/components/submissions/video-embed"
 import type { CustomForm } from "@/lib/types"
 
 interface Props {
@@ -176,6 +177,14 @@ export function CustomFieldDisplay({
     case "TOGGLE":
       return (
         <Field orientation="horizontal" data-invalid={error ? true : undefined}>
+          <Switch
+            id={id}
+            checked={value === "true"}
+            onCheckedChange={(checked) =>
+              handleChange(checked ? "true" : "false")
+            }
+            disabled={disabled}
+          />
           <div className="flex flex-col gap-1">
             <FieldLabel htmlFor={id}>
               {field.label}
@@ -185,17 +194,44 @@ export function CustomFieldDisplay({
               <FieldDescription>{field.description}</FieldDescription>
             )}
           </div>
-          <Switch
-            id={id}
-            checked={value === "true"}
-            onCheckedChange={(checked) =>
-              handleChange(checked ? "true" : "false")
-            }
-            disabled={disabled}
-          />
           {error && <FieldError errors={[error]} />}
         </Field>
       )
+
+    case "VIDEO": {
+      function handleVideoBlur() {
+        if (
+          value &&
+          !value.startsWith("http://") &&
+          !value.startsWith("https://")
+        ) {
+          handleChange(`https://${value}`)
+        }
+      }
+      return (
+        <Field data-invalid={error ? true : undefined}>
+          <FieldLabel htmlFor={id}>
+            {field.label}
+            {field.required && <span className="text-destructive"> *</span>}
+          </FieldLabel>
+          {field.description && (
+            <FieldDescription>{field.description}</FieldDescription>
+          )}
+          <Input
+            id={id}
+            type="url"
+            value={value}
+            onChange={(e) => handleChange(e.target.value)}
+            onBlur={handleVideoBlur}
+            placeholder="https://..."
+            disabled={disabled}
+            aria-invalid={error ? true : undefined}
+          />
+          {value && <VideoEmbed url={value} />}
+          {error && <FieldError errors={[error]} />}
+        </Field>
+      )
+    }
 
     case "IMAGE":
       return (

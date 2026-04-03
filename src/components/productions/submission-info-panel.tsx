@@ -127,14 +127,10 @@ export function SubmissionInfoPanel({
         </div>
       )}
 
-      {submission.videoUrls.length > 0 && (
+      {submission.videoUrl && (
         <div className="flex flex-col gap-block">
-          <h3 className="font-medium text-foreground text-label">Videos</h3>
-          <div className="flex flex-col gap-element">
-            {submission.videoUrls.map((url) => (
-              <VideoEmbed key={url} url={url} />
-            ))}
-          </div>
+          <h3 className="font-medium text-foreground text-label">Video</h3>
+          <VideoEmbed url={submission.videoUrl} size="sm" showHint />
         </div>
       )}
 
@@ -299,6 +295,24 @@ export function SubmissionInfoPanel({
               const answer = submission.answers.find(
                 (a) => a.fieldId === field.id,
               )
+
+              if (field.type === "VIDEO") {
+                const url = answer?.textValue
+                return (
+                  <div key={field.id}>
+                    <p className="font-medium text-caption text-muted-foreground">
+                      {field.label}
+                    </p>
+                    {url ? (
+                      <VideoEmbed url={url} size="sm" showHint />
+                    ) : (
+                      <p className="text-label text-muted-foreground italic">
+                        Not provided
+                      </p>
+                    )}
+                  </div>
+                )
+              }
 
               let displayValue = ""
               if (answer) {

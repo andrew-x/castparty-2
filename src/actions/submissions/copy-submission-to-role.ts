@@ -97,7 +97,7 @@ export const copySubmissionToRole = secureActionClient
           location: source.location,
           answers: source.answers,
           links: source.links,
-          videoUrls: source.videoUrls,
+          videoUrl: source.videoUrl,
           unionStatus: source.unionStatus,
           representation: source.representation,
           resumeText: source.resumeText,

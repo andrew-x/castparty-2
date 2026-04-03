@@ -203,7 +203,7 @@ CREATE TABLE "submission" (
 	"location" text DEFAULT '' NOT NULL,
 	"answers" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"links" text[] DEFAULT '{}' NOT NULL,
-	"video_urls" text[] DEFAULT '{}' NOT NULL,
+	"video_url" text,
 	"union_status" text[] DEFAULT '{}' NOT NULL,
 	"representation" jsonb DEFAULT 'null'::jsonb,
 	"resume_text" text,

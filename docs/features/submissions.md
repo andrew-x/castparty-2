@@ -1,6 +1,6 @@
 # Public Submission Flow
 
-> **Last verified:** 2026-03-31
+> **Last verified:** 2026-04-02
 
 ## Overview
 
@@ -30,7 +30,7 @@ All three pages are server components. Each resolves its entity by slug via unau
 | `Production` | `id`, `organizationId`, `name`, `slug`, `status`, `location`, `submissionFormFields`, `systemFieldConfig` | Slug unique per org. Status must be `open` to appear publicly |
 | `Role` | `id`, `productionId`, `name`, `slug`, `status` | Slug unique per production. Status must be `open` |
 | `Candidate` | `id`, `organizationId`, `firstName`, `lastName`, `email`, `phone`, `location` | Unique constraint on `(organizationId, email)` for deduplication |
-| `Submission` | `id`, `productionId`, `roleId`, `candidateId`, `stageId`, `firstName`, `lastName`, `email`, `phone`, `location`, `answers`, `links`, `videoUrls`, `resumeText` | Denormalizes contact info as a point-in-time snapshot |
+| `Submission` | `id`, `productionId`, `roleId`, `candidateId`, `stageId`, `firstName`, `lastName`, `email`, `phone`, `location`, `answers`, `links`, `videoUrl`, `resumeText` | Denormalizes contact info as a point-in-time snapshot |
 | `File` | `id`, `submissionId`, `type` (`HEADSHOT`/`RESUME`), `url`, `key`, `path`, `filename`, `contentType`, `size`, `order` | Shared table; consumers filter by `type` |
 | `PipelineStage` | `id`, `productionId`, `type` (`APPLIED`/`CUSTOM`/`SELECTED`/`REJECTED`) | New submissions land in the `APPLIED` stage |
 
@@ -39,7 +39,7 @@ All three pages are server components. Each resolves its entity by slug via unau
 - `Candidate` is org-scoped and deduplicated by `(organizationId, email)` via upsert.
 - `Submission` denormalizes `firstName`, `lastName`, `email`, `phone`, `location` from the form input (not from `Candidate`) so each submission preserves the data as submitted.
 - `Submission.answers` stores custom form responses as JSONB (`CustomFormResponse[]`).
-- `Submission.videoUrls` is a `text[]` array storing external video URLs (YouTube, Vimeo, Google Drive, Dropbox, or custom). Videos are not hosted — only URLs are stored.
+- `Submission.videoUrl` is a `text` column storing a single external video URL (YouTube, Vimeo, Google Drive, Dropbox, or custom). Videos are not hosted — only the URL is stored.
 - `File` rows link to `Submission` via `submissionId`; headshots and resumes share the same table, distinguished by `type`.
 
 ## Key Files
@@ -62,7 +62,6 @@ All three pages are server components. Each resolves its entity by slug via unau
 | `src/components/submissions/resume-uploader.tsx` | Controlled PDF file picker with remove button |
 | `src/components/submissions/custom-field-display.tsx` | Renders a single custom field by type |
 | `src/lib/r2.ts` | R2 utility: presign, upload, move, delete, check existence |
-| `src/components/submissions/video-url-editor.tsx` | Multi-URL input with inline embed previews |
 | `src/components/submissions/video-embed.tsx` | Shared embed component (YouTube, Vimeo, Google Drive, Dropbox, fallback) |
 | `src/lib/video-embed.ts` | Pure utility: URL → platform detection + embed URL |
 | `src/lib/schemas/submission.ts` | Zod schemas: `submissionFormSchema`, `submissionActionSchema`, file schemas |
@@ -93,7 +92,7 @@ SubmissionForm (client)
   ├── User fills out: name, email, phone, location, custom fields, video URLs, links
   ├── User uploads headshots via HeadshotUploader
   ├── User uploads resume via ResumeUploader
-  └── User adds video URLs via VideoUrlEditor (inline embed preview per URL)
+  └── User adds a single video URL (inline embed preview via VideoEmbed)
         │
         ▼  on form submit
   1. Client-side validation (Zod + required custom field walk)
@@ -116,7 +115,7 @@ SubmissionForm (client)
 
 ### Multi-Role Submission
 
-When a production has multiple open roles, the form shows checkboxes for role selection. The initial role is pre-selected. On submit, one `Submission` row is created per selected role, all sharing the same `Candidate` record, file uploads, and `videoUrls`.
+When a production has multiple open roles, the form shows checkboxes for role selection. The initial role is pre-selected. On submit, one `Submission` row is created per selected role, all sharing the same `Candidate` record, file uploads, and `videoUrl`.
 
 ### R2 File Storage
 
@@ -156,8 +155,8 @@ Slugs are auto-generated from entity names via `nameToSlug()`: lowercase, hyphen
 - **Candidate deduplication.** `INSERT ... ON CONFLICT (organizationId, email) DO UPDATE` ensures one candidate per email per org.
 - **Submission snapshot.** `Submission` denormalizes contact fields so each submission records what was entered at the time.
 - **System field visibility.** `SystemFieldConfig` controls whether phone, location, headshots, resume, video, links, union status, and representation are hidden, optional, or required. See [Custom Fields](./custom-fields.md) for the full config.
-- **Video URL validation.** Each video URL is validated as a valid URL via Zod. The `VideoEmbed` component detects YouTube, Vimeo, Google Drive, and Dropbox URLs for inline embed previews; unknown URLs get a fallback warning but are still accepted.
-- **Video copy on clone.** `copy-submission-to-role` copies `videoUrls` along with other submission data.
+- **Video URL validation.** The video URL schema is `httpUrl.or(z.literal("")).optional()`. The `VideoEmbed` component detects YouTube, Vimeo, Google Drive, and Dropbox URLs for inline embed previews; unknown URLs get a fallback warning but are still accepted.
+- **Video copy on clone.** `copy-submission-to-role` copies `videoUrl` along with other submission data.
 - **File validation.** Headshots: JPEG/PNG/WebP/HEIC, max 20 MB each, max 10 files. Resume: PDF only, max 10 MB.
 - **Temp key prefix validation.** `create-submission` verifies file keys start with `temp/` before moving.
 
@@ -194,5 +193,5 @@ Slugs are auto-generated from entity names via `nameToSlug()`: lowercase, hyphen
 - **`files` relation instead of `headshots`.** Named generically so new file types slot in without renames. Consumers filter by `type`.
 - **Candidate deduplication by email.** Same person submitting to multiple roles = one candidate. Contact info updated on each submission.
 - **Free-text location.** Max 200 chars, no foreign key. Non-standard values work without schema changes.
-- **Video URLs stored, not video files.** Videos are hosted externally (YouTube, Vimeo, Google Drive, Dropbox) to avoid storage costs. Only URLs are stored in `videoUrls: text[]`. Embed previews are generated client-side via platform detection.
+- **Video URLs stored, not video files.** Videos are hosted externally (YouTube, Vimeo, Google Drive, Dropbox) to avoid storage costs. Only a single URL is stored in `videoUrl: text`. Embed previews are generated client-side via platform detection.
 - **Module-level city cache.** `useCityOptions` uses a module-level `Promise` instead of React context.

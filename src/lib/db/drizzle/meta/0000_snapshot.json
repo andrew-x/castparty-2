@@ -1,5 +1,5 @@
 {
-  "id": "b3d17ae8-13a8-4b6f-ab63-d75bbd442a00",
+  "id": "e3163433-7430-4841-af4a-11c13fb59f28",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1910,12 +1910,11 @@
           "notNull": true,
           "default": "'{}'"
         },
-        "video_urls": {
-          "name": "video_urls",
-          "type": "text[]",
+        "video_url": {
+          "name": "video_url",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'"
+          "notNull": false
         },
         "union_status": {
           "name": "union_status",

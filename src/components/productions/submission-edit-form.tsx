@@ -26,7 +26,7 @@ import { LinksEditor } from "@/components/submissions/links-editor"
 import { RepresentationFields } from "@/components/submissions/representation-fields"
 import { ResumeUploader } from "@/components/submissions/resume-uploader"
 import { UnionStatusSelect } from "@/components/submissions/union-status-select"
-import { VideoUrlEditor } from "@/components/submissions/video-url-editor"
+import { VideoEmbed } from "@/components/submissions/video-embed"
 import { formResolver } from "@/lib/schemas/resolve"
 import { updateSubmissionFormSchema } from "@/lib/schemas/submission"
 import type { SubmissionWithCandidate } from "@/lib/submission-helpers"
@@ -62,7 +62,7 @@ export function SubmissionEditForm({
           phone: submission.phone ?? "",
           location: submission.location ?? "",
           links: submission.links,
-          videoUrls: submission.videoUrls,
+          videoUrl: submission.videoUrl ?? "",
           unionStatus: submission.unionStatus ?? [],
           representation: submission.representation ?? null,
         },
@@ -303,18 +303,35 @@ export function SubmissionEditForm({
         />
 
         <Controller
-          name="videoUrls"
+          name="videoUrl"
           control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel>Videos</FieldLabel>
-              <VideoUrlEditor
-                value={(field.value as string[]) ?? []}
-                onChange={field.onChange}
-              />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
+          render={({ field, fieldState }) => {
+            const url = (field.value as string) ?? ""
+            return (
+              <Field data-invalid={fieldState.invalid || undefined}>
+                <FieldLabel htmlFor={field.name}>Video</FieldLabel>
+                <Input
+                  id={field.name}
+                  type="url"
+                  value={url}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={() => {
+                    if (
+                      url &&
+                      !url.startsWith("http://") &&
+                      !url.startsWith("https://")
+                    ) {
+                      field.onChange(`https://${url}`)
+                    }
+                  }}
+                  placeholder="https://..."
+                  aria-invalid={fieldState.invalid}
+                />
+                {url && <VideoEmbed url={url} />}
+                {fieldState.error && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )
+          }}
         />
 
         <Controller
@@ -417,6 +434,24 @@ export function SubmissionEditForm({
                   const answer = submission.answers.find(
                     (a) => a.fieldId === field.id,
                   )
+
+                  if (field.type === "VIDEO") {
+                    const url = answer?.textValue
+                    return (
+                      <div key={field.id}>
+                        <p className="font-medium text-caption text-muted-foreground">
+                          {field.label}
+                        </p>
+                        {url ? (
+                          <VideoEmbed url={url} size="sm" showHint />
+                        ) : (
+                          <p className="text-label text-muted-foreground italic">
+                            Not provided
+                          </p>
+                        )}
+                      </div>
+                    )
+                  }
 
                   let displayValue = ""
                   if (answer) {
