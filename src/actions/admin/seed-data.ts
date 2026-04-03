@@ -259,288 +259,292 @@ export const seedDataAction = adminActionClient
       .set({ emailVerified: true, role: "admin" })
       .where(eq(user.id, userId))
 
-    // 2. Insert everything else in a transaction
-    await db.transaction(async (tx) => {
-      // --- Organization ---
-      const orgId = generateId("org")
-      const orgName = `${faker.company.name()} Theatre Company`
-      const orgSlug = nameToSlug(orgName)
+    // 2. Build all data in memory, then bulk insert in a transaction
+    const orgId = generateId("org")
+    const orgName = `${faker.company.name()} Theatre Company`
+    const orgSlug = nameToSlug(orgName)
+    const now = new Date()
 
-      await tx.insert(organization).values({
-        id: orgId,
-        name: orgName,
-        slug: orgSlug,
-        createdAt: new Date(),
+    // Collect rows per table
+    const productionRows: (typeof Production.$inferInsert)[] = []
+    const roleRows: (typeof Role.$inferInsert)[] = []
+    const stageRows: (typeof PipelineStage.$inferInsert)[] = []
+    const candidateRows: (typeof Candidate.$inferInsert)[] = []
+    const submissionRows: (typeof Submission.$inferInsert)[] = []
+    const pipelineUpdateRows: (typeof PipelineUpdate.$inferInsert)[] = []
+    const feedbackRows: (typeof Feedback.$inferInsert)[] = []
+    const commentRows: (typeof Comment.$inferInsert)[] = []
+    const fileRows: (typeof File.$inferInsert)[] = []
+
+    // --- Productions, Roles, Pipeline Stages ---
+    const productionData: {
+      id: string
+      submissionFormFields: CustomForm[]
+      feedbackFormFields: CustomForm[]
+      roles: { id: string; name: string }[]
+      stages: { id: string; type: string; order: number }[]
+      rejectReasons: string[]
+    }[] = []
+
+    for (let i = 0; i < PRODUCTION_CONFIGS.length; i++) {
+      const config = PRODUCTION_CONFIGS[i]
+      const prodId = generateId("prod")
+      const submissionFormFields = makeSubmissionFormFields()
+      const feedbackFormFields = makeFeedbackFormFields()
+
+      productionRows.push({
+        id: prodId,
+        organizationId: orgId,
+        name: config.name,
+        slug: nameToSlug(config.name),
+        description: faker.lorem.paragraph(),
+        status: config.status,
+        location: `${faker.location.city()}, ${faker.location.state({ abbreviated: true })}`,
+        submissionFormFields,
+        systemFieldConfig: SYSTEM_FIELD_CONFIGS[i],
+        feedbackFormFields,
+        rejectReasons: REJECT_REASONS,
+        emailTemplates: makeEmailTemplates(),
       })
 
+      const roleNames = ROLE_NAMES_BY_PRODUCTION[config.name] ?? []
+      const roles: { id: string; name: string }[] = []
+      for (const roleName of roleNames) {
+        const roleId = generateId("role")
+        roleRows.push({
+          id: roleId,
+          productionId: prodId,
+          name: roleName,
+          slug: nameToSlug(roleName),
+          description: faker.lorem.sentence(),
+          status: config.status === "archive" ? "archive" : config.status,
+        })
+        roles.push({ id: roleId, name: roleName })
+      }
+
+      const stages: { id: string; type: string; order: number }[] = []
+      for (const tmpl of STAGE_TEMPLATES) {
+        const stageId = generateId("stg")
+        stageRows.push({
+          id: stageId,
+          organizationId: orgId,
+          productionId: prodId,
+          name: tmpl.name,
+          order: tmpl.order,
+          type: tmpl.type,
+        })
+        stages.push({ id: stageId, type: tmpl.type, order: tmpl.order })
+      }
+
+      productionData.push({
+        id: prodId,
+        submissionFormFields,
+        feedbackFormFields,
+        roles,
+        stages,
+        rejectReasons: REJECT_REASONS,
+      })
+    }
+
+    // --- Candidates ---
+    const candidates: {
+      id: string
+      firstName: string
+      lastName: string
+      email: string
+      phone: string
+      location: string
+    }[] = []
+
+    for (let i = 0; i < 50; i++) {
+      const firstName = faker.person.firstName()
+      const lastName = faker.person.lastName()
+      const candId = generateId("cand")
+      const candEmail = faker.internet
+        .email({ firstName, lastName })
+        .toLowerCase()
+      const phone = faker.phone.number({ style: "national" })
+      const location = `${faker.location.city()}, ${faker.location.state({ abbreviated: true })}`
+
+      candidateRows.push({
+        id: candId,
+        organizationId: orgId,
+        firstName,
+        lastName,
+        email: candEmail,
+        phone,
+        location,
+      })
+
+      candidates.push({
+        id: candId,
+        firstName,
+        lastName,
+        email: candEmail,
+        phone,
+        location,
+      })
+    }
+
+    // --- Submissions, Pipeline Updates, Feedback, Comments, Files ---
+    for (const cand of candidates) {
+      const numSubmissions = faker.number.int({ min: 1, max: 2 })
+      const selectedProductions = faker.helpers.arrayElements(
+        productionData,
+        numSubmissions,
+      )
+
+      for (const prod of selectedProductions) {
+        const role = faker.helpers.arrayElement(prod.roles)
+        const stageIndex = pickStageIndex()
+        const targetStage = prod.stages[stageIndex]
+        const subId = generateId("sub")
+
+        const unionStatus =
+          Math.random() < 0.3
+            ? faker.helpers.arrayElements(UNION_OPTIONS, { min: 1, max: 2 })
+            : []
+
+        const representation: Representation | null =
+          Math.random() < 0.15 ? makeRepresentation() : null
+
+        const rejectionReason =
+          targetStage.type === "REJECTED"
+            ? faker.helpers.arrayElement(prod.rejectReasons)
+            : null
+
+        submissionRows.push({
+          id: subId,
+          productionId: prod.id,
+          roleId: role.id,
+          candidateId: cand.id,
+          stageId: targetStage.id,
+          rejectionReason,
+          firstName: cand.firstName,
+          lastName: cand.lastName,
+          email: cand.email,
+          phone: cand.phone,
+          location: cand.location,
+          answers: makeAnswers(prod.submissionFormFields),
+          links: Math.random() < 0.4 ? [faker.internet.url()] : [],
+          unionStatus,
+          representation,
+        })
+
+        // Pipeline updates: trace path from APPLIED to current stage
+        if (stageIndex > 0) {
+          const appliedStage = prod.stages[0]
+          pipelineUpdateRows.push({
+            id: generateId("pu"),
+            organizationId: orgId,
+            productionId: prod.id,
+            roleId: role.id,
+            submissionId: subId,
+            fromStage: null,
+            toStage: appliedStage.id,
+            changeByUserId: userId,
+          })
+
+          for (let s = 1; s <= stageIndex; s++) {
+            pipelineUpdateRows.push({
+              id: generateId("pu"),
+              organizationId: orgId,
+              productionId: prod.id,
+              roleId: role.id,
+              submissionId: subId,
+              fromStage: prod.stages[s - 1].id,
+              toStage: prod.stages[s].id,
+              changeByUserId: userId,
+            })
+          }
+        }
+
+        if (Math.random() < 0.3) {
+          feedbackRows.push({
+            id: generateId("fb"),
+            submissionId: subId,
+            submittedByUserId: userId,
+            stageId: targetStage.id,
+            formFields: prod.feedbackFormFields,
+            answers: makeAnswers(prod.feedbackFormFields),
+            rating: faker.helpers.arrayElement(FEEDBACK_RATINGS),
+            notes: faker.lorem.sentence(),
+          })
+        }
+
+        if (Math.random() < 0.2) {
+          commentRows.push({
+            id: generateId("cmt"),
+            submissionId: subId,
+            submittedByUserId: userId,
+            content: faker.lorem.sentence(),
+          })
+        }
+
+        const headshotSeed = faker.number.int({ min: 1, max: 1000 })
+        fileRows.push({
+          id: generateId("file"),
+          submissionId: subId,
+          candidateId: cand.id,
+          type: "HEADSHOT",
+          url: `https://picsum.photos/seed/${headshotSeed}/400/500`,
+          key: `seed/headshots/${cand.id}.jpg`,
+          path: `headshots/${cand.id}.jpg`,
+          filename: `${cand.firstName.toLowerCase()}-${cand.lastName.toLowerCase()}-headshot.jpg`,
+          contentType: "image/jpeg",
+          size: faker.number.int({ min: 100000, max: 2000000 }),
+          order: 0,
+        })
+
+        if (Math.random() < 0.6) {
+          fileRows.push({
+            id: generateId("file"),
+            submissionId: subId,
+            candidateId: cand.id,
+            type: "RESUME",
+            url: `https://example.com/seed/resumes/${cand.id}.pdf`,
+            key: `seed/resumes/${cand.id}.pdf`,
+            path: `resumes/${cand.id}.pdf`,
+            filename: `${cand.firstName.toLowerCase()}-${cand.lastName.toLowerCase()}-resume.pdf`,
+            contentType: "application/pdf",
+            size: faker.number.int({ min: 50000, max: 500000 }),
+            order: 0,
+          })
+        }
+      }
+    }
+
+    // 3. Bulk insert in dependency order within a single transaction
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(organization)
+        .values({ id: orgId, name: orgName, slug: orgSlug, createdAt: now })
       await tx.insert(OrganizationProfile).values({
         id: orgId,
         websiteUrl: faker.internet.url(),
         description: faker.lorem.paragraph(),
         isOrganizationProfileOpen: true,
       })
-
-      // --- Member (dev user as owner) ---
       await tx.insert(member).values({
         id: generateId("mem"),
         organizationId: orgId,
         userId,
         role: "owner",
-        createdAt: new Date(),
+        createdAt: now,
       })
 
-      // --- Productions, Roles, Pipeline Stages ---
-      const productionData: {
-        id: string
-        name: string
-        submissionFormFields: CustomForm[]
-        feedbackFormFields: CustomForm[]
-        roles: { id: string; name: string }[]
-        stages: { id: string; type: string; order: number }[]
-        rejectReasons: string[]
-      }[] = []
+      await tx.insert(Production).values(productionRows)
+      await tx.insert(Role).values(roleRows)
+      await tx.insert(PipelineStage).values(stageRows)
+      await tx.insert(Candidate).values(candidateRows)
+      await tx.insert(Submission).values(submissionRows)
 
-      for (let i = 0; i < PRODUCTION_CONFIGS.length; i++) {
-        const config = PRODUCTION_CONFIGS[i]
-        const prodId = generateId("prod")
-        const prodSlug = nameToSlug(config.name)
-        const submissionFormFields = makeSubmissionFormFields()
-        const feedbackFormFields = makeFeedbackFormFields()
-
-        await tx.insert(Production).values({
-          id: prodId,
-          organizationId: orgId,
-          name: config.name,
-          slug: prodSlug,
-          description: faker.lorem.paragraph(),
-          status: config.status,
-          location: `${faker.location.city()}, ${faker.location.state({ abbreviated: true })}`,
-          submissionFormFields,
-          systemFieldConfig: SYSTEM_FIELD_CONFIGS[i],
-          feedbackFormFields,
-          rejectReasons: REJECT_REASONS,
-          emailTemplates: makeEmailTemplates(),
-        })
-
-        // Roles
-        const roleNames = ROLE_NAMES_BY_PRODUCTION[config.name] ?? []
-        const roles: { id: string; name: string }[] = []
-        for (const roleName of roleNames) {
-          const roleId = generateId("role")
-          const roleSlug = nameToSlug(roleName)
-          await tx.insert(Role).values({
-            id: roleId,
-            productionId: prodId,
-            name: roleName,
-            slug: roleSlug,
-            description: faker.lorem.sentence(),
-            status: config.status === "archive" ? "archive" : config.status,
-          })
-          roles.push({ id: roleId, name: roleName })
-        }
-
-        // Pipeline stages
-        const stages: { id: string; type: string; order: number }[] = []
-        for (const tmpl of STAGE_TEMPLATES) {
-          const stageId = generateId("stg")
-          await tx.insert(PipelineStage).values({
-            id: stageId,
-            organizationId: orgId,
-            productionId: prodId,
-            name: tmpl.name,
-            order: tmpl.order,
-            type: tmpl.type,
-          })
-          stages.push({ id: stageId, type: tmpl.type, order: tmpl.order })
-        }
-
-        productionData.push({
-          id: prodId,
-          name: config.name,
-          submissionFormFields,
-          feedbackFormFields,
-          roles,
-          stages,
-          rejectReasons: REJECT_REASONS,
-        })
-      }
-
-      // --- Candidates ---
-      const candidates: {
-        id: string
-        firstName: string
-        lastName: string
-        email: string
-        phone: string
-        location: string
-      }[] = []
-
-      for (let i = 0; i < 50; i++) {
-        const firstName = faker.person.firstName()
-        const lastName = faker.person.lastName()
-        const candId = generateId("cand")
-        const candEmail = faker.internet
-          .email({ firstName, lastName })
-          .toLowerCase()
-        const phone = faker.phone.number({ style: "national" })
-        const location = `${faker.location.city()}, ${faker.location.state({ abbreviated: true })}`
-
-        await tx.insert(Candidate).values({
-          id: candId,
-          organizationId: orgId,
-          firstName,
-          lastName,
-          email: candEmail,
-          phone,
-          location,
-        })
-
-        candidates.push({
-          id: candId,
-          firstName,
-          lastName,
-          email: candEmail,
-          phone,
-          location,
-        })
-      }
-
-      // --- Submissions, Pipeline Updates, Feedback, Comments, Files ---
-      for (const cand of candidates) {
-        // Each candidate submits to 1-2 productions
-        const numSubmissions = faker.number.int({ min: 1, max: 2 })
-        const selectedProductions = faker.helpers.arrayElements(
-          productionData,
-          numSubmissions,
-        )
-
-        for (const prod of selectedProductions) {
-          const role = faker.helpers.arrayElement(prod.roles)
-          const stageIndex = pickStageIndex()
-          const targetStage = prod.stages[stageIndex]
-          const subId = generateId("sub")
-
-          // Union status (~30%)
-          const unionStatus =
-            Math.random() < 0.3
-              ? faker.helpers.arrayElements(UNION_OPTIONS, { min: 1, max: 2 })
-              : []
-
-          // Representation (~15%)
-          const representation: Representation | null =
-            Math.random() < 0.15 ? makeRepresentation() : null
-
-          // Rejection reason for REJECTED submissions
-          const rejectionReason =
-            targetStage.type === "REJECTED"
-              ? faker.helpers.arrayElement(prod.rejectReasons)
-              : null
-
-          await tx.insert(Submission).values({
-            id: subId,
-            productionId: prod.id,
-            roleId: role.id,
-            candidateId: cand.id,
-            stageId: targetStage.id,
-            rejectionReason,
-            firstName: cand.firstName,
-            lastName: cand.lastName,
-            email: cand.email,
-            phone: cand.phone,
-            location: cand.location,
-            answers: makeAnswers(prod.submissionFormFields),
-            links: Math.random() < 0.4 ? [faker.internet.url()] : [],
-            unionStatus,
-            representation,
-          })
-
-          // Pipeline updates: trace path from APPLIED to current stage
-          const appliedStage = prod.stages[0] // APPLIED is always first
-          if (stageIndex > 0) {
-            // Initial APPLIED transition
-            await tx.insert(PipelineUpdate).values({
-              id: generateId("pu"),
-              organizationId: orgId,
-              productionId: prod.id,
-              roleId: role.id,
-              submissionId: subId,
-              fromStage: null,
-              toStage: appliedStage.id,
-              changeByUserId: userId,
-            })
-
-            // Intermediate transitions
-            for (let s = 1; s <= stageIndex; s++) {
-              await tx.insert(PipelineUpdate).values({
-                id: generateId("pu"),
-                organizationId: orgId,
-                productionId: prod.id,
-                roleId: role.id,
-                submissionId: subId,
-                fromStage: prod.stages[s - 1].id,
-                toStage: prod.stages[s].id,
-                changeByUserId: userId,
-              })
-            }
-          }
-
-          // Feedback (~30%)
-          if (Math.random() < 0.3) {
-            await tx.insert(Feedback).values({
-              id: generateId("fb"),
-              submissionId: subId,
-              submittedByUserId: userId,
-              stageId: targetStage.id,
-              formFields: prod.feedbackFormFields,
-              answers: makeAnswers(prod.feedbackFormFields),
-              rating: faker.helpers.arrayElement(FEEDBACK_RATINGS),
-              notes: faker.lorem.sentence(),
-            })
-          }
-
-          // Comments (~20%)
-          if (Math.random() < 0.2) {
-            await tx.insert(Comment).values({
-              id: generateId("cmt"),
-              submissionId: subId,
-              submittedByUserId: userId,
-              content: faker.lorem.sentence(),
-            })
-          }
-
-          // Files: headshot + resume for candidate
-          const headshotSeed = faker.number.int({ min: 1, max: 1000 })
-          await tx.insert(File).values({
-            id: generateId("file"),
-            submissionId: subId,
-            candidateId: cand.id,
-            type: "HEADSHOT",
-            url: `https://picsum.photos/seed/${headshotSeed}/400/500`,
-            key: `seed/headshots/${cand.id}.jpg`,
-            path: `headshots/${cand.id}.jpg`,
-            filename: `${cand.firstName.toLowerCase()}-${cand.lastName.toLowerCase()}-headshot.jpg`,
-            contentType: "image/jpeg",
-            size: faker.number.int({ min: 100000, max: 2000000 }),
-            order: 0,
-          })
-
-          if (Math.random() < 0.6) {
-            await tx.insert(File).values({
-              id: generateId("file"),
-              submissionId: subId,
-              candidateId: cand.id,
-              type: "RESUME",
-              url: `https://example.com/seed/resumes/${cand.id}.pdf`,
-              key: `seed/resumes/${cand.id}.pdf`,
-              path: `resumes/${cand.id}.pdf`,
-              filename: `${cand.firstName.toLowerCase()}-${cand.lastName.toLowerCase()}-resume.pdf`,
-              contentType: "application/pdf",
-              size: faker.number.int({ min: 50000, max: 500000 }),
-              order: 0,
-            })
-          }
-        }
-      }
+      if (pipelineUpdateRows.length > 0)
+        await tx.insert(PipelineUpdate).values(pipelineUpdateRows)
+      if (feedbackRows.length > 0)
+        await tx.insert(Feedback).values(feedbackRows)
+      if (commentRows.length > 0) await tx.insert(Comment).values(commentRows)
+      if (fileRows.length > 0) await tx.insert(File).values(fileRows)
     })
 
     revalidatePath("/", "layout")
