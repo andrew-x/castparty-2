@@ -93,7 +93,9 @@ Each status group follows a consistent suffix pattern: *(none)* = main, `-light`
 | `element` | 8px | Between tightly coupled elements | `gap-element` |
 | `tight` | 4px | Minimal separation | `gap-tight` |
 
-**Layout constraint:** `--spacing-page-content: 48rem` (768px) -- max content width for settings/form pages.
+**Layout constraints:**
+- `--spacing-page-content: 48rem` (768px) — max content width for settings/form pages (`max-w-page-content`)
+- `--spacing-page-wide: 72rem` (1152px) — max content width for two-column layouts (`max-w-page-wide`); used by `/s/[orgSlug]/[productionSlug]`
 
 ## Common Components
 

@@ -43,7 +43,7 @@ export default async function SubmitOrgPage({
 
   if (!isOrganizationProfileOpen) {
     return (
-      <div className="flex flex-col gap-section">
+      <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
         <div>
           <h1 className="font-serif text-title">{org.name}</h1>
         </div>
@@ -66,7 +66,7 @@ export default async function SubmitOrgPage({
   const productions = await getPublicProductions(org.id)
 
   return (
-    <div className="flex flex-col gap-section">
+    <div className="mx-auto flex w-full max-w-page-content flex-col gap-section">
       <div className="flex flex-col gap-block">
         <div className="flex items-center gap-element">
           {org.logo && (
