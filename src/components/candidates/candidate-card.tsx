@@ -44,6 +44,7 @@ export function CandidateCard({ candidate }: { candidate: Candidate }) {
             src={candidate.headshotUrl}
             alt={`${candidate.firstName} ${candidate.lastName}`}
             className="size-full object-cover"
+            draggable={false}
           />
         ) : (
           <div className="flex size-full items-center justify-center">

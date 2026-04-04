@@ -9,6 +9,7 @@ import { useRef, useState } from "react"
 import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-submission-status"
 import { sendSubmissionEmailAction } from "@/actions/submissions/send-submission-email"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
+import { Button } from "@/components/common/button"
 import {
   Empty,
   EmptyDescription,
@@ -17,13 +18,6 @@ import {
   EmptyTitle,
 } from "@/components/common/empty"
 import { Input } from "@/components/common/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/common/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/common/toggle-group"
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
 import { ComparisonView } from "@/components/productions/comparison-view"
@@ -447,9 +441,9 @@ export function ProductionSubmissions({
 
   return (
     <>
-      {/* Toolbar: search + role filter + view toggle */}
-      <div className="flex items-center justify-between gap-block px-block pb-block">
-        <div className="flex items-center gap-block">
+      {/* Toolbar: search + view toggle */}
+      <div className="flex flex-col gap-block px-block pb-block">
+        <div className="flex items-center justify-between gap-block">
           <div className="relative w-full max-w-sm">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -459,38 +453,48 @@ export function ProductionSubmissions({
               className="pl-9"
             />
           </div>
-          {roles.length > 1 && (
-            <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
-              <SelectTrigger size="sm" aria-label="Filter by role">
-                <SelectValue placeholder="All Roles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                {roles.map((role) => (
-                  <SelectItem key={role.id} value={role.id}>
-                    {role.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={compact ? "compact" : "default"}
+            onValueChange={(v) => {
+              if (v) setCompact(v === "compact")
+            }}
+          >
+            <ToggleGroupItem value="default" aria-label="Default view">
+              <LayoutGridIcon className="size-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="compact" aria-label="Compact view">
+              <Rows3Icon className="size-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          value={compact ? "compact" : "default"}
-          onValueChange={(v) => {
-            if (v) setCompact(v === "compact")
-          }}
-        >
-          <ToggleGroupItem value="default" aria-label="Default view">
-            <LayoutGridIcon className="size-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="compact" aria-label="Compact view">
-            <Rows3Icon className="size-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
+        {roles.length > 1 && (
+          <div className="flex flex-wrap items-center gap-element">
+            <Button
+              size="xs"
+              variant={
+                selectedRoleId === "" || selectedRoleId === "all"
+                  ? "default"
+                  : "outline"
+              }
+              onClick={() => setSelectedRoleId("all")}
+            >
+              All
+            </Button>
+            {roles.map((role) => (
+              <Button
+                key={role.id}
+                size="xs"
+                variant={selectedRoleId === role.id ? "default" : "outline"}
+                onClick={() => setSelectedRoleId(role.id)}
+              >
+                {role.name}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
 
       <DragDropProvider
