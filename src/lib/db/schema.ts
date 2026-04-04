@@ -409,41 +409,50 @@ export const Candidate = pgTable(
   ],
 )
 
-export const Submission = pgTable("submission", {
-  id: text().primaryKey(),
-  productionId: text()
-    .notNull()
-    .references(() => Production.id, { onDelete: "cascade" }),
-  roleId: text()
-    .notNull()
-    .references(() => Role.id, { onDelete: "cascade" }),
-  candidateId: text()
-    .notNull()
-    .references(() => Candidate.id, { onDelete: "cascade" }),
-  stageId: text()
-    .notNull()
-    .references(() => PipelineStage.id, { onDelete: "restrict" }),
-  rejectionReason: text(),
+export const Submission = pgTable(
+  "submission",
+  {
+    id: text().primaryKey(),
+    productionId: text()
+      .notNull()
+      .references(() => Production.id, { onDelete: "cascade" }),
+    roleId: text()
+      .notNull()
+      .references(() => Role.id, { onDelete: "cascade" }),
+    candidateId: text()
+      .notNull()
+      .references(() => Candidate.id, { onDelete: "cascade" }),
+    stageId: text()
+      .notNull()
+      .references(() => PipelineStage.id, { onDelete: "restrict" }),
+    rejectionReason: text(),
 
-  firstName: text().notNull(),
-  lastName: text().notNull(),
-  email: text().notNull(),
-  phone: text().notNull().default(""),
-  location: text().notNull().default(""),
+    firstName: text().notNull(),
+    lastName: text().notNull(),
+    email: text().notNull(),
+    phone: text().notNull().default(""),
+    location: text().notNull().default(""),
 
-  answers: jsonb().$type<CustomFormResponse[]>().notNull().default([]),
-  links: text().array().notNull().default([]),
-  videoUrl: text(),
-  unionStatus: text().array().notNull().default([]),
-  representation: jsonb().$type<Representation | null>().default(null),
-  resumeText: text(),
+    answers: jsonb().$type<CustomFormResponse[]>().notNull().default([]),
+    links: text().array().notNull().default([]),
+    videoUrl: text(),
+    unionStatus: text().array().notNull().default([]),
+    representation: jsonb().$type<Representation | null>().default(null),
+    resumeText: text(),
 
-  createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp()
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-})
+    createdAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp()
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("submission_candidateId_roleId_idx").on(
+      table.candidateId,
+      table.roleId,
+    ),
+  ],
+)
 
 export const feedbackRatingEnum = pgEnum("feedback_rating", [
   "STRONG_NO",

@@ -4,6 +4,8 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { CheckIcon } from "lucide-react"
 import { useState } from "react"
 import { Controller } from "react-hook-form"
+import type { z } from "zod/v4"
+import { checkSubmissionDuplicates } from "@/actions/submissions/check-submission-duplicates"
 import { createSubmission } from "@/actions/submissions/create-submission"
 import { presignCustomFieldUpload } from "@/actions/submissions/presign-custom-field-upload"
 import { presignHeadshotUpload } from "@/actions/submissions/presign-headshot-upload"
@@ -23,6 +25,7 @@ import {
 import { Input } from "@/components/common/input"
 import { Separator } from "@/components/common/separator"
 import { CustomFieldDisplay } from "@/components/submissions/custom-field-display"
+import { DuplicateWarningDialog } from "@/components/submissions/duplicate-warning-dialog"
 import {
   type HeadshotFile,
   HeadshotUploader,
@@ -50,6 +53,13 @@ function systemFieldLabel(label: string, visibility: SystemFieldVisibility) {
 
 function RequiredMarker() {
   return <span className="text-destructive"> *</span>
+}
+
+interface FileMeta {
+  key: string
+  filename: string
+  contentType: string
+  size: number
 }
 
 interface AvailableRole {
@@ -98,6 +108,14 @@ export function SubmissionForm({
   const [customFieldFileErrors, setCustomFieldFileErrors] = useState<
     Record<string, string | null>
   >({})
+  const [duplicateRoles, setDuplicateRoles] = useState<
+    { roleId: string; roleName: string }[]
+  >([])
+  const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false)
+  const [submissionResult, setSubmissionResult] = useState<{
+    created: number
+    updated: number
+  } | null>(null)
 
   const defaultAnswers: Record<string, string> = {}
   for (const field of submissionFormFields) {
@@ -124,10 +142,16 @@ export function SubmissionForm({
         },
       },
       actionProps: {
-        onSuccess() {
+        onSuccess({ data }) {
+          setDuplicateWarningOpen(false)
+          setSubmissionResult({
+            created: data?.created ?? 0,
+            updated: data?.updated ?? 0,
+          })
           setSubmitted(true)
         },
         onError({ error }) {
+          setDuplicateWarningOpen(false)
           form.setError("root", {
             message:
               error.serverError ??
@@ -150,20 +174,238 @@ export function SubmissionForm({
 
   const hasCustomFields = submissionFormFields.length > 0
 
+  /** Uploads files and fires the action. Returns true if the action was dispatched. */
+  async function uploadAndSubmit(
+    v: Record<string, unknown>,
+    confirmUpdate: boolean,
+  ): Promise<boolean> {
+    let headshotMeta: FileMeta[] = []
+
+    if (headshots.length > 0) {
+      setUploading(true)
+      try {
+        const presignResult = await presignHeadshotUpload({
+          files: headshots.map((h) => ({
+            filename: h.file.name,
+            contentType: h.file.type,
+            size: h.file.size,
+          })),
+        })
+
+        if (!presignResult?.data?.files) {
+          throw new Error(
+            presignResult?.serverError ?? "Failed to prepare upload.",
+          )
+        }
+
+        const presigned = presignResult.data.files
+
+        await Promise.all(
+          presigned.map(async ({ presignedUrl }, i) => {
+            const res = await fetch(presignedUrl, {
+              method: "PUT",
+              body: headshots[i].file,
+              headers: { "Content-Type": headshots[i].file.type },
+            })
+            if (!res.ok) throw new Error("Upload failed.")
+          }),
+        )
+
+        headshotMeta = presigned.map(({ key }, i) => ({
+          key,
+          filename: headshots[i].file.name,
+          contentType: headshots[i].file.type,
+          size: headshots[i].file.size,
+        }))
+      } catch (err) {
+        setUploading(false)
+        setUploadError(
+          err instanceof Error ? err.message : "Upload failed. Try again.",
+        )
+        return false
+      }
+      setUploading(false)
+    }
+
+    let resumeMeta: FileMeta | undefined
+
+    if (resume) {
+      setUploading(true)
+      try {
+        const presignResult = await presignResumeUpload({
+          filename: resume.name,
+          contentType: resume.type,
+          size: resume.size,
+        })
+
+        if (!presignResult?.data) {
+          throw new Error(
+            presignResult?.serverError ?? "Failed to prepare upload.",
+          )
+        }
+
+        const { key, presignedUrl } = presignResult.data
+
+        const res = await fetch(presignedUrl, {
+          method: "PUT",
+          body: resume,
+          headers: { "Content-Type": resume.type },
+        })
+        if (!res.ok) throw new Error("Upload failed.")
+
+        resumeMeta = {
+          key,
+          filename: resume.name,
+          contentType: resume.type,
+          size: resume.size,
+        }
+      } catch (err) {
+        setUploading(false)
+        setResumeError(
+          err instanceof Error ? err.message : "Upload failed. Try again.",
+        )
+        return false
+      }
+      setUploading(false)
+    }
+
+    const customFieldFileMeta: Record<string, FileMeta[]> = {}
+
+    try {
+      for (const formField of submissionFormFields) {
+        if (formField.type === "IMAGE") {
+          const images = customFieldImages[formField.id]
+          if (!images || images.length === 0) continue
+
+          setUploading(true)
+          const presignResult = await presignCustomFieldUpload({
+            fieldType: "IMAGE",
+            files: images.map((h) => ({
+              filename: h.file.name,
+              contentType: h.file.type,
+              size: h.file.size,
+            })),
+          })
+
+          if (!presignResult?.data?.files) {
+            throw new Error(
+              presignResult?.serverError ?? "Failed to prepare upload.",
+            )
+          }
+
+          const presigned = presignResult.data.files
+          await Promise.all(
+            presigned.map(async ({ presignedUrl }, i) => {
+              const res = await fetch(presignedUrl, {
+                method: "PUT",
+                body: images[i].file,
+                headers: { "Content-Type": images[i].file.type },
+              })
+              if (!res.ok) throw new Error("Upload failed.")
+            }),
+          )
+
+          customFieldFileMeta[formField.id] = presigned.map(({ key }, i) => ({
+            key,
+            filename: images[i].file.name,
+            contentType: images[i].file.type,
+            size: images[i].file.size,
+          }))
+        } else if (formField.type === "DOCUMENT") {
+          const doc = customFieldDocuments[formField.id]
+          if (!doc) continue
+
+          setUploading(true)
+          const presignResult = await presignCustomFieldUpload({
+            fieldType: "DOCUMENT",
+            files: [
+              {
+                filename: doc.name,
+                contentType: doc.type,
+                size: doc.size,
+              },
+            ],
+          })
+
+          if (!presignResult?.data?.files) {
+            throw new Error(
+              presignResult?.serverError ?? "Failed to prepare upload.",
+            )
+          }
+
+          const { key, presignedUrl } = presignResult.data.files[0]
+          const res = await fetch(presignedUrl, {
+            method: "PUT",
+            body: doc,
+            headers: { "Content-Type": doc.type },
+          })
+          if (!res.ok) throw new Error("Upload failed.")
+
+          customFieldFileMeta[formField.id] = [
+            {
+              key,
+              filename: doc.name,
+              contentType: doc.type,
+              size: doc.size,
+            },
+          ]
+        }
+      }
+    } catch (err) {
+      setUploading(false)
+      form.setError("root", {
+        message:
+          err instanceof Error ? err.message : "Upload failed. Try again.",
+      })
+      return false
+    }
+    setUploading(false)
+
+    action.execute({
+      ...(v as z.infer<typeof submissionFormSchema>),
+      orgId,
+      productionId,
+      roleIds: selectedRoleIds,
+      headshots: headshotMeta,
+      resume: resumeMeta,
+      customFieldFiles: customFieldFileMeta,
+      confirmUpdate,
+    })
+    return true
+  }
+
+  async function handleConfirmUpdate() {
+    const dispatched = await uploadAndSubmit(form.getValues(), true)
+    if (!dispatched) {
+      // Upload failed — close dialog so user sees the error on the form
+      setDuplicateWarningOpen(false)
+    }
+    // If dispatched, dialog stays open with loading state until onSuccess/onError
+  }
+
   if (submitted) {
-    const roleCount = selectedRoleIds.length
+    const created = submissionResult?.created ?? selectedRoleIds.length
+    const updated = submissionResult?.updated ?? 0
+    const total = created + updated
+
+    let title: string
+    if (updated === 0) {
+      title =
+        total > 1 ? `${total} submissions received` : "Submission received"
+    } else if (created === 0) {
+      title = total > 1 ? `${total} submissions updated` : "Submission updated"
+    } else {
+      title = `${created} new, ${updated} updated`
+    }
+
     return (
       <div className="flex flex-col gap-group rounded-lg border bg-background p-6 shadow-sm">
         <Alert>
-          <AlertTitle>
-            {roleCount > 1
-              ? `${roleCount} submissions received`
-              : "Submission received"}
-          </AlertTitle>
+          <AlertTitle>{title}</AlertTitle>
           <AlertDescription>
             The production team will review your{" "}
-            {roleCount > 1 ? "submissions" : "submission"} and be in touch if
-            they want to move forward.
+            {total > 1 ? "submissions" : "submission"} and be in touch if they
+            want to move forward.
           </AlertDescription>
         </Alert>
         <Button
@@ -272,229 +514,27 @@ export function SubmissionForm({
           }
           if (hasFieldErrors) return
 
-          let headshotMeta: {
-            key: string
-            filename: string
-            contentType: string
-            size: number
-          }[] = []
-
-          if (headshots.length > 0) {
-            setUploading(true)
-            try {
-              // 1. Request presigned URLs via server action
-              const presignResult = await presignHeadshotUpload({
-                files: headshots.map((h) => ({
-                  filename: h.file.name,
-                  contentType: h.file.type,
-                  size: h.file.size,
-                })),
-              })
-
-              if (!presignResult?.data?.files) {
-                throw new Error(
-                  presignResult?.serverError ?? "Failed to prepare upload.",
-                )
-              }
-
-              const presigned = presignResult.data.files
-
-              // 2. Upload all files to R2 in parallel
-              await Promise.all(
-                presigned.map(async ({ presignedUrl }, i) => {
-                  const res = await fetch(presignedUrl, {
-                    method: "PUT",
-                    body: headshots[i].file,
-                    headers: { "Content-Type": headshots[i].file.type },
-                  })
-                  if (!res.ok) throw new Error("Upload failed.")
-                }),
-              )
-
-              // 3. Build metadata for server action
-              headshotMeta = presigned.map(({ key }, i) => ({
-                key,
-                filename: headshots[i].file.name,
-                contentType: headshots[i].file.type,
-                size: headshots[i].file.size,
-              }))
-            } catch (err) {
-              setUploading(false)
-              setUploadError(
-                err instanceof Error
-                  ? err.message
-                  : "Upload failed. Try again.",
-              )
-              return
-            }
-            setUploading(false)
-          }
-
-          let resumeMeta:
-            | {
-                key: string
-                filename: string
-                contentType: string
-                size: number
-              }
-            | undefined
-
-          if (resume) {
-            setUploading(true)
-            try {
-              const presignResult = await presignResumeUpload({
-                filename: resume.name,
-                contentType: resume.type,
-                size: resume.size,
-              })
-
-              if (!presignResult?.data) {
-                throw new Error(
-                  presignResult?.serverError ?? "Failed to prepare upload.",
-                )
-              }
-
-              const { key, presignedUrl } = presignResult.data
-
-              const res = await fetch(presignedUrl, {
-                method: "PUT",
-                body: resume,
-                headers: { "Content-Type": resume.type },
-              })
-              if (!res.ok) throw new Error("Upload failed.")
-
-              resumeMeta = {
-                key,
-                filename: resume.name,
-                contentType: resume.type,
-                size: resume.size,
-              }
-            } catch (err) {
-              setUploading(false)
-              setResumeError(
-                err instanceof Error
-                  ? err.message
-                  : "Upload failed. Try again.",
-              )
-              return
-            }
-            setUploading(false)
-          }
-
-          // Upload custom field files (IMAGE and DOCUMENT)
-          const customFieldFileMeta: Record<
-            string,
-            {
-              key: string
-              filename: string
-              contentType: string
-              size: number
-            }[]
-          > = {}
-
+          // Check for duplicate submissions before uploading files
           try {
-            for (const formField of submissionFormFields) {
-              if (formField.type === "IMAGE") {
-                const images = customFieldImages[formField.id]
-                if (!images || images.length === 0) continue
+            const dupeResult = await checkSubmissionDuplicates({
+              email: v.email,
+              orgId,
+              roleIds: selectedRoleIds,
+            })
 
-                setUploading(true)
-                const presignResult = await presignCustomFieldUpload({
-                  fieldType: "IMAGE",
-                  files: images.map((h) => ({
-                    filename: h.file.name,
-                    contentType: h.file.type,
-                    size: h.file.size,
-                  })),
-                })
-
-                if (!presignResult?.data?.files) {
-                  throw new Error(
-                    presignResult?.serverError ?? "Failed to prepare upload.",
-                  )
-                }
-
-                const presigned = presignResult.data.files
-                await Promise.all(
-                  presigned.map(async ({ presignedUrl }, i) => {
-                    const res = await fetch(presignedUrl, {
-                      method: "PUT",
-                      body: images[i].file,
-                      headers: { "Content-Type": images[i].file.type },
-                    })
-                    if (!res.ok) throw new Error("Upload failed.")
-                  }),
-                )
-
-                customFieldFileMeta[formField.id] = presigned.map(
-                  ({ key }, i) => ({
-                    key,
-                    filename: images[i].file.name,
-                    contentType: images[i].file.type,
-                    size: images[i].file.size,
-                  }),
-                )
-              } else if (formField.type === "DOCUMENT") {
-                const doc = customFieldDocuments[formField.id]
-                if (!doc) continue
-
-                setUploading(true)
-                const presignResult = await presignCustomFieldUpload({
-                  fieldType: "DOCUMENT",
-                  files: [
-                    {
-                      filename: doc.name,
-                      contentType: doc.type,
-                      size: doc.size,
-                    },
-                  ],
-                })
-
-                if (!presignResult?.data?.files) {
-                  throw new Error(
-                    presignResult?.serverError ?? "Failed to prepare upload.",
-                  )
-                }
-
-                const { key, presignedUrl } = presignResult.data.files[0]
-                const res = await fetch(presignedUrl, {
-                  method: "PUT",
-                  body: doc,
-                  headers: { "Content-Type": doc.type },
-                })
-                if (!res.ok) throw new Error("Upload failed.")
-
-                customFieldFileMeta[formField.id] = [
-                  {
-                    key,
-                    filename: doc.name,
-                    contentType: doc.type,
-                    size: doc.size,
-                  },
-                ]
-              }
+            if (dupeResult.duplicates.length > 0) {
+              setDuplicateRoles(dupeResult.duplicates)
+              setDuplicateWarningOpen(true)
+              return
             }
-          } catch (err) {
-            setUploading(false)
+          } catch {
             form.setError("root", {
-              message:
-                err instanceof Error
-                  ? err.message
-                  : "Upload failed. Try again.",
+              message: "We couldn't check for existing submissions. Try again.",
             })
             return
           }
-          setUploading(false)
 
-          action.execute({
-            ...v,
-            orgId,
-            productionId,
-            roleIds: selectedRoleIds,
-            headshots: headshotMeta,
-            resume: resumeMeta,
-            customFieldFiles: customFieldFileMeta,
-          })
+          await uploadAndSubmit(v, false)
         })}
       >
         <FieldGroup>
@@ -957,6 +997,15 @@ export function SubmissionForm({
           </Button>
         </FieldGroup>
       </form>
+
+      <DuplicateWarningDialog
+        open={duplicateWarningOpen}
+        onOpenChange={setDuplicateWarningOpen}
+        duplicateRoles={duplicateRoles}
+        newRoleCount={selectedRoleIds.length - duplicateRoles.length}
+        onConfirm={handleConfirmUpdate}
+        loading={uploading || action.isPending}
+      />
     </div>
   )
 }

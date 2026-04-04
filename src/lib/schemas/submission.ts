@@ -79,6 +79,7 @@ export const submissionActionSchema = submissionFormSchema.extend({
   customFieldFiles: z
     .record(z.string(), z.array(customFieldFileSchema))
     .default({}),
+  confirmUpdate: z.boolean().default(false),
 })
 
 export const updateSubmissionStatusSchema = z.object({

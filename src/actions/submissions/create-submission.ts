@@ -36,6 +36,7 @@ export const createSubmission = publicActionClient
         headshots,
         resume,
         customFieldFiles,
+        confirmUpdate,
       },
     }) => {
       // Validate all roles exist and belong to the production
@@ -242,9 +243,6 @@ export const createSubmission = publicActionClient
           }
         })
 
-      // Generate one submission ID per role
-      const submissionIds = roleIds.map(() => generateId("sub"))
-
       // Move files from temp/ to permanent R2 storage before the transaction
       // (R2 operations can't participate in a Postgres transaction)
       type MovedFile = { url: string; key: string; path: string }
@@ -293,6 +291,11 @@ export const createSubmission = publicActionClient
       }
 
       // All DB writes in a single atomic transaction
+      let createdCount = 0
+      let updatedCount = 0
+      const newSubmissionIds: string[] = []
+      const updatedSubmissionIds: string[] = []
+
       await db.transaction(async (tx) => {
         const [candidate] = await tx
           .insert(Candidate)
@@ -316,87 +319,227 @@ export const createSubmission = publicActionClient
           })
           .returning({ id: Candidate.id })
 
-        await tx.insert(Submission).values(
-          roleIds.map((roleId, i) => ({
-            id: submissionIds[i],
-            productionId,
-            roleId,
-            candidateId: candidate.id,
-            stageId: appliedStage.id,
-            firstName,
-            lastName,
-            email,
-            phone: phone ?? "",
-            location: location || "",
-            answers: formResponses,
-            links,
-            videoUrl: videoUrl || null,
-            unionStatus,
-            representation,
-          })),
-        )
+        // Check for existing submissions for these roles
+        const existingSubmissions = await tx.query.Submission.findMany({
+          where: and(
+            eq(Submission.candidateId, candidate.id),
+            inArray(Submission.roleId, roleIds),
+          ),
+          columns: { id: true, roleId: true, stageId: true },
+        })
 
-        if (movedHeadshots.length > 0) {
-          await tx.insert(File).values(
-            submissionIds.flatMap((subId) =>
-              movedHeadshots.map(({ moved, headshot, index }) => ({
-                id: generateId("file"),
-                submissionId: subId,
-                type: "HEADSHOT" as const,
-                url: moved.url,
-                key: moved.key,
-                path: moved.path,
-                filename: headshot.filename,
-                contentType: headshot.contentType,
-                size: headshot.size,
-                order: index,
-              })),
-            ),
+        const existingByRoleId = new Map(
+          existingSubmissions.map((s) => [s.roleId, s]),
+        )
+        const newRoleIds = roleIds.filter((id) => !existingByRoleId.has(id))
+        const existingSubIds = existingSubmissions.map((s) => s.id)
+
+        if (existingSubmissions.length > 0 && !confirmUpdate) {
+          throw new Error(
+            "You have already submitted for one or more of these roles.",
           )
         }
 
-        if (movedResume && resume) {
-          await tx.insert(File).values(
-            submissionIds.map((subId) => ({
-              id: generateId("file"),
-              submissionId: subId,
-              type: "RESUME" as const,
-              url: movedResume.url,
-              key: movedResume.key,
-              path: movedResume.path,
-              filename: resume.filename,
-              contentType: resume.contentType,
-              size: resume.size,
-              order: 0,
+        // UPDATE existing submissions (preserve stageId and rejectionReason)
+        if (existingSubmissions.length > 0) {
+          await tx
+            .update(Submission)
+            .set({
+              firstName,
+              lastName,
+              email,
+              phone: phone ?? "",
+              location: location || "",
+              answers: formResponses,
+              links,
+              videoUrl: videoUrl || null,
+              unionStatus,
+              representation,
+            })
+            .where(inArray(Submission.id, existingSubIds))
+
+          // Replace only file types that have new uploads; preserve the rest
+          if (movedHeadshots.length > 0) {
+            await tx
+              .delete(File)
+              .where(
+                and(
+                  inArray(File.submissionId, existingSubIds),
+                  eq(File.type, "HEADSHOT"),
+                ),
+              )
+            await tx.insert(File).values(
+              existingSubIds.flatMap((subId) =>
+                movedHeadshots.map(({ moved, headshot, index }) => ({
+                  id: generateId("file"),
+                  submissionId: subId,
+                  type: "HEADSHOT" as const,
+                  url: moved.url,
+                  key: moved.key,
+                  path: moved.path,
+                  filename: headshot.filename,
+                  contentType: headshot.contentType,
+                  size: headshot.size,
+                  order: index,
+                })),
+              ),
+            )
+          }
+
+          if (movedResume && resume) {
+            await tx
+              .delete(File)
+              .where(
+                and(
+                  inArray(File.submissionId, existingSubIds),
+                  eq(File.type, "RESUME"),
+                ),
+              )
+            await tx.insert(File).values(
+              existingSubIds.map((subId) => ({
+                id: generateId("file"),
+                submissionId: subId,
+                type: "RESUME" as const,
+                url: movedResume.url,
+                key: movedResume.key,
+                path: movedResume.path,
+                filename: resume.filename,
+                contentType: resume.contentType,
+                size: resume.size,
+                order: 0,
+              })),
+            )
+          }
+
+          for (const [fieldId, files] of Object.entries(
+            movedCustomFieldFiles,
+          )) {
+            if (!files || files.length === 0) continue
+            await tx
+              .delete(File)
+              .where(
+                and(
+                  inArray(File.submissionId, existingSubIds),
+                  eq(File.type, "CUSTOM_FIELD"),
+                  eq(File.formFieldId, fieldId),
+                ),
+              )
+            await tx.insert(File).values(
+              existingSubIds.flatMap((subId) =>
+                files.map(({ moved, meta }, index) => ({
+                  id: generateId("file"),
+                  submissionId: subId,
+                  formFieldId: fieldId,
+                  type: "CUSTOM_FIELD" as const,
+                  url: moved.url,
+                  key: moved.key,
+                  path: moved.path,
+                  filename: meta.filename,
+                  contentType: meta.contentType,
+                  size: meta.size,
+                  order: index,
+                })),
+              ),
+            )
+          }
+
+          updatedSubmissionIds.push(...existingSubIds)
+          updatedCount = existingSubmissions.length
+        }
+
+        // INSERT new submissions
+        if (newRoleIds.length > 0) {
+          const newIds = newRoleIds.map(() => generateId("sub"))
+          newSubmissionIds.push(...newIds)
+
+          await tx.insert(Submission).values(
+            newRoleIds.map((roleId, i) => ({
+              id: newIds[i],
+              productionId,
+              roleId,
+              candidateId: candidate.id,
+              stageId: appliedStage.id,
+              firstName,
+              lastName,
+              email,
+              phone: phone ?? "",
+              location: location || "",
+              answers: formResponses,
+              links,
+              videoUrl: videoUrl || null,
+              unionStatus,
+              representation,
             })),
           )
-        }
 
-        // Insert File records for custom field uploads
-        for (const [fieldId, files] of Object.entries(movedCustomFieldFiles)) {
-          if (!files || files.length === 0) continue
-          await tx.insert(File).values(
-            submissionIds.flatMap((subId) =>
-              files.map(({ moved, meta }, index) => ({
+          if (movedHeadshots.length > 0) {
+            await tx.insert(File).values(
+              newIds.flatMap((subId) =>
+                movedHeadshots.map(({ moved, headshot, index }) => ({
+                  id: generateId("file"),
+                  submissionId: subId,
+                  type: "HEADSHOT" as const,
+                  url: moved.url,
+                  key: moved.key,
+                  path: moved.path,
+                  filename: headshot.filename,
+                  contentType: headshot.contentType,
+                  size: headshot.size,
+                  order: index,
+                })),
+              ),
+            )
+          }
+
+          if (movedResume && resume) {
+            await tx.insert(File).values(
+              newIds.map((subId) => ({
                 id: generateId("file"),
                 submissionId: subId,
-                formFieldId: fieldId,
-                type: "CUSTOM_FIELD" as const,
-                url: moved.url,
-                key: moved.key,
-                path: moved.path,
-                filename: meta.filename,
-                contentType: meta.contentType,
-                size: meta.size,
-                order: index,
+                type: "RESUME" as const,
+                url: movedResume.url,
+                key: movedResume.key,
+                path: movedResume.path,
+                filename: resume.filename,
+                contentType: resume.contentType,
+                size: resume.size,
+                order: 0,
               })),
-            ),
-          )
+            )
+          }
+
+          for (const [fieldId, files] of Object.entries(
+            movedCustomFieldFiles,
+          )) {
+            if (!files || files.length === 0) continue
+            await tx.insert(File).values(
+              newIds.flatMap((subId) =>
+                files.map(({ moved, meta }, index) => ({
+                  id: generateId("file"),
+                  submissionId: subId,
+                  formFieldId: fieldId,
+                  type: "CUSTOM_FIELD" as const,
+                  url: moved.url,
+                  key: moved.key,
+                  path: moved.path,
+                  filename: meta.filename,
+                  contentType: meta.contentType,
+                  size: meta.size,
+                  order: index,
+                })),
+              ),
+            )
+          }
+
+          createdCount = newRoleIds.length
         }
       })
 
+      // Combine all submission IDs that need resume text parsing
+      const allSubmissionIds = [...newSubmissionIds, ...updatedSubmissionIds]
+
       // Parse PDF text from the uploaded resume (best-effort)
-      if (movedResume) {
+      if (movedResume && allSubmissionIds.length > 0) {
         try {
           const response = await fetch(movedResume.url)
           const buffer = await response.arrayBuffer()
@@ -406,23 +549,29 @@ export const createSubmission = publicActionClient
             await db
               .update(Submission)
               .set({ resumeText: text.trim() })
-              .where(inArray(Submission.id, submissionIds))
+              .where(inArray(Submission.id, allSubmissionIds))
           }
         } catch (err) {
           logger.error("PDF parsing failed", err)
         }
       }
 
-      // Send submission received emails in parallel (fire-and-forget)
-      await Promise.allSettled(
-        submissionIds.map((subId) =>
-          sendSubmissionEmail(subId, "submissionReceived").catch((err) =>
-            logger.error("Submission received email failed", err),
+      // Send submission received emails only for new submissions
+      if (newSubmissionIds.length > 0) {
+        await Promise.allSettled(
+          newSubmissionIds.map((subId) =>
+            sendSubmissionEmail(subId, "submissionReceived").catch((err) =>
+              logger.error("Submission received email failed", err),
+            ),
           ),
-        ),
-      )
+        )
+      }
 
       revalidatePath("/", "layout")
-      return { ids: submissionIds }
+      return {
+        ids: [...newSubmissionIds, ...updatedSubmissionIds],
+        created: createdCount,
+        updated: updatedCount,
+      }
     },
   )

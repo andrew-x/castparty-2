@@ -1,0 +1,1 @@
+CREATE INDEX "submission_candidateId_roleId_idx" ON "submission" USING btree ("candidate_id","role_id");
