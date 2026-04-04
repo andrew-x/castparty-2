@@ -82,6 +82,7 @@ export function KanbanCard({
                 src={headshotUrl}
                 alt={`${submission.firstName} ${submission.lastName}`}
                 className="size-full object-cover"
+                draggable={false}
               />
             ) : (
               <div className="flex size-full items-center justify-center">
@@ -139,6 +140,7 @@ export function KanbanCard({
                 src={headshotUrl}
                 alt={`${submission.firstName} ${submission.lastName}`}
                 className="size-full object-contain"
+                draggable={false}
               />
             </div>
           ) : (
