@@ -1,6 +1,7 @@
 "use server"
 
-import { and, eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, ne } from "drizzle-orm"
+import { generateNKeysBetween } from "fractional-indexing"
 import { revalidatePath } from "next/cache"
 import { extractText, getDocumentProxy } from "unpdf"
 import { sendSubmissionEmail } from "@/actions/submissions/send-submission-email"
@@ -111,6 +112,25 @@ export const createSubmission = publicActionClient
       if (!appliedStage) {
         throw new Error("Pipeline is not configured for this production.")
       }
+
+      // Generate a sortOrder key that places this submission at the top of the
+      // Applied column (before the current first item).
+      const firstInApplied = await db.query.Submission.findFirst({
+        where: (s) =>
+          and(
+            eq(s.productionId, productionId),
+            eq(s.stageId, appliedStage.id),
+            ne(s.sortOrder, ""),
+          ),
+        columns: { sortOrder: true },
+        orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)],
+      })
+
+      const sortOrders = generateNKeysBetween(
+        null,
+        firstInApplied?.sortOrder || null,
+        roleIds.length,
+      )
 
       // Validate required system fields
       const sfc = {
@@ -345,6 +365,7 @@ export const createSubmission = publicActionClient
             roleId,
             candidateId: candidate.id,
             stageId: appliedStage.id,
+            sortOrder: sortOrders[i],
             firstName,
             lastName,
             email,

@@ -2,11 +2,13 @@
 
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider } from "@dnd-kit/react"
+import { generateKeyBetween } from "fractional-indexing"
 import { LayoutGridIcon, Rows3Icon, SearchIcon, UsersIcon } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
 import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-submission-status"
+import { reorderSubmission } from "@/actions/submissions/reorder-submission"
 import { sendSubmissionEmailAction } from "@/actions/submissions/send-submission-email"
 import { updateSubmissionStatus } from "@/actions/submissions/update-submission-status"
 import { Button } from "@/components/common/button"
@@ -86,7 +88,7 @@ export function ProductionSubmissions({
 
   // Stores pending reject info: either a single drag submission or bulk IDs
   const pendingRejectRef = useRef<
-    | { type: "drag"; submissionId: string; stageId: string }
+    | { type: "drag"; submissionId: string; stageId: string; sortOrder: string }
     | { type: "bulk"; submissionIds: string[]; stageId: string }
     | null
   >(null)
@@ -95,6 +97,7 @@ export function ProductionSubmissions({
   const pendingSelectRef = useRef<{
     submissionId: string
     stageId: string
+    sortOrder: string
   } | null>(null)
 
   const rejectedStage = pipelineStages.find((s) => s.type === "REJECTED")
@@ -213,6 +216,13 @@ export function ProductionSubmissions({
     },
   )
 
+  const { execute: executeReorder } = useAction(reorderSubmission, {
+    onError() {
+      setColumns(previousColumns.current)
+      router.refresh()
+    },
+  })
+
   const { execute: executeBulkMove, isPending: isBulkMovePending } = useAction(
     bulkUpdateSubmissionStatus,
     {
@@ -298,6 +308,7 @@ export function ProductionSubmissions({
         submissionId: pending.submissionId,
         stageId: pending.stageId,
         rejectionReason: reason,
+        sortOrder: pending.sortOrder,
       }).then((result) => {
         if (sendEmail && result?.data) {
           executeSendEmail({
@@ -365,6 +376,7 @@ export function ProductionSubmissions({
     executeStatusChangeAsync({
       submissionId: pending.submissionId,
       stageId: pending.stageId,
+      sortOrder: pending.sortOrder,
     }).then((result) => {
       if (sendEmail && result?.data) {
         executeSendEmail({
@@ -523,9 +535,7 @@ export function ProductionSubmissions({
           movedColumns.current = null
           if (!currentColumns) return
 
-          // Compare previous vs current columns to detect cross-stage moves.
-          // We avoid reading source.group/initialGroup because React may not
-          // have re-rendered the sortable with its new group prop yet.
+          // Find original stage
           let originalStageId: string | null = null
           for (const [stageId, items] of Object.entries(
             previousColumns.current,
@@ -536,31 +546,68 @@ export function ProductionSubmissions({
             }
           }
 
+          // Find new stage and index
           let newStageId: string | null = null
+          let newIndex = -1
           for (const [stageId, items] of Object.entries(currentColumns)) {
-            if (items.some((s) => s.id === submissionId)) {
+            const idx = items.findIndex((s) => s.id === submissionId)
+            if (idx !== -1) {
               newStageId = stageId
+              newIndex = idx
               break
             }
           }
 
-          if (originalStageId && newStageId && originalStageId !== newStageId) {
-            // If dragging to REJECTED, show the reason dialog
+          if (!originalStageId || !newStageId || newIndex === -1) return
+
+          // Check if position actually changed (same column, same index = no-op)
+          if (originalStageId === newStageId) {
+            const prevCol = previousColumns.current[originalStageId]
+            const prevIdx =
+              prevCol?.findIndex((s) => s.id === submissionId) ?? -1
+            if (prevIdx === newIndex) return
+          }
+
+          // Compute sort order from neighbors in the new column
+          const col = currentColumns[newStageId]
+          const prevKey =
+            newIndex > 0 ? col[newIndex - 1].sortOrder || null : null
+          const nextKey =
+            newIndex < col.length - 1
+              ? col[newIndex + 1].sortOrder || null
+              : null
+          const newSortOrder = generateKeyBetween(prevKey, nextKey)
+
+          // Update local state with new sortOrder for accurate subsequent drags
+          setColumns((current) => {
+            const items = current[newStageId]
+            if (!items) return current
+            return {
+              ...current,
+              [newStageId]: items.map((s) =>
+                s.id === submissionId ? { ...s, sortOrder: newSortOrder } : s,
+              ),
+            }
+          })
+
+          if (originalStageId !== newStageId) {
+            // Cross-column move
             if (rejectedStage && newStageId === rejectedStage.id) {
               pendingRejectRef.current = {
                 type: "drag",
                 submissionId,
                 stageId: newStageId,
+                sortOrder: newSortOrder,
               }
               setRejectDialogOpen(true)
               return
             }
 
-            // If dragging to SELECTED, show the email preview dialog
             if (selectedStage && newStageId === selectedStage.id) {
               pendingSelectRef.current = {
                 submissionId,
                 stageId: newStageId,
+                sortOrder: newSortOrder,
               }
               setSelectDialogOpen(true)
               return
@@ -570,7 +617,11 @@ export function ProductionSubmissions({
             executeStatusChangeAsync({
               submissionId,
               stageId: newStageId,
+              sortOrder: newSortOrder,
             })
+          } else {
+            // Within-column reorder
+            executeReorder({ submissionId, sortOrder: newSortOrder })
           }
         }}
       >

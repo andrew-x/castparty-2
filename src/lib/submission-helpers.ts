@@ -73,6 +73,7 @@ export interface SubmissionWithCandidate {
   phone: string
   location: string
   createdAt: Date | string
+  sortOrder: string
   stageId: string
   rejectionReason: string | null
   stage: PipelineStageData | null
@@ -139,6 +140,19 @@ export function buildColumns(
     if (columns[sub.stageId]) {
       columns[sub.stageId].push(sub)
     }
+  }
+  // Submissions arrive per-role from the relational query, so items from
+  // different roles may be interleaved. Sort each column by sortOrder so
+  // fractional-indexing neighbor lookups always see ascending keys.
+  for (const items of Object.values(columns)) {
+    items.sort((a, b) => {
+      if (a.sortOrder < b.sortOrder) return -1
+      if (a.sortOrder > b.sortOrder) return 1
+      // Stable tie-breaker for duplicate sortOrder (e.g. empty default)
+      const timeA = day(a.createdAt).valueOf()
+      const timeB = day(b.createdAt).valueOf()
+      return timeA - timeB || a.id.localeCompare(b.id)
+    })
   }
   return columns
 }

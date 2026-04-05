@@ -14,7 +14,7 @@ export const updateSubmissionStatus = secureActionClient
   .inputSchema(updateSubmissionStatusSchema)
   .action(
     async ({
-      parsedInput: { submissionId, stageId, rejectionReason },
+      parsedInput: { submissionId, stageId, rejectionReason, sortOrder },
       ctx: { user },
     }) => {
       const orgId = user.activeOrganizationId
@@ -58,7 +58,12 @@ export const updateSubmissionStatus = secureActionClient
       await db.transaction(async (tx) => {
         await tx
           .update(Submission)
-          .set({ stageId, rejectionReason: reason, updatedAt: day().toDate() })
+          .set({
+            stageId,
+            rejectionReason: reason,
+            updatedAt: day().toDate(),
+            ...(sortOrder ? { sortOrder } : {}),
+          })
           .where(eq(Submission.id, submissionId))
 
         await tx.insert(PipelineUpdate).values({

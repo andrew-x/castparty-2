@@ -2,6 +2,7 @@
 
 import { faker } from "@faker-js/faker"
 import { eq } from "drizzle-orm"
+import { generateNKeysBetween } from "fractional-indexing"
 import { revalidatePath } from "next/cache"
 import { adminActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
@@ -511,6 +512,25 @@ export const seedDataAction = adminActionClient
             order: 0,
           })
         }
+      }
+    }
+
+    // --- Assign sortOrder keys grouped by (productionId, stageId) ---
+    const submissionsByStage = new Map<string, number[]>()
+    for (let i = 0; i < submissionRows.length; i++) {
+      const key = `${submissionRows[i].productionId}:${submissionRows[i].stageId}`
+      const indices = submissionsByStage.get(key)
+      if (indices) {
+        indices.push(i)
+      } else {
+        submissionsByStage.set(key, [i])
+      }
+    }
+
+    for (const indices of submissionsByStage.values()) {
+      const keys = generateNKeysBetween(null, null, indices.length)
+      for (let j = 0; j < indices.length; j++) {
+        submissionRows[indices[j]].sortOrder = keys[j]
       }
     }
 

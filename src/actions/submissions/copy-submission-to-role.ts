@@ -1,6 +1,7 @@
 "use server"
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, ne } from "drizzle-orm"
+import { generateKeyBetween } from "fractional-indexing"
 import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
@@ -80,6 +81,22 @@ export const copySubmissionToRole = secureActionClient
         throw new Error("Target role's pipeline is not configured.")
       }
 
+      const firstInApplied = await db.query.Submission.findFirst({
+        where: (s) =>
+          and(
+            eq(s.productionId, targetRole.productionId),
+            eq(s.stageId, appliedStage.id),
+            ne(s.sortOrder, ""),
+          ),
+        columns: { sortOrder: true },
+        orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)],
+      })
+
+      const sortOrder = generateKeyBetween(
+        null,
+        firstInApplied?.sortOrder || null,
+      )
+
       // Create new submission + copy file records atomically
       const newSubmissionId = generateId("sub")
 
@@ -90,6 +107,7 @@ export const copySubmissionToRole = secureActionClient
           roleId: targetRoleId,
           candidateId: source.candidateId,
           stageId: appliedStage.id,
+          sortOrder,
           firstName: source.firstName,
           lastName: source.lastName,
           email: source.email,
