@@ -1,7 +1,7 @@
 "use server"
 
 import { and, eq, inArray } from "drizzle-orm"
-import { generateKeyBetween } from "fractional-indexing"
+import { generateNKeysBetween } from "fractional-indexing"
 import { revalidatePath } from "next/cache"
 import { extractText, getDocumentProxy } from "unpdf"
 import { sendSubmissionEmail } from "@/actions/submissions/send-submission-email"
@@ -122,9 +122,10 @@ export const createSubmission = publicActionClient
         orderBy: (s, { asc }) => [asc(s.sortOrder)],
       })
 
-      const sortOrder = generateKeyBetween(
+      const sortOrders = generateNKeysBetween(
         null,
         firstInApplied?.sortOrder || null,
+        roleIds.length,
       )
 
       // Validate required system fields
@@ -360,7 +361,7 @@ export const createSubmission = publicActionClient
             roleId,
             candidateId: candidate.id,
             stageId: appliedStage.id,
-            sortOrder,
+            sortOrder: sortOrders[i],
             firstName,
             lastName,
             email,

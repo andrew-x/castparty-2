@@ -81,11 +81,16 @@ export const submissionActionSchema = submissionFormSchema.extend({
     .default({}),
 })
 
+/** Fractional-indexing keys: start with a letter, followed by printable ASCII. */
+const sortOrderSchema = z
+  .string()
+  .regex(/^[A-Za-z][!-~]*$/, "Invalid sort key.")
+
 export const updateSubmissionStatusSchema = z.object({
   submissionId: z.string().min(1),
   stageId: z.string().min(1),
   rejectionReason: z.string().trim().min(1).max(500).optional(),
-  sortOrder: z.string().min(1).optional(),
+  sortOrder: sortOrderSchema.optional(),
 })
 
 export const bulkUpdateSubmissionStatusSchema = z.object({
@@ -96,7 +101,7 @@ export const bulkUpdateSubmissionStatusSchema = z.object({
 
 export const reorderSubmissionSchema = z.object({
   submissionId: z.string().min(1),
-  sortOrder: z.string().min(1),
+  sortOrder: sortOrderSchema,
 })
 
 export const updateSubmissionFormSchema = z.object({

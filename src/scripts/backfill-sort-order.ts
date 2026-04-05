@@ -4,7 +4,7 @@
  *   bun src/scripts/backfill-sort-order.ts
  */
 import "dotenv/config"
-import { eq } from "drizzle-orm"
+import { and, eq, ne } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { generateNKeysBetween } from "fractional-indexing"
 import * as schema from "@/lib/db/schema"
@@ -41,8 +41,28 @@ async function main() {
   }
 
   let updated = 0
-  for (const [, group] of groups) {
-    const keys = generateNKeysBetween(null, null, group.length)
+  for (const [groupKey, group] of groups) {
+    const [productionId, stageId] = groupKey.split(":")
+
+    // Find the max existing real key in this group so we don't collide
+    // with submissions that arrived after the schema change but before
+    // this backfill ran.
+    const maxExisting = await db.query.Submission.findFirst({
+      where: (s) =>
+        and(
+          eq(s.productionId, productionId),
+          eq(s.stageId, stageId),
+          ne(s.sortOrder, ""),
+        ),
+      columns: { sortOrder: true },
+      orderBy: (s, { desc }) => [desc(s.sortOrder)],
+    })
+
+    const keys = generateNKeysBetween(
+      maxExisting?.sortOrder || null,
+      null,
+      group.length,
+    )
     for (let i = 0; i < group.length; i++) {
       await db
         .update(schema.Submission)

@@ -98,17 +98,19 @@ export const bulkUpdateSubmissionStatus = secureActionClient
         targetStage.type === "REJECTED" ? (rejectionReason ?? null) : null
 
       await db.transaction(async (tx) => {
-        for (let i = 0; i < toMove.length; i++) {
-          await tx
-            .update(Submission)
-            .set({
-              stageId,
-              rejectionReason: reason,
-              sortOrder: sortKeys[i],
-              updatedAt: day().toDate(),
-            })
-            .where(eq(Submission.id, toMove[i].id))
-        }
+        await Promise.all(
+          toMove.map((s, i) =>
+            tx
+              .update(Submission)
+              .set({
+                stageId,
+                rejectionReason: reason,
+                sortOrder: sortKeys[i],
+                updatedAt: day().toDate(),
+              })
+              .where(eq(Submission.id, s.id)),
+          ),
+        )
 
         await tx.insert(PipelineUpdate).values(
           toMove.map((s) => ({
