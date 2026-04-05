@@ -154,7 +154,7 @@ export function ProductionsTable({ productions }: Props) {
   const hasFilters = search !== "" || statusFilter !== "all"
 
   return (
-    <div className="flex flex-col gap-block">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-block">
       <div className="flex items-center gap-block">
         <div className="relative w-full max-w-sm">
           <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
