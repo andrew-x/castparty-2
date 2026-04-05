@@ -30,14 +30,7 @@ export const mergeCandidate = secureActionClient
         db.query.Candidate.findFirst({
           where: (c) =>
             and(eq(c.id, destinationCandidateId), eq(c.organizationId, orgId)),
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-            location: true,
-          },
+          columns: { id: true },
         }),
       ])
 
@@ -47,14 +40,7 @@ export const mergeCandidate = secureActionClient
       await db.transaction(async (tx) => {
         await tx
           .update(Submission)
-          .set({
-            candidateId: destinationCandidateId,
-            firstName: destination.firstName,
-            lastName: destination.lastName,
-            email: destination.email,
-            phone: destination.phone,
-            location: destination.location,
-          })
+          .set({ candidateId: destinationCandidateId })
           .where(eq(Submission.candidateId, sourceCandidateId))
 
         await tx

@@ -1,7 +1,6 @@
 import Link from "next/link"
-import { Badge } from "@/components/common/badge"
 import type { PipelineStageData } from "@/lib/submission-helpers"
-import { getStageBadgeProps } from "@/lib/submission-helpers"
+import { cn } from "@/lib/util"
 
 const MAX_VISIBLE_SUBMISSIONS = 2
 
@@ -70,19 +69,25 @@ export function CandidateCard({ candidate }: { candidate: Candidate }) {
             {visibleSubmissions.map((sub) => (
               <div
                 key={sub.id}
-                className="flex items-center gap-1 text-caption"
+                className="flex items-center justify-between gap-1 text-caption"
               >
-                <span className="truncate text-muted-foreground">
+                <span className="min-w-0 truncate text-muted-foreground">
                   {sub.production?.name ?? "Unknown"} /{" "}
                   {sub.role?.name ?? "Unknown"}
                 </span>
                 {sub.stage && (
-                  <Badge
-                    {...getStageBadgeProps(sub.stage)}
-                    className="shrink-0"
+                  <span
+                    className={cn(
+                      "shrink-0 text-[11px]",
+                      sub.stage.type === "SELECTED" && "text-success-text",
+                      sub.stage.type === "REJECTED" && "text-destructive",
+                      (sub.stage.type === "APPLIED" ||
+                        sub.stage.type === "CUSTOM") &&
+                        "text-muted-foreground",
+                    )}
                   >
                     {sub.stage.name}
-                  </Badge>
+                  </span>
                 )}
               </div>
             ))}
