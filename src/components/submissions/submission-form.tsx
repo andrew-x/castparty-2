@@ -1,14 +1,14 @@
 "use client"
 
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
-import { CheckIcon } from "lucide-react"
+import { CheckIcon, CircleCheck } from "lucide-react"
 import { useState } from "react"
 import { Controller } from "react-hook-form"
 import { createSubmission } from "@/actions/submissions/create-submission"
 import { presignCustomFieldUpload } from "@/actions/submissions/presign-custom-field-upload"
 import { presignHeadshotUpload } from "@/actions/submissions/presign-headshot-upload"
 import { presignResumeUpload } from "@/actions/submissions/presign-resume-upload"
-import { Alert, AlertDescription, AlertTitle } from "@/components/common/alert"
+import { Alert, AlertDescription } from "@/components/common/alert"
 import { AutocompleteInput } from "@/components/common/autocomplete-input"
 import { Button } from "@/components/common/button"
 import {
@@ -43,6 +43,11 @@ import type {
 } from "@/lib/types"
 import { DEFAULT_SYSTEM_FIELD_CONFIG } from "@/lib/types"
 
+function joinNames(names: string[]): string {
+  if (names.length <= 2) return names.join(" and ")
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`
+}
+
 function systemFieldLabel(label: string, visibility: SystemFieldVisibility) {
   if (visibility === "optional") return `${label} (optional)`
   return label
@@ -63,8 +68,6 @@ interface Props {
   productionId: string
   initialRoleIds?: string[]
   availableRoles: AvailableRole[]
-  orgSlug: string
-  productionSlug: string
   submissionFormFields: CustomForm[]
   systemFieldConfig?: SystemFieldConfig
 }
@@ -74,8 +77,6 @@ export function SubmissionForm({
   productionId,
   initialRoleIds = [],
   availableRoles,
-  orgSlug,
-  productionSlug,
   submissionFormFields,
   systemFieldConfig = DEFAULT_SYSTEM_FIELD_CONFIG,
 }: Props) {
@@ -84,6 +85,8 @@ export function SubmissionForm({
     useState<string[]>(initialRoleIds)
   const [roleError, setRoleError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [submittedIds, setSubmittedIds] = useState<string[]>([])
+  const [skippedRoles, setSkippedRoles] = useState<string[]>([])
   const [headshots, setHeadshots] = useState<HeadshotFile[]>([])
   const [resume, setResume] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -124,7 +127,9 @@ export function SubmissionForm({
         },
       },
       actionProps: {
-        onSuccess() {
+        onSuccess({ data }) {
+          setSubmittedIds(data?.ids ?? [])
+          setSkippedRoles(data?.skippedRoles ?? [])
           setSubmitted(true)
         },
         onError({ error }) {
@@ -151,28 +156,40 @@ export function SubmissionForm({
   const hasCustomFields = submissionFormFields.length > 0
 
   if (submitted) {
-    const roleCount = selectedRoleIds.length
+    const allSkipped = submittedIds.length === 0 && skippedRoles.length > 0
+
     return (
-      <div className="flex flex-col gap-group rounded-lg border bg-background p-6 shadow-sm">
-        <Alert>
-          <AlertTitle>
-            {roleCount > 1
-              ? `${roleCount} submissions received`
-              : "Submission received"}
-          </AlertTitle>
-          <AlertDescription>
-            The production team will review your{" "}
-            {roleCount > 1 ? "submissions" : "submission"} and be in touch if
-            they want to move forward.
-          </AlertDescription>
-        </Alert>
-        <Button
-          href={`/s/${orgSlug}/${productionSlug}`}
-          variant="outline"
-          className="w-fit"
-        >
-          Browse other roles
-        </Button>
+      <div className="flex flex-col items-center gap-group rounded-lg border bg-background p-6 text-center shadow-sm">
+        <CircleCheck className="size-10 text-primary" />
+
+        {allSkipped ? (
+          <>
+            <h2 className="font-serif text-heading">Already submitted</h2>
+            <p className="text-body text-muted-foreground">
+              You already submitted for {joinNames(skippedRoles)}. No new
+              submissions were created.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="font-serif text-heading">
+              {submittedIds.length > 1
+                ? `${submittedIds.length} submissions received`
+                : "Submission received"}
+            </h2>
+            <p className="text-body text-muted-foreground">
+              The production team will review your{" "}
+              {submittedIds.length > 1 ? "submissions" : "submission"} and be in
+              touch if they want to move forward.
+            </p>
+            {skippedRoles.length > 0 && (
+              <p className="text-caption text-muted-foreground">
+                You already submitted for {joinNames(skippedRoles)}, so{" "}
+                {skippedRoles.length > 1 ? "those were" : "that was"} skipped.
+              </p>
+            )}
+          </>
+        )}
       </div>
     )
   }
