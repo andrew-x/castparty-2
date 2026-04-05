@@ -229,8 +229,6 @@ export default async function SubmitProductionPage({
                   orgId={org.id}
                   productionId={production.id}
                   availableRoles={production.roles}
-                  orgSlug={orgSlug}
-                  productionSlug={productionSlug}
                   submissionFormFields={production.submissionFormFields}
                   systemFieldConfig={production.systemFieldConfig}
                 />

@@ -44,6 +44,7 @@ export const createSubmission = publicActionClient
           and(eq(r.productionId, productionId), inArray(r.id, roleIds)),
         columns: {
           id: true,
+          name: true,
           productionId: true,
           status: true,
         },
@@ -57,6 +58,27 @@ export const createSubmission = publicActionClient
         if (role.status !== "open") {
           throw new Error("One or more roles are not open for auditions.")
         }
+      }
+
+      // Check for existing submissions with this email for the requested roles
+      const existingSubmissions = await db.query.Submission.findMany({
+        where: (s) => and(eq(s.email, email), inArray(s.roleId, roleIds)),
+        columns: { roleId: true },
+      })
+
+      const alreadySubmittedRoleIds = new Set(
+        existingSubmissions.map((s) => s.roleId),
+      )
+      const newRoleIds = roleIds.filter(
+        (id) => !alreadySubmittedRoleIds.has(id),
+      )
+      const skippedRoles = roles
+        .filter((r) => alreadySubmittedRoleIds.has(r.id))
+        .map((r) => r.name)
+
+      // All roles already submitted. Skip everything and return early.
+      if (newRoleIds.length === 0) {
+        return { ids: [] as string[], skippedRoles }
       }
 
       // Validate production ownership and fetch config
@@ -243,7 +265,7 @@ export const createSubmission = publicActionClient
         })
 
       // Generate one submission ID per role
-      const submissionIds = roleIds.map(() => generateId("sub"))
+      const submissionIds = newRoleIds.map(() => generateId("sub"))
 
       // Move files from temp/ to permanent R2 storage before the transaction
       // (R2 operations can't participate in a Postgres transaction)
@@ -317,7 +339,7 @@ export const createSubmission = publicActionClient
           .returning({ id: Candidate.id })
 
         await tx.insert(Submission).values(
-          roleIds.map((roleId, i) => ({
+          newRoleIds.map((roleId, i) => ({
             id: submissionIds[i],
             productionId,
             roleId,
@@ -423,6 +445,6 @@ export const createSubmission = publicActionClient
       )
 
       revalidatePath("/", "layout")
-      return { ids: submissionIds }
+      return { ids: submissionIds, skippedRoles }
     },
   )
