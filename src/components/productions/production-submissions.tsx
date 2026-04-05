@@ -408,33 +408,43 @@ export function ProductionSubmissions({
   }
 
   function handleStageChange(submissionId: string, targetStageId: string) {
-    // Look up from columns state (not submissions prop) to get current optimistic state
-    let submission: SubmissionWithCandidate | undefined
-    for (const items of Object.values(columns)) {
-      submission = items.find((s) => s.id === submissionId)
-      if (submission) break
-    }
-    if (!submission || submission.stageId === targetStageId) return
+    // Compute everything inside the functional updater so each rapid call
+    // sees the latest state (avoids duplicate sortOrder keys).
+    let computedSortOrder = ""
+    let found = false
 
-    // Compute sortOrder: append to end of target column
-    const targetCol = columns[targetStageId] ?? []
-    const lastKey =
-      targetCol.length > 0
-        ? targetCol[targetCol.length - 1].sortOrder || null
-        : null
-    const sortOrder = generateKeyBetween(lastKey, null)
+    previousColumns.current = columns
+    setColumns((current) => {
+      // Find the submission in the current state
+      let submission: SubmissionWithCandidate | undefined
+      for (const items of Object.values(current)) {
+        submission = items.find((s) => s.id === submissionId)
+        if (submission) break
+      }
+      if (!submission || submission.stageId === targetStageId) return current
 
-    function optimisticMove(current: ColumnItems) {
+      found = true
+
+      // Compute sortOrder from current target column (not stale closure)
+      const targetCol = current[targetStageId] ?? []
+      const lastKey =
+        targetCol.length > 0
+          ? targetCol[targetCol.length - 1].sortOrder || null
+          : null
+      computedSortOrder = generateKeyBetween(lastKey, null)
+
       const next: ColumnItems = {}
       for (const [stageId, items] of Object.entries(current)) {
         next[stageId] = items.filter((s) => s.id !== submissionId)
       }
       next[targetStageId] = [
         ...(next[targetStageId] ?? []),
-        { ...submission!, stageId: targetStageId, sortOrder },
+        { ...submission, stageId: targetStageId, sortOrder: computedSortOrder },
       ]
       return next
-    }
+    })
+
+    if (!found) return
 
     // If moving to REJECTED, show the reason dialog
     if (rejectedStage && targetStageId === rejectedStage.id) {
@@ -442,10 +452,8 @@ export function ProductionSubmissions({
         type: "drag",
         submissionId,
         stageId: targetStageId,
-        sortOrder,
+        sortOrder: computedSortOrder,
       }
-      previousColumns.current = columns
-      setColumns(optimisticMove)
       setRejectDialogOpen(true)
       return
     }
@@ -455,22 +463,18 @@ export function ProductionSubmissions({
       pendingSelectRef.current = {
         submissionId,
         stageId: targetStageId,
-        sortOrder,
+        sortOrder: computedSortOrder,
       }
-      previousColumns.current = columns
-      setColumns(optimisticMove)
       setSelectDialogOpen(true)
       return
     }
 
-    // Normal stage change — optimistic update + server call
-    previousColumns.current = columns
-    setColumns(optimisticMove)
+    // Normal stage change — server call
     setPendingSubmissionId(submissionId)
     executeStatusChangeAsync({
       submissionId,
       stageId: targetStageId,
-      sortOrder,
+      sortOrder: computedSortOrder,
     })
   }
 

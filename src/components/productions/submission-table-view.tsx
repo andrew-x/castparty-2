@@ -411,7 +411,7 @@ function DraggableRow({
 
       {/* Submitted date */}
       <TableCell className="text-label text-muted-foreground">
-        {day(submission.createdAt).format("ll")}
+        {day(submission.createdAt).format("LL")}
       </TableCell>
     </TableRow>
   )
