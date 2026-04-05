@@ -72,7 +72,7 @@ export function TopNav({
           alt="Castparty"
           width={140}
           height={26}
-          className="h-auto"
+          className="h-auto w-auto"
         />
       </Link>
 
@@ -129,7 +129,7 @@ export function TopNav({
                   alt="Castparty"
                   width={120}
                   height={22}
-                  className="h-auto"
+                  className="h-auto w-auto"
                 />
               </SheetTitle>
             </SheetHeader>
