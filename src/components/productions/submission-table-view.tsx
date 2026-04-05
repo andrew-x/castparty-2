@@ -52,8 +52,7 @@ interface Props {
 const COL_WIDTHS = {
   drag: "w-10",
   checkbox: "w-10",
-  name: "",
-  role: "w-[20%]",
+  role: "w-1/5",
   stage: "w-36",
   submitted: "w-32",
 }
@@ -194,8 +193,8 @@ function StageAccordion({
             </colgroup>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead />
-                <TableHead />
+                <TableHead aria-label="Reorder" />
+                <TableHead aria-label="Select" />
                 <TableHead className="text-caption">Name</TableHead>
                 <TableHead className="text-caption">Role</TableHead>
                 <TableHead className="text-caption">Stage</TableHead>
@@ -316,8 +315,8 @@ function SubmissionRow({
             ) : (
               <div className="flex size-full items-center justify-center">
                 <span className="font-medium text-caption text-muted-foreground">
-                  {submission.firstName[0]}
-                  {submission.lastName[0]}
+                  {submission.firstName.charAt(0)}
+                  {submission.lastName.charAt(0)}
                 </span>
               </div>
             )}
@@ -330,7 +329,7 @@ function SubmissionRow({
 
       {/* Role */}
       <TableCell className="text-label text-muted-foreground">
-        {showRoleName ? submission.roleName || "\u2014" : "\u2014"}
+        {showRoleName ? submission.roleName || "-" : "-"}
       </TableCell>
 
       {/* Stage dropdown */}

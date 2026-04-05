@@ -406,8 +406,25 @@ export function ProductionSubmissions({
   }
 
   function handleStageChange(submissionId: string, targetStageId: string) {
-    const submission = submissions.find((s) => s.id === submissionId)
+    // Look up from columns state (not submissions prop) to get current optimistic state
+    let submission: SubmissionWithCandidate | undefined
+    for (const items of Object.values(columns)) {
+      submission = items.find((s) => s.id === submissionId)
+      if (submission) break
+    }
     if (!submission || submission.stageId === targetStageId) return
+
+    function optimisticMove(current: ColumnItems) {
+      const next: ColumnItems = {}
+      for (const [stageId, items] of Object.entries(current)) {
+        next[stageId] = items.filter((s) => s.id !== submissionId)
+      }
+      next[targetStageId] = [
+        ...(next[targetStageId] ?? []),
+        { ...submission!, stageId: targetStageId },
+      ]
+      return next
+    }
 
     // If moving to REJECTED, show the reason dialog
     if (rejectedStage && targetStageId === rejectedStage.id) {
@@ -416,17 +433,8 @@ export function ProductionSubmissions({
         submissionId,
         stageId: targetStageId,
       }
-      // Optimistically move the submission before showing the dialog
       previousColumns.current = columns
-      setColumns((current) => {
-        const next: ColumnItems = {}
-        for (const [stageId, items] of Object.entries(current)) {
-          next[stageId] = items.filter((s) => s.id !== submissionId)
-        }
-        const movedSubmission = { ...submission, stageId: targetStageId }
-        next[targetStageId] = [...(next[targetStageId] ?? []), movedSubmission]
-        return next
-      })
+      setColumns(optimisticMove)
       setRejectDialogOpen(true)
       return
     }
@@ -434,32 +442,15 @@ export function ProductionSubmissions({
     // If moving to SELECTED, show the email preview dialog
     if (selectedStage && targetStageId === selectedStage.id) {
       pendingSelectRef.current = { submissionId, stageId: targetStageId }
-      // Optimistically move the submission before showing the dialog
       previousColumns.current = columns
-      setColumns((current) => {
-        const next: ColumnItems = {}
-        for (const [stageId, items] of Object.entries(current)) {
-          next[stageId] = items.filter((s) => s.id !== submissionId)
-        }
-        const movedSubmission = { ...submission, stageId: targetStageId }
-        next[targetStageId] = [...(next[targetStageId] ?? []), movedSubmission]
-        return next
-      })
+      setColumns(optimisticMove)
       setSelectDialogOpen(true)
       return
     }
 
     // Normal stage change — optimistic update + server call
     previousColumns.current = columns
-    setColumns((current) => {
-      const next: ColumnItems = {}
-      for (const [stageId, items] of Object.entries(current)) {
-        next[stageId] = items.filter((s) => s.id !== submissionId)
-      }
-      const movedSubmission = { ...submission, stageId: targetStageId }
-      next[targetStageId] = [...(next[targetStageId] ?? []), movedSubmission]
-      return next
-    })
+    setColumns(optimisticMove)
     setPendingSubmissionId(submissionId)
     executeStatusChangeAsync({ submissionId, stageId: targetStageId })
   }
