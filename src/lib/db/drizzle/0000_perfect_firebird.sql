@@ -196,6 +196,7 @@ CREATE TABLE "submission" (
 	"candidate_id" text NOT NULL,
 	"stage_id" text NOT NULL,
 	"rejection_reason" text,
+	"sort_order" text DEFAULT '' NOT NULL,
 	"first_name" text NOT NULL,
 	"last_name" text NOT NULL,
 	"email" text NOT NULL,
