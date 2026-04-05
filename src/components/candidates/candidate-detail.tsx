@@ -3,6 +3,7 @@
 import {
   ExternalLinkIcon,
   FileTextIcon,
+  GitMergeIcon,
   MailIcon,
   MapPinIcon,
   PencilIcon,
@@ -21,6 +22,7 @@ const HeadshotLightbox = dynamic(
 )
 
 import { EditCandidateDialog } from "@/components/candidates/edit-candidate-dialog"
+import { MergeCandidateDialog } from "@/components/candidates/merge-candidate-dialog"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
 import { Page, PageContent, PageHeader } from "@/components/common/page"
@@ -138,6 +140,7 @@ function SubmissionNav({
 export function CandidateDetail({ candidate, submissions }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   const selected = submissions[selectedIndex] ?? null
@@ -159,14 +162,24 @@ export function CandidateDetail({ candidate, submissions }: Props) {
         ]}
         description={<ContactInfo candidate={candidate} />}
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            leftSection={<PencilIcon />}
-            onClick={() => setEditDialogOpen(true)}
-          >
-            Edit
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              leftSection={<GitMergeIcon />}
+              onClick={() => setMergeDialogOpen(true)}
+            >
+              Merge
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leftSection={<PencilIcon />}
+              onClick={() => setEditDialogOpen(true)}
+            >
+              Edit
+            </Button>
+          </>
         }
       />
       <PageContent isFlush className="min-h-0 overflow-hidden">
@@ -373,6 +386,11 @@ export function CandidateDetail({ candidate, submissions }: Props) {
         candidate={candidate}
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
+      />
+      <MergeCandidateDialog
+        candidate={candidate}
+        open={mergeDialogOpen}
+        onOpenChange={setMergeDialogOpen}
       />
     </Page>
   )
