@@ -33,6 +33,7 @@ import { EmailPreviewDialog } from "@/components/productions/email-preview-dialo
 import { KanbanColumn } from "@/components/productions/kanban-column"
 import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
+import { SubmissionTableView } from "@/components/productions/submission-table-view"
 import { interpolateTemplate } from "@/lib/email-template"
 import type {
   ColumnItems,
@@ -693,24 +694,40 @@ export function ProductionSubmissions({
           }
         }}
       >
-        <div className="flex min-h-0 flex-1 gap-block overflow-x-auto pb-2">
-          {pipelineStages.map((stage) => (
-            <KanbanColumn
-              key={stage.id}
-              stage={stage}
-              items={filteredColumns[stage.id] ?? []}
-              compact={viewMode === "compact"}
-              searchActive={query !== "" || !showAllRoles}
-              selectedIds={selectedIds}
-              pendingSubmissionId={pendingSubmissionId}
-              showRoleName={showAllRoles}
-              onToggle={toggleSelection}
-              onSelectAll={addToSelection}
-              onDeselectAll={removeFromSelection}
-              onSelect={selectSubmission}
-            />
-          ))}
-        </div>
+        {viewMode === "table" ? (
+          <SubmissionTableView
+            pipelineStages={pipelineStages}
+            filteredColumns={filteredColumns}
+            searchActive={query !== "" || !showAllRoles}
+            selectedIds={selectedIds}
+            pendingSubmissionId={pendingSubmissionId}
+            showRoleName={showAllRoles}
+            onSelect={selectSubmission}
+            onToggle={toggleSelection}
+            onSelectAll={addToSelection}
+            onDeselectAll={removeFromSelection}
+            onStageChange={handleStageChange}
+          />
+        ) : (
+          <div className="flex min-h-0 flex-1 gap-block overflow-x-auto pb-2">
+            {pipelineStages.map((stage) => (
+              <KanbanColumn
+                key={stage.id}
+                stage={stage}
+                items={filteredColumns[stage.id] ?? []}
+                compact={viewMode === "compact"}
+                searchActive={query !== "" || !showAllRoles}
+                selectedIds={selectedIds}
+                pendingSubmissionId={pendingSubmissionId}
+                showRoleName={showAllRoles}
+                onToggle={toggleSelection}
+                onSelectAll={addToSelection}
+                onDeselectAll={removeFromSelection}
+                onSelect={selectSubmission}
+              />
+            ))}
+          </div>
+        )}
       </DragDropProvider>
 
       {selectedIds.size > 0 && (
