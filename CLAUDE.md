@@ -55,7 +55,7 @@ Institutional knowledge lives in `docs/`. These docs capture architecture, featu
 
 - `docs/INDEX.md` -- Start here. Maps each doc to when you should read it.
 - `docs/ARCHITECTURE.md` -- System architecture, directory layout, tech stack rationale.
-- `docs/FEATURES.md` -- Feature inventory with status, entry points, and how each works.
+- `docs/features/README.md` -- Feature inventory with status, entry points, and how each works.
 - `docs/CONVENTIONS.md` -- Coding patterns, naming, gotchas.
 - `docs/DECISIONS.md` -- Architecture Decision Records (why we chose X over Y).
 
