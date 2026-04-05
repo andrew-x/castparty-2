@@ -29,7 +29,8 @@ import day from "@/lib/dayjs"
 
 export interface AdminUser {
   id: string
-  name: string
+  firstName: string
+  lastName: string
   email: string
   emailVerified: boolean
   createdAt: Date
@@ -104,7 +105,7 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
           {users.map((u) => (
             <TableRow key={u.id}>
               <TableCell className="font-medium text-foreground">
-                {u.name}
+                {u.firstName} {u.lastName}
               </TableCell>
               <TableCell className="text-muted-foreground">{u.email}</TableCell>
               <TableCell>

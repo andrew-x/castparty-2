@@ -29,7 +29,8 @@ export default async function AppLayout({
     <>
       <TopNav
         user={{
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           image: user.image,
         }}

@@ -23,7 +23,8 @@ import { Input } from "@/components/common/input"
 import { formResolver } from "@/lib/schemas/resolve"
 
 const schema = z.object({
-  name: z.string().trim().min(1, "Name is required."),
+  firstName: z.string().trim().min(1, "First name is required."),
+  lastName: z.string().trim().min(1, "Last name is required."),
   email: z.string().trim().email("Enter a valid email."),
   password: z.string().min(8, "Password must be at least 8 characters."),
 })
@@ -39,7 +40,9 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: Props) {
     createUserAction,
     formResolver(schema),
     {
-      formProps: { defaultValues: { name: "", email: "", password: "" } },
+      formProps: {
+        defaultValues: { firstName: "", lastName: "", email: "", password: "" },
+      },
       actionProps: {
         onSuccess() {
           form.reset()
@@ -64,16 +67,35 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: Props) {
         <form onSubmit={form.handleSubmit((v) => action.execute(v))}>
           <FieldGroup>
             <Controller
-              name="name"
+              name="firstName"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid || undefined}>
-                  <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>First name</FieldLabel>
                   <Input
                     {...field}
                     id={field.name}
                     type="text"
-                    autoComplete="name"
+                    autoComplete="given-name"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.error && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
+              name="lastName"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel htmlFor={field.name}>Last name</FieldLabel>
+                  <Input
+                    {...field}
+                    id={field.name}
+                    type="text"
+                    autoComplete="family-name"
                     aria-invalid={fieldState.invalid}
                   />
                   {fieldState.error && (

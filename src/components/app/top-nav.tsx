@@ -33,7 +33,12 @@ const navItems = [
 ]
 
 interface Props {
-  user: { name: string; email: string; image?: string | null }
+  user: {
+    firstName: string
+    lastName: string
+    email: string
+    image?: string | null
+  }
   organizations: OrgSwitcherOrg[]
   activeOrgId: string | null
   activeOrgRole: string | null

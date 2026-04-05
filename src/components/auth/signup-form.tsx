@@ -29,12 +29,14 @@ export function SignUpForm() {
   const redirectTo = searchParams.get("redirect") ?? "/home"
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: { firstName: "", lastName: "", email: "", password: "" },
   })
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
     const { error: authError } = await authClient.signUp.email({
-      name: values.name,
+      name: `${values.firstName} ${values.lastName}`,
+      firstName: values.firstName,
+      lastName: values.lastName,
       email: values.email,
       password: values.password,
       callbackURL: "/auth/verify-email",
@@ -57,16 +59,33 @@ export function SignUpForm() {
     <form onSubmit={form.handleSubmit(onSubmit)}>
       <FieldGroup>
         <Controller
-          name="name"
+          name="firstName"
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+              <FieldLabel htmlFor={field.name}>First name</FieldLabel>
               <Input
                 {...field}
                 id={field.name}
                 type="text"
-                autoComplete="name"
+                autoComplete="given-name"
+                aria-invalid={fieldState.invalid}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+        <Controller
+          name="lastName"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor={field.name}>Last name</FieldLabel>
+              <Input
+                {...field}
+                id={field.name}
+                type="text"
+                autoComplete="family-name"
                 aria-invalid={fieldState.invalid}
               />
               {fieldState.error && <FieldError errors={[fieldState.error]} />}

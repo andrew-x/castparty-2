@@ -30,18 +30,18 @@ export interface OrgSwitcherOrg {
 }
 
 interface Props {
-  user: { name: string; email: string; image?: string | null }
+  user: {
+    firstName: string
+    lastName: string
+    email: string
+    image?: string | null
+  }
   organizations: OrgSwitcherOrg[]
   activeOrgId: string | null
 }
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
+function getInitials(firstName: string, lastName: string) {
+  return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase()
 }
 
 export function OrgSwitcher({ user, organizations, activeOrgId }: Props) {
@@ -88,12 +88,19 @@ export function OrgSwitcher({ user, organizations, activeOrgId }: Props) {
             disabled={isSwitching}
           >
             <Avatar>
-              {user.image && <AvatarImage src={user.image} alt={user.name} />}
-              <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+              {user.image && (
+                <AvatarImage
+                  src={user.image}
+                  alt={`${user.firstName} ${user.lastName}`}
+                />
+              )}
+              <AvatarFallback>
+                {getInitials(user.firstName, user.lastName)}
+              </AvatarFallback>
             </Avatar>
             <div className="hidden text-left leading-tight md:grid">
               <span className="truncate font-medium text-label">
-                {user.name}
+                {user.firstName} {user.lastName}
               </span>
               <span className="truncate text-caption text-muted-foreground">
                 {activeOrg?.name ?? user.email}
@@ -105,7 +112,9 @@ export function OrgSwitcher({ user, organizations, activeOrgId }: Props) {
         <PopoverContent className="w-64 p-1" align="end" side="bottom">
           <div className="flex flex-col">
             <div className="px-2 py-1.5">
-              <p className="truncate font-medium text-label">{user.name}</p>
+              <p className="truncate font-medium text-label">
+                {user.firstName} {user.lastName}
+              </p>
               <p className="truncate text-caption text-muted-foreground">
                 {user.email}
               </p>
