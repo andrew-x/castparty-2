@@ -115,7 +115,7 @@ Browser
 - `src/lib/r2.ts` — Cloudflare R2 file storage: `uploadFile`, `deleteFile`, `moveFile`, `getKeyFromUrl`; uses AWS SDK S3-compatible API
 - `src/lib/auth/auth-util.ts` — Auth utility: `checkAuth()` reads the session and throws if unauthenticated; used by all server-side read functions
 - `src/lib/auth/auth-client.ts` — Better Auth browser client; used in form components
-- `src/lib/email.ts` — `sendEmail()` async entry point; dev branch stores emails via `email-dev-store.ts`, production branch calls Resend; errors are logged and re-thrown so failures propagate to callers (all call sites in `src/lib/auth.ts` `await` it)
+- `src/lib/email.ts` — `sendEmail()` and `sendBatchEmail()` async entry points; dev branch stores emails via `email-dev-store.ts`, production branch calls Resend (batch uses `resend.batch.send`, chunked at 100 per call); errors are logged and re-thrown so failures propagate to callers
 - `src/lib/email-dev-store.ts` — Dev-only in-memory email store (`globalThis.__devEmails`, HMR-safe, capped at 200); all functions guard on `IS_DEV`
 - `src/lib/db/db.ts` — Drizzle ORM instance; Neon `neon-serverless` driver with `Pool` (enables transactions); `snake_case` column casing
 - `src/lib/db/schema.ts` — Drizzle schema (source of truth for DB shape)
@@ -149,7 +149,7 @@ Schema lives in `src/lib/db/schema.ts`. Drizzle relational API (`db.query`) is t
 
 | Table | Alias | Key columns |
 |-------|-------|-------------|
-| `user` | `User` | `id`, `email`, `role`, `banned` |
+| `user` | `User` | `id`, `firstName`, `lastName`, `email`, `role`, `banned` |
 | `session` | `Session` | `userId`, `activeOrganizationId` |
 | `account` | `Account` | `userId`, `providerId`, `password` |
 | `organization` | `Organization` | `id`, `name`, `slug` (globally unique) |
@@ -162,13 +162,13 @@ Schema lives in `src/lib/db/schema.ts`. Drizzle relational API (`db.query`) is t
 |-------|-----------|--------------------------|
 | `UserProfile` | User | `id` (FK → user, PK) — extended user metadata; currently empty (reserved for future fields) |
 | `OrganizationProfile` | Organization | `id` (FK → organization, PK), `websiteUrl`, `description`, `isOrganizationProfileOpen` — public-facing org info |
-| `Production` | Organization | `organizationId`, `name`, `slug` (unique per org), `status` enum (`"open"/"closed"/"archive"`), `location`, `submissionFormFields` (JSONB), `feedbackFormFields` (JSONB), `systemFieldConfig` (JSONB — visibility of system fields: phone, location, headshots, resume, links), `rejectReasons` (JSONB string[]), `emailTemplates` (JSONB or null) |
-| `Role` | Production | `productionId`, `name`, `slug` (unique per production), `status` enum (`"open"/"closed"/"archive"`), `description` — no form fields, system field config, or reject reasons; all config lives on the parent `Production` |
+| `Production` | Organization | `organizationId`, `name`, `slug` (unique per org), `status` enum (`"open"/"closed"/"archive"`), `location`, `banner` (nullable text), `submissionFormFields` (JSONB), `feedbackFormFields` (JSONB), `systemFieldConfig` (JSONB — visibility of system fields: phone, location, headshots, resume, video, links, unionStatus, representation), `rejectReasons` (JSONB string[]), `emailTemplates` (JSONB or null) |
+| `Role` | Production | `productionId`, `name`, `slug` (unique per production), `status` enum (`"open"/"closed"/"archive"`), `description`, `referencePhotos` (JSONB string[]) — no form fields, system field config, or reject reasons; all config lives on the parent `Production` |
 | `PipelineStage` | Production | `organizationId`, `productionId`, `name`, `order`, `type` enum (`APPLIED`/`SELECTED`/`REJECTED`/`CUSTOM`) — all stages are production-scoped; no `roleId` column |
 | `Candidate` | Organization | `organizationId`, `firstName`, `lastName`, `email` (unique per org), `phone`, `location` |
-| `Submission` | Role + Candidate | `productionId`, `roleId`, `candidateId`, `stageId` (FK → PipelineStage, `onDelete: "restrict"`), `rejectionReason` (nullable), `firstName`, `lastName`, `email`, `phone`, `location` (denormalized snapshot), `answers` (JSONB), `links` (text[]), `resumeText` (nullable) |
+| `Submission` | Role + Candidate | `productionId`, `roleId`, `candidateId`, `stageId` (FK → PipelineStage, `onDelete: "restrict"`), `rejectionReason` (nullable), `sortOrder` (text — fractional indexing key for Kanban ordering), `answers` (JSONB), `links` (text[]), `videoUrl` (nullable text), `unionStatus` (text[] — union affiliations), `representation` (JSONB `Representation \| null`), `resumeText` (nullable) |
 | `PipelineUpdate` | Submission | `submissionId`, `fromStage`, `toStage`, `changeByUserId` — full audit trail of stage transitions |
-| `File` | Submission or Candidate | `submissionId` (nullable), `candidateId` (nullable), `type` enum (`HEADSHOT`/`RESUME`/`VIDEO`), `url`, `key`, `path`, `filename`, `contentType`, `size`, `order` |
+| `File` | Submission or Candidate | `submissionId` (nullable), `candidateId` (nullable), `formFieldId` (nullable — links file to a custom form field), `type` enum (`HEADSHOT`/`RESUME`/`VIDEO`/`CUSTOM_FIELD`), `url`, `key`, `path`, `filename`, `contentType`, `size`, `order` |
 | `Feedback` | Submission + Stage | `submissionId`, `submittedByUserId`, `stageId` (FK → PipelineStage, `onDelete: "restrict"`), `rating` enum (`STRONG_NO`/`NO`/`YES`/`STRONG_YES`), `notes`, `formFields` (JSONB snapshot), `answers` (JSONB) |
 | `Comment` | Submission | `submissionId`, `submittedByUserId`, `content` (text, max 5000 chars) — freetext notes on a submission, not tied to a pipeline stage |
 
@@ -177,8 +177,6 @@ Candidate records are deduplicated by `(organizationId, email)` — the same per
 `PipelineStage` rows are production-scoped only — all roles in a production share the same pipeline stages. There is no per-role pipeline.
 
 `SystemFieldConfig` controls whether each system submission field (phone, location, headshots, resume, links) is `"hidden"`, `"optional"`, or `"required"`. Stored as JSONB on `Production`; defaults to all `"optional"`. All roles in a production use the same config.
-
-**Submission denormalization:** `Submission` stores `firstName`, `lastName`, `email`, `phone`, `location` as a snapshot at submission time — independent of the linked `Candidate` row. This means the submission record reflects what the candidate entered on that specific form, even if their Candidate profile is later updated.
 
 **Stage deletion constraint:** Both `Submission.stageId` and `Feedback.stageId` use `onDelete: "restrict"`. The `removePipelineStage` action blocks deletion if submissions exist on the stage. If feedback rows exist but no submissions, it returns `{ confirmRequired: true, feedbackCount }` — the UI shows a confirmation dialog and re-calls with `force: true`, which cascade-deletes the feedback rows before removing the stage.
 
@@ -213,3 +211,4 @@ These were identified in a codebase audit (2026-03-18). They are documented here
 *Updated: 2026-03-22 — Switched database driver from `neon-http` to `neon-serverless` with `Pool`; all 9 multi-mutation actions now wrapped in `db.transaction()`; closed Known Issues #6 and #7; updated src/lib/db/db.ts key file entry*
 *Updated: 2026-03-22 — Production/role config lifted to production level: Role table no longer stores location, submissionFormFields, systemFieldConfig, feedbackFormFields, or rejectReasons; PipelineStage no longer has a roleId column (all stages are production-scoped); role settings sub-routes for pipeline/submission-form/feedback-form/reject-reasons removed; directory layout updated; closed Known Issue #2*
 *Updated: 2026-03-29 — Updated route tree (removed stale per-role routes, added emails/ settings route); updated data model (isOpen boolean → status enum on Production and Role, added emailTemplates column); closed Known Issue #8 (getPublicProduction now filters closed productions)*
+*Updated: 2026-04-05 — User table: added firstName/lastName (PR #77); Production: added banner column (PR #62); Role: added referencePhotos (PR #62); Submission: removed denormalized candidate fields (PR #75), added sortOrder/videoUrl/unionStatus/representation (PRs #71, #64, #61); File: added formFieldId column and CUSTOM_FIELD enum value (PR #63); email.ts: added sendBatchEmail() (PR #78)*

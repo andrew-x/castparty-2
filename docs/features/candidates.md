@@ -1,6 +1,6 @@
 # Candidates
 
-> **Last verified:** 2026-03-29
+> **Last verified:** 2026-04-05
 
 ## Overview
 
@@ -35,7 +35,7 @@ Candidates represent the individual people who submit auditions across an organi
 ### Relationships
 - `candidate` -> many `submission` (one per role auditioned for)
 - `candidate` -> many `file` (headshots, resumes)
-- Submissions store their own contact field copies (historical snapshot); candidate record reflects latest info.
+- Submissions hold no contact field copies. Contact data (`firstName`, `lastName`, `email`, `phone`, `location`) lives only on the candidate row and is updated on each new submission via upsert.
 
 ## Key Files
 
@@ -45,12 +45,15 @@ Candidates represent the individual people who submit auditions across an organi
 | `src/actions/candidates/get-candidate.ts` | Single candidate with all submissions, feedback, comments, pipeline updates, emails |
 | `src/actions/candidates/get-candidate-filter-options.ts` | Productions + roles for the filter combobox |
 | `src/actions/candidates/update-candidate.ts` | Update contact info with email uniqueness check |
+| `src/actions/candidates/merge-candidate.ts` | Merge two candidates: reassigns submissions + files from source to destination, then deletes source |
+| `src/actions/candidates/search-candidates.ts` | Plain server function: ILIKE search across `firstName`/`lastName`/`email`, excludes a given candidate ID; used by merge dialog |
 | `src/components/candidates/candidates-grid.tsx` | Server component: search, filters, card grid, pagination |
 | `src/components/candidates/candidate-card.tsx` | Card with headshot thumbnail, name, email, submission badges |
 | `src/components/candidates/candidate-detail.tsx` | Full detail view with submission navigator + tabbed content |
 | `src/components/candidates/candidate-search.tsx` | Debounced search input (300ms), updates URL params |
 | `src/components/candidates/candidate-filters.tsx` | Multi-select combobox filtering by production/role |
 | `src/components/candidates/edit-candidate-dialog.tsx` | Dialog to edit contact info |
+| `src/components/candidates/merge-candidate-dialog.tsx` | Dialog to merge two candidates; debounced search (300ms) + result list + destructive confirm |
 | `src/app/(app)/candidates/page.tsx` | List page |
 | `src/app/(app)/candidates/[candidateId]/page.tsx` | Detail page |
 
@@ -95,6 +98,26 @@ EditCandidateDialog → updateCandidate action
   └── UPDATE candidate SET firstName, lastName, email, phone, location
 ```
 
+### Candidate Merge
+
+```
+MergeCandidateDialog (source candidate)
+  ├── Debounced search (300ms) → searchCandidates(query, excludeId: sourceId)
+  │     └── ILIKE on firstName/lastName/email, excludes source, limit 10
+  ├── User selects a destination candidate from results
+  └── mergeCandidate({ sourceCandidateId, destinationCandidateId })
+        ├── Verify both candidates exist in active org
+        └── DB transaction (atomic):
+              ├── UPDATE Submission SET candidateId = destinationCandidateId
+              │     WHERE candidateId = sourceCandidateId
+              ├── UPDATE File SET candidateId = destinationCandidateId
+              │     WHERE candidateId = sourceCandidateId
+              └── DELETE Candidate WHERE id = sourceCandidateId
+  └── On success: navigate to destination candidate's detail page
+```
+
+The merge is irreversible. After merging, the source candidate is deleted and all their submissions and files are attributed to the destination candidate.
+
 ## Business Logic
 
 ### Deduplication
@@ -131,6 +154,7 @@ When editing email, checks no other candidate in the org has the same email. Pre
 ## Architecture Decisions
 
 - **Cross-production entity.** Unlike submissions (per-role), candidates live at org level. Mirrors real casting -- directors remember performers across shows.
-- **Denormalized contact on submissions.** Submissions preserve historical data; candidate record reflects latest info.
+- **Single source of truth for contact info.** Submissions no longer copy contact fields. The candidate row is the only place contact data lives; it's updated on each new submission via upsert. This simplifies edits -- changing a candidate's email updates all submissions automatically.
+- **Merge as a first-class feature.** Duplicate candidates arise when the same person submits under different emails. Merge transfers all submissions and files atomically, then deletes the source, preserving the org's deduplication invariant.
 - **URL-driven filtering/pagination.** All state in search params -- bookmarkable, shareable, SSR-compatible.
 - **Prefixed combobox values.** `p:` and `r:` prefixes distinguish production/role filters in a single multi-select.

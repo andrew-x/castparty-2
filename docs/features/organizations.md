@@ -1,6 +1,6 @@
 # Organizations
 
-> **Last verified:** 2026-03-29
+> **Last verified:** 2026-04-05
 
 ## Overview
 
@@ -26,7 +26,7 @@ Organizations are the top-level tenant in Castparty. Every production, candidate
 | `id` | text PK | |
 | `name` | text | Required |
 | `slug` | text | Unique, URL-friendly |
-| `logo` | text | Nullable, not yet used |
+| `logo` | text | Nullable; URL of the org logo image stored in R2 |
 | `createdAt` | timestamp | |
 
 ### `organization_profile` (Castparty extension)
@@ -85,6 +85,7 @@ The `session` table stores the currently active org. Set via `auth.api.setActive
 | `src/actions/organizations/get-org-invitations.ts` | Pending invitations for an org |
 | `src/actions/organizations/get-member-role.ts` | Look up a user's role in an org |
 | `src/actions/organizations/get-active-org-slug.ts` | Get slug of current active org |
+| `src/actions/organizations/presign-logo-upload.ts` | Presigns an R2 upload URL for an org logo image (owner/admin only; max 5 MB; JPEG/PNG/WebP/HEIC) |
 | `src/actions/organizations/get-user-memberships.ts` | Check if user has any org membership |
 | `src/components/organizations/org-switcher.tsx` | Popover: switch orgs, create new, log out |
 | `src/components/organizations/org-settings-form.tsx` | Settings form |

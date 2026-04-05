@@ -1,6 +1,6 @@
 # Public Submission Flow
 
-> **Last verified:** 2026-04-02
+> **Last verified:** 2026-04-05
 
 ## Overview
 
@@ -30,14 +30,14 @@ All three pages are server components. Each resolves its entity by slug via unau
 | `Production` | `id`, `organizationId`, `name`, `slug`, `status`, `location`, `submissionFormFields`, `systemFieldConfig` | Slug unique per org. Status must be `open` to appear publicly |
 | `Role` | `id`, `productionId`, `name`, `slug`, `status` | Slug unique per production. Status must be `open` |
 | `Candidate` | `id`, `organizationId`, `firstName`, `lastName`, `email`, `phone`, `location` | Unique constraint on `(organizationId, email)` for deduplication |
-| `Submission` | `id`, `productionId`, `roleId`, `candidateId`, `stageId`, `firstName`, `lastName`, `email`, `phone`, `location`, `answers`, `links`, `videoUrl`, `resumeText` | Denormalizes contact info as a point-in-time snapshot |
+| `Submission` | `id`, `productionId`, `roleId`, `candidateId`, `stageId`, `sortOrder` (text), `answers`, `links`, `videoUrl` (text), `unionStatus` (text[]), `representation` (jsonb), `resumeText` | Contact info comes from `Candidate` via join; no denormalized copies |
 | `File` | `id`, `submissionId`, `type` (`HEADSHOT`/`RESUME`), `url`, `key`, `path`, `filename`, `contentType`, `size`, `order` | Shared table; consumers filter by `type` |
 | `PipelineStage` | `id`, `productionId`, `type` (`APPLIED`/`CUSTOM`/`SELECTED`/`REJECTED`) | New submissions land in the `APPLIED` stage |
 
 ### Key Relationships
 
 - `Candidate` is org-scoped and deduplicated by `(organizationId, email)` via upsert.
-- `Submission` denormalizes `firstName`, `lastName`, `email`, `phone`, `location` from the form input (not from `Candidate`) so each submission preserves the data as submitted.
+- `Submission` stores no contact-info copies. All contact data (`firstName`, `lastName`, `email`, `phone`, `location`) is read from the `Candidate` row via join.
 - `Submission.answers` stores custom form responses as JSONB (`CustomFormResponse[]`).
 - `Submission.videoUrl` is a `text` column storing a single external video URL (YouTube, Vimeo, Google Drive, Dropbox, or custom). Videos are not hosted — only the URL is stored.
 - `File` rows link to `Submission` via `submissionId`; headshots and resumes share the same table, distinguished by `type`.
@@ -58,6 +58,9 @@ All three pages are server components. Each resolves its entity by slug via unau
 | `src/actions/submissions/create-submission.ts` | Core mutation: validates, upserts candidate, creates submissions, moves files, extracts resume text |
 | `src/actions/submissions/presign-headshot-upload.ts` | Presigns R2 URLs for headshot uploads (JPEG/PNG/WebP/HEIC, max 20 MB each, max 10 files) |
 | `src/actions/submissions/presign-resume-upload.ts` | Presigns an R2 URL for resume upload (PDF only, max 10 MB) |
+| `src/actions/submissions/presign-custom-field-upload.ts` | Presigns R2 URLs for IMAGE/DOCUMENT custom field uploads (IMAGE: JPEG/PNG/WebP/HEIC ≤20 MB; DOCUMENT: PDF ≤10 MB; up to 20 files per call); stores under `temp/custom-fields/` |
+| `src/actions/submissions/reorder-submission.ts` | Updates `Submission.sortOrder` for drag-to-reorder; uses `secureActionClient` with org ownership check |
+| `src/actions/submissions/bulk-send-email.ts` | Sends a custom email to all selected submissions via `sendBatchEmail`; writes `Email` rows for the activity log |
 | `src/components/submissions/submission-form.tsx` | Client component: the full submission form with file uploads, wrapped in a card with grouped sections |
 | `src/components/submissions/collapsible-description.tsx` | Client component: sanitized HTML description with line-clamp-3 and "Show more/Show less" toggle |
 | `src/components/submissions/floating-apply-button.tsx` | Client component: mobile floating "Go to form" CTA using IntersectionObserver |
@@ -94,25 +97,28 @@ SubmissionForm (client)
   ├── User fills out: name, email, phone, location, custom fields, video URLs, links
   ├── User uploads headshots via HeadshotUploader
   ├── User uploads resume via ResumeUploader
+  ├── User uploads IMAGE/DOCUMENT custom field files via presign-custom-field-upload
   └── User adds a single video URL (inline embed preview via VideoEmbed)
         │
         ▼  on form submit
   1. Client-side validation (Zod + required custom field walk)
   2. Presign headshot uploads → PUT each file to R2 temp/headshots/
   3. Presign resume upload → PUT file to R2 temp/resumes/
-  4. action.execute({ ...formValues, orgId, productionId, roleIds, headshots, resume })
+  4. Presign IMAGE/DOCUMENT custom field uploads → PUT each file to R2 temp/custom-fields/
+  5. action.execute({ ...formValues, orgId, productionId, roleIds, headshots, resume, customFieldFiles })
         │
         ▼  createSubmission (server action via publicActionClient)
-  5. Server validation (roles exist + open, production open, required fields)
-  6. Transform flat answers → CustomFormResponse[]
-  7. Move files from temp/ to permanent R2 storage
-  8. Database transaction (atomic):
+  6. Server validation (roles exist + open, production open, required fields)
+  7. Transform flat answers → CustomFormResponse[]
+  8. Move files from temp/ to permanent R2 storage
+  9. Database transaction (atomic):
      ├── Upsert Candidate by (organizationId, email)
      ├── Insert Submission(s) — one per roleId
      ├── Insert File rows for headshots (per submission)
-     └── Insert File row for resume (per submission)
-  9. PDF text extraction (best-effort, outside transaction)
-  10. Send submission-received emails (fire-and-forget)
+     ├── Insert File row for resume (per submission)
+     └── Insert File rows for custom field uploads (per submission)
+  10. PDF text extraction (best-effort, outside transaction)
+  11. Send submission-received emails (fire-and-forget)
 ```
 
 ### Multi-Role Submission
@@ -124,10 +130,12 @@ When a production has multiple open roles, the form shows checkboxes for role se
 `src/lib/r2.ts` wraps the AWS SDK `S3Client` pointing at Cloudflare's R2 endpoint. Key layout:
 
 ```
-{dev|prod}/temp/headshots/{fileId}.{ext}    ← staging area (presigned uploads land here)
+{dev|prod}/temp/headshots/{fileId}.{ext}         ← staging area (presigned uploads land here)
 {dev|prod}/temp/resumes/{fileId}.pdf
-{dev|prod}/headshots/{fileId}.{ext}         ← permanent storage (after move)
+{dev|prod}/temp/custom-fields/{fileId}.{ext}
+{dev|prod}/headshots/{fileId}.{ext}              ← permanent storage (after move)
 {dev|prod}/resumes/{fileId}.pdf
+{dev|prod}/custom-fields/{fileId}.{ext}
 ```
 
 Functions: `createPresignedUploadUrl`, `uploadFile`, `deleteFile`, `moveFile`, `moveFileByKey`, `checkFileExists`, `getKeyFromUrl`.
@@ -154,8 +162,8 @@ Slugs are auto-generated from entity names via `nameToSlug()`: lowercase, hyphen
 - **No auth required.** All public server functions use `publicActionClient`.
 - **Org profile gate.** If `isOrganizationProfileOpen` is false, the org page shows a "not accepting auditions" message.
 - **Status checks.** Productions and roles must have `status: "open"` to appear publicly. Server action double-checks.
-- **Candidate deduplication.** `INSERT ... ON CONFLICT (organizationId, email) DO UPDATE` ensures one candidate per email per org.
-- **Submission snapshot.** `Submission` denormalizes contact fields so each submission records what was entered at the time.
+- **Candidate deduplication.** `INSERT ... ON CONFLICT (organizationId, email) DO UPDATE` ensures one candidate per email per org. The candidate row is updated with the latest contact info on each submission.
+- **No denormalized contact fields.** `Submission` holds no copies of `firstName`, `lastName`, `email`, `phone`, or `location`. Contact data is always read from the joined `Candidate` row.
 - **System field visibility.** `SystemFieldConfig` controls whether phone, location, headshots, resume, video, links, union status, and representation are hidden, optional, or required. See [Custom Fields](./custom-fields.md) for the full config.
 - **Video URL validation.** The video URL schema is `httpUrl.or(z.literal("")).optional()`. The `VideoEmbed` component detects YouTube, Vimeo, Google Drive, and Dropbox URLs for inline embed previews; unknown URLs get a fallback warning but are still accepted.
 - **Video copy on clone.** `copy-submission-to-role` copies `videoUrl` along with other submission data.
@@ -193,7 +201,7 @@ Slugs are auto-generated from entity names via `nameToSlug()`: lowercase, hyphen
 - **`unpdf` over `pdf-parse`.** `pdf-parse` requires bundler workarounds that conflict with Next.js. `unpdf` is zero-dependency and edge-compatible. (ADR-008)
 - **`resumeText` on `Submission`, not `File`.** A submission has at most one resume and the text is a property of the application, not the file asset.
 - **`files` relation instead of `headshots`.** Named generically so new file types slot in without renames. Consumers filter by `type`.
-- **Candidate deduplication by email.** Same person submitting to multiple roles = one candidate. Contact info updated on each submission.
-- **Free-text location.** Max 200 chars, no foreign key. Non-standard values work without schema changes.
+- **Candidate deduplication by email.** Same person submitting to multiple roles = one candidate. Contact info on the candidate row is updated on each submission (via upsert).
+- **Free-text location.** Max 200 chars on the candidate row. Non-standard values work without schema changes.
 - **Video URLs stored, not video files.** Videos are hosted externally (YouTube, Vimeo, Google Drive, Dropbox) to avoid storage costs. Only a single URL is stored in `videoUrl: text`. Embed previews are generated client-side via platform detection.
 - **Module-level city cache.** `useCityOptions` uses a module-level `Promise` instead of React context.
