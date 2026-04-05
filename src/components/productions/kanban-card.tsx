@@ -65,7 +65,7 @@ export function KanbanCard({
           <Checkbox
             checked={isChecked}
             onCheckedChange={onToggle}
-            aria-label={`Select ${submission.firstName} ${submission.lastName}`}
+            aria-label={`Select ${submission.candidate.firstName} ${submission.candidate.lastName}`}
           />
         </div>
 
@@ -80,22 +80,22 @@ export function KanbanCard({
               // biome-ignore lint/performance/noImgElement: external R2 URLs
               <img
                 src={headshotUrl}
-                alt={`${submission.firstName} ${submission.lastName}`}
+                alt={`${submission.candidate.firstName} ${submission.candidate.lastName}`}
                 className="size-full object-cover"
                 draggable={false}
               />
             ) : (
               <div className="flex size-full items-center justify-center">
                 <span className="font-medium text-caption text-muted-foreground">
-                  {submission.firstName[0]}
-                  {submission.lastName[0]}
+                  {submission.candidate.firstName[0]}
+                  {submission.candidate.lastName[0]}
                 </span>
               </div>
             )}
           </div>
           <div className="min-w-0 flex-1">
             <p className="min-w-0 truncate font-medium text-foreground text-label">
-              {submission.firstName} {submission.lastName}
+              {submission.candidate.firstName} {submission.candidate.lastName}
             </p>
             {showRoleName && submission.roleName && (
               <p className="min-w-0 truncate text-caption text-muted-foreground">
@@ -138,7 +138,7 @@ export function KanbanCard({
               {/* biome-ignore lint/performance/noImgElement: external R2 URLs */}
               <img
                 src={headshotUrl}
-                alt={`${submission.firstName} ${submission.lastName}`}
+                alt={`${submission.candidate.firstName} ${submission.candidate.lastName}`}
                 className="size-full object-contain"
                 draggable={false}
               />
@@ -146,8 +146,8 @@ export function KanbanCard({
           ) : (
             <div className="flex size-full items-center justify-center">
               <span className="font-medium text-heading text-muted-foreground">
-                {submission.firstName[0]}
-                {submission.lastName[0]}
+                {submission.candidate.firstName[0]}
+                {submission.candidate.lastName[0]}
               </span>
             </div>
           )}
@@ -156,7 +156,7 @@ export function KanbanCard({
         {/* Name + date */}
         <div className="flex flex-col gap-0.5 p-2">
           <p className="truncate font-medium text-foreground text-label">
-            {submission.firstName} {submission.lastName}
+            {submission.candidate.firstName} {submission.candidate.lastName}
           </p>
           {showRoleName && submission.roleName && (
             <p className="truncate text-caption text-muted-foreground">
@@ -193,7 +193,7 @@ export function KanbanCard({
         <Checkbox
           checked={isChecked}
           onCheckedChange={onToggle}
-          aria-label={`Select ${submission.firstName} ${submission.lastName}`}
+          aria-label={`Select ${submission.candidate.firstName} ${submission.candidate.lastName}`}
         />
       </div>
     </div>

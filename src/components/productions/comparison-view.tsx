@@ -169,14 +169,14 @@ export function ComparisonView({
                     // biome-ignore lint/performance/noImgElement: external R2 URLs
                     <img
                       src={url}
-                      alt={`${s.firstName} ${s.lastName}`}
+                      alt={`${s.candidate.firstName} ${s.candidate.lastName}`}
                       className="size-full object-contain"
                     />
                   ) : (
                     <div className="flex size-full items-center justify-center">
                       <span className="font-medium text-muted-foreground text-title">
-                        {s.firstName[0]}
-                        {s.lastName[0]}
+                        {s.candidate.firstName[0]}
+                        {s.candidate.lastName[0]}
                       </span>
                     </div>
                   )}
@@ -221,23 +221,23 @@ export function ComparisonView({
             {localSubmissions.map((s) => (
               <div key={s.id} className="flex flex-col gap-element pt-block">
                 <h3 className="font-medium text-foreground text-heading">
-                  {s.firstName} {s.lastName}
+                  {s.candidate.firstName} {s.candidate.lastName}
                 </h3>
                 <div className="flex flex-col gap-1 text-label text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <MailIcon className="size-3.5 shrink-0" />
-                    <span className="truncate">{s.email}</span>
+                    <span className="truncate">{s.candidate.email}</span>
                   </span>
-                  {s.phone && (
+                  {s.candidate.phone && (
                     <span className="flex items-center gap-1">
                       <PhoneIcon className="size-3.5 shrink-0" />
-                      {s.phone}
+                      {s.candidate.phone}
                     </span>
                   )}
-                  {s.location && (
+                  {s.candidate.location && (
                     <span className="flex items-center gap-1">
                       <MapPinIcon className="size-3.5 shrink-0" />
-                      {s.location}
+                      {s.candidate.location}
                     </span>
                   )}
                 </div>

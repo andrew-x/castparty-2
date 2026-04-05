@@ -67,11 +67,6 @@ export interface SubmissionWithCandidate {
   id: string
   roleId: string
   roleName: string
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  location: string
   createdAt: Date | string
   sortOrder: string
   stageId: string
@@ -99,6 +94,7 @@ export interface SubmissionWithCandidate {
     lastName: string
     email: string
     phone: string
+    location: string
   }
 }
 
