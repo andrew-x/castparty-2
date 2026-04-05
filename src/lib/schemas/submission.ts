@@ -85,12 +85,18 @@ export const updateSubmissionStatusSchema = z.object({
   submissionId: z.string().min(1),
   stageId: z.string().min(1),
   rejectionReason: z.string().trim().min(1).max(500).optional(),
+  sortOrder: z.string().min(1).optional(),
 })
 
 export const bulkUpdateSubmissionStatusSchema = z.object({
   submissionIds: z.array(z.string().min(1)).min(1).max(100),
   stageId: z.string().min(1),
   rejectionReason: z.string().trim().min(1).max(500).optional(),
+})
+
+export const reorderSubmissionSchema = z.object({
+  submissionId: z.string().min(1),
+  sortOrder: z.string().min(1),
 })
 
 export const updateSubmissionFormSchema = z.object({

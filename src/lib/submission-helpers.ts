@@ -73,6 +73,7 @@ export interface SubmissionWithCandidate {
   phone: string
   location: string
   createdAt: Date | string
+  sortOrder: string
   stageId: string
   rejectionReason: string | null
   stage: PipelineStageData | null
