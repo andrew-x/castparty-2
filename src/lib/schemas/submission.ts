@@ -84,6 +84,7 @@ export const submissionActionSchema = submissionFormSchema.extend({
 /** Fractional-indexing keys: start with a letter, followed by printable ASCII. */
 const sortOrderSchema = z
   .string()
+  .max(50)
   .regex(/^[A-Za-z][!-~]*$/, "Invalid sort key.")
 
 export const updateSubmissionStatusSchema = z.object({
