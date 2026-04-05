@@ -78,7 +78,7 @@ When documenting a new feature:
 | `docs/INDEX.md` | Map of all docs — start here |
 | `docs/ARCHITECTURE.md` | System architecture, directory layout, tech stack |
 | `docs/CONVENTIONS.md` | Coding patterns, naming, design tokens |
-| `docs/FEATURES.md` | Feature inventory with status and entry points |
+| `docs/features/README.md` | Feature inventory with status and entry points |
 | `docs/DECISIONS.md` | Architecture Decision Records |
 | `docs/PRODUCT.md` | Business context, personas, UX guidelines |
 

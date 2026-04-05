@@ -39,6 +39,14 @@ productions. Solutions must work for a 15-person volunteer crew, not just Broadw
 10. **No manual memoization** — React Compiler handles it. No `useMemo`, `useCallback`,
     or `React.memo`.
 
+## Form Conventions
+
+- **Use `useHookFormAction`** for action-connected forms — never wire `useForm` + `useAction` separately
+- **Use `formResolver`** from `@/lib/schemas/resolve` — never raw `zodResolver`
+- **Schema split:** form schema (user input only) in `src/lib/schemas/` + action schema (extends with IDs)
+- **Loading:** `action.isPending`. **Server errors:** `form.setError("root", ...)`
+- **Exception:** Auth forms using Better Auth use standard `useForm`
+
 ## Tech Stack
 
 - Next.js 16 (App Router) + React 19 + TypeScript 5
@@ -69,7 +77,7 @@ Read these docs when working in their respective areas:
 |---|---|
 | `docs/ARCHITECTURE.md` | Adding routes, changing data flow, or structural changes |
 | `docs/CONVENTIONS.md` | Writing any code — naming, patterns, design tokens |
-| `docs/FEATURES.md` | Modifying or adding features |
+| `docs/features/README.md` | Modifying or adding features |
 | `docs/DECISIONS.md` | Touching areas with prior architecture decisions |
 | `docs/PRODUCT.md` | Making product/UX decisions, writing UI copy |
 

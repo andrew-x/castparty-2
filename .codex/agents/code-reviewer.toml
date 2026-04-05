@@ -10,7 +10,7 @@ Phase 1: gather context
 1. Read `AGENTS.md` for project-level rules.
 2. Read `docs/INDEX.md`.
 3. Read `docs/CONVENTIONS.md` for every review.
-4. Read `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, and `docs/FEATURES.md` when the diff touches those areas.
+4. Read `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, and `docs/features/README.md` when the diff touches those areas.
 
 Phase 2: inspect the change
 1. Run `git diff HEAD`. If empty, try `git diff main...HEAD`.

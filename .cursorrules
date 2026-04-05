@@ -1,6 +1,6 @@
-# AGENTS.md
+# .cursorrules
 
-This file provides project context, architecture, and coding conventions for AI coding agents working in this repository.
+This file provides project context, architecture, and coding conventions for Cursor when working in this repository.
 
 ## Product
 
@@ -55,7 +55,7 @@ For deeper architecture details, read `docs/ARCHITECTURE.md`.
 - **Biome** (not ESLint/Prettier) handles linting and formatting. Run `bun run format` after making changes.
 - 2-space indentation. Import organization is automatic.
 - React and Next.js domain rules enabled.
-- Codex project hooks, rules, and custom agents live in `.codex/`. Keep Codex-specific automation there rather than duplicating instructions inline.
+- Cursor-specific rules live in this file. For the full source of truth, read `CLAUDE.md`.
 
 For full conventions, read `docs/CONVENTIONS.md`.
 
@@ -73,14 +73,14 @@ After completing a feature or significant change, update the relevant docs (espe
 
 ### Documentation Helpers
 
-Use the `librarian` custom agent for `docs/` questions and doc maintenance when subagents are available.
+A `librarian` agent is defined in `.claude/agents/librarian.md` for `docs/` questions and doc maintenance.
 
-- **Query:** Route doc questions through `librarian` instead of reading large sections of `docs/` into the main context.
+- **Query:** Route doc questions through `librarian` instead of reading large sections of `docs/` into context.
 - **Update:** After a major feature or architectural change, ask `librarian` to sync the affected docs against the real code.
 
 ### Developer Docs
 
-Use the repo-scoped `dev-docs` skill in `.agents/skills/dev-docs/` whenever you need version-accurate documentation for dependencies, framework APIs, or config.
+Bundled reference docs for key dependencies live in `references/`. Version-accurate documentation for dependencies, framework APIs, and config can also be looked up via the `dev-docs` skill in `.claude/skills/dev-docs/`.
 
 - Check bundled references first.
 - Prefer official docs over third-party summaries.
@@ -169,11 +169,11 @@ const production = await db.query.Production.findFirst({
 
 When modifying the database schema (`src/lib/db/schema.ts`) or entity fields/types (`src/lib/types.ts`), update the seed data generator at `src/actions/admin/seed-data.ts` to include the new or changed fields with representative fake data.
 
-- **New column** — add a faker-generated value in the corresponding `tx.insert()` call
-- **New table** — add a generation block in dependency order within the transaction
-- **Changed JSONB shape** — update the helper functions that build those objects
-- **New enum value** — add it to the relevant constant array
-- **Removed column/table** — remove the corresponding generation code
+- **New column** -- add a faker-generated value in the corresponding `tx.insert()` call
+- **New table** -- add a generation block in dependency order within the transaction
+- **Changed JSONB shape** -- update the helper functions that build those objects
+- **New enum value** -- add it to the relevant constant array
+- **Removed column/table** -- remove the corresponding generation code
 
 ### Form Conventions
 
@@ -325,10 +325,9 @@ Push back proactively. If a prompt seems wrong, flag it before implementing. If 
 
 ### Code Review Triggers
 
-After completing a feature touching 3+ files, modifying shared utilities, adding a dependency, or refactoring code others depend on, run a review before considering the work done.
+After completing a feature touching 3+ files, modifying shared utilities, adding a dependency, or refactoring code others depend on, review changes before considering the work done.
 
-- Use the `review-diff` skill for a quick review of local changes.
-- Use the `code_reviewer` custom agent for a deeper read on uncommitted changes when the work is broad or risky.
+- Use available review tools or perform a manual review of the diff.
 - Fix Critical findings immediately. Fix Important findings before considering the task done.
 
 ### Avoid Over-Engineering
