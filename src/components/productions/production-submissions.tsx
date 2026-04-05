@@ -692,7 +692,6 @@ export function ProductionSubmissions({
             searchActive={query !== "" || !showAllRoles}
             selectedIds={selectedIds}
             pendingSubmissionId={pendingSubmissionId}
-            showRoleName={showAllRoles}
             onSelect={selectSubmission}
             onToggle={toggleSelection}
             onSelectAll={addToSelection}

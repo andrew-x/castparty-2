@@ -41,7 +41,6 @@ interface Props {
   searchActive: boolean
   selectedIds: Set<string>
   pendingSubmissionId: string | null
-  showRoleName: boolean
   onSelect: (submission: SubmissionWithCandidate) => void
   onToggle: (id: string) => void
   onSelectAll: (ids: string[]) => void
@@ -63,7 +62,6 @@ export function SubmissionTableView({
   searchActive,
   selectedIds,
   pendingSubmissionId,
-  showRoleName,
   onSelect,
   onToggle,
   onSelectAll,
@@ -86,7 +84,6 @@ export function SubmissionTableView({
               searchActive={searchActive}
               selectedIds={selectedIds}
               pendingSubmissionId={pendingSubmissionId}
-              showRoleName={showRoleName}
               onSelect={onSelect}
               onToggle={onToggle}
               onSelectAll={onSelectAll}
@@ -107,7 +104,6 @@ interface StageAccordionProps {
   searchActive: boolean
   selectedIds: Set<string>
   pendingSubmissionId: string | null
-  showRoleName: boolean
   onSelect: (submission: SubmissionWithCandidate) => void
   onToggle: (id: string) => void
   onSelectAll: (ids: string[]) => void
@@ -122,7 +118,6 @@ function StageAccordion({
   searchActive,
   selectedIds,
   pendingSubmissionId,
-  showRoleName,
   onSelect,
   onToggle,
   onSelectAll,
@@ -211,7 +206,6 @@ function StageAccordion({
                   pipelineStages={pipelineStages}
                   isChecked={selectedIds.has(submission.id)}
                   isPending={submission.id === pendingSubmissionId}
-                  showRoleName={showRoleName}
                   onSelect={onSelect}
                   onToggle={onToggle}
                   onStageChange={onStageChange}
@@ -232,7 +226,6 @@ interface SubmissionRowProps {
   pipelineStages: PipelineStageData[]
   isChecked: boolean
   isPending: boolean
-  showRoleName: boolean
   onSelect: (submission: SubmissionWithCandidate) => void
   onToggle: (id: string) => void
   onStageChange: (submissionId: string, targetStageId: string) => void
@@ -245,7 +238,6 @@ function SubmissionRow({
   pipelineStages,
   isChecked,
   isPending,
-  showRoleName,
   onSelect,
   onToggle,
   onStageChange,
@@ -327,9 +319,9 @@ function SubmissionRow({
         </button>
       </TableCell>
 
-      {/* Role */}
+      {/* Role — always show in table view since the column is visible */}
       <TableCell className="text-label text-muted-foreground">
-        {showRoleName ? submission.roleName || "-" : "-"}
+        {submission.roleName || "-"}
       </TableCell>
 
       {/* Stage dropdown */}
