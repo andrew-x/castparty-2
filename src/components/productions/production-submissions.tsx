@@ -3,7 +3,13 @@
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider } from "@dnd-kit/react"
 import { generateKeyBetween } from "fractional-indexing"
-import { LayoutGridIcon, Rows3Icon, SearchIcon, UsersIcon } from "lucide-react"
+import {
+  LayoutGridIcon,
+  Rows3Icon,
+  SearchIcon,
+  TableIcon,
+  UsersIcon,
+} from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
@@ -83,7 +89,7 @@ export function ProductionSubmissions({
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [selectDialogOpen, setSelectDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [compact, setCompact] = useState(false)
+  const [viewMode, setViewMode] = useState<"grid" | "compact" | "table">("grid")
   const [selectedRoleId, setSelectedRoleId] = useState("")
 
   // Stores pending reject info: either a single drag submission or bulk IDs
@@ -398,6 +404,65 @@ export function ProductionSubmissions({
     }
   }
 
+  function handleStageChange(submissionId: string, targetStageId: string) {
+    const submission = submissions.find((s) => s.id === submissionId)
+    if (!submission || submission.stageId === targetStageId) return
+
+    // If moving to REJECTED, show the reason dialog
+    if (rejectedStage && targetStageId === rejectedStage.id) {
+      pendingRejectRef.current = {
+        type: "drag",
+        submissionId,
+        stageId: targetStageId,
+      }
+      // Optimistically move the submission before showing the dialog
+      previousColumns.current = columns
+      setColumns((current) => {
+        const next: ColumnItems = {}
+        for (const [stageId, items] of Object.entries(current)) {
+          next[stageId] = items.filter((s) => s.id !== submissionId)
+        }
+        const movedSubmission = { ...submission, stageId: targetStageId }
+        next[targetStageId] = [...(next[targetStageId] ?? []), movedSubmission]
+        return next
+      })
+      setRejectDialogOpen(true)
+      return
+    }
+
+    // If moving to SELECTED, show the email preview dialog
+    if (selectedStage && targetStageId === selectedStage.id) {
+      pendingSelectRef.current = { submissionId, stageId: targetStageId }
+      // Optimistically move the submission before showing the dialog
+      previousColumns.current = columns
+      setColumns((current) => {
+        const next: ColumnItems = {}
+        for (const [stageId, items] of Object.entries(current)) {
+          next[stageId] = items.filter((s) => s.id !== submissionId)
+        }
+        const movedSubmission = { ...submission, stageId: targetStageId }
+        next[targetStageId] = [...(next[targetStageId] ?? []), movedSubmission]
+        return next
+      })
+      setSelectDialogOpen(true)
+      return
+    }
+
+    // Normal stage change — optimistic update + server call
+    previousColumns.current = columns
+    setColumns((current) => {
+      const next: ColumnItems = {}
+      for (const [stageId, items] of Object.entries(current)) {
+        next[stageId] = items.filter((s) => s.id !== submissionId)
+      }
+      const movedSubmission = { ...submission, stageId: targetStageId }
+      next[targetStageId] = [...(next[targetStageId] ?? []), movedSubmission]
+      return next
+    })
+    setPendingSubmissionId(submissionId)
+    executeStatusChangeAsync({ submissionId, stageId: targetStageId })
+  }
+
   function getEmailPreviewForSubmission(
     submissionId: string,
     templateKey: keyof typeof emailTemplates,
@@ -469,16 +534,19 @@ export function ProductionSubmissions({
             type="single"
             variant="outline"
             size="sm"
-            value={compact ? "compact" : "default"}
+            value={viewMode}
             onValueChange={(v) => {
-              if (v) setCompact(v === "compact")
+              if (v) setViewMode(v as "grid" | "compact" | "table")
             }}
           >
-            <ToggleGroupItem value="default" aria-label="Default view">
+            <ToggleGroupItem value="grid" aria-label="Grid view">
               <LayoutGridIcon className="size-4" />
             </ToggleGroupItem>
             <ToggleGroupItem value="compact" aria-label="Compact view">
               <Rows3Icon className="size-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="table" aria-label="Table view">
+              <TableIcon className="size-4" />
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
@@ -631,7 +699,7 @@ export function ProductionSubmissions({
               key={stage.id}
               stage={stage}
               items={filteredColumns[stage.id] ?? []}
-              compact={compact}
+              compact={viewMode === "compact"}
               searchActive={query !== "" || !showAllRoles}
               selectedIds={selectedIds}
               pendingSubmissionId={pendingSubmissionId}
