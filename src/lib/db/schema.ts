@@ -424,6 +424,7 @@ export const Submission = pgTable("submission", {
     .notNull()
     .references(() => PipelineStage.id, { onDelete: "restrict" }),
   rejectionReason: text(),
+  sortOrder: text().notNull().default(""),
 
   firstName: text().notNull(),
   lastName: text().notNull(),
