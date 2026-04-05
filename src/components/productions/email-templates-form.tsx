@@ -15,11 +15,9 @@ import {
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
 import { Textarea } from "@/components/common/textarea"
+import { HighlightedText } from "@/components/productions/highlighted-text"
 import { VariableInsertButtons } from "@/components/productions/variable-insert-buttons"
-import {
-  DEFAULT_EMAIL_TEMPLATES,
-  TEMPLATE_VARIABLES,
-} from "@/lib/email-template"
+import { DEFAULT_EMAIL_TEMPLATES } from "@/lib/email-template"
 import {
   type UpdateEmailTemplatesInput,
   updateEmailTemplatesFormSchema,
@@ -63,30 +61,6 @@ const TEMPLATES: TemplateConfig[] = [
       "Sent when you select a candidate for a role. You'll see a preview before it sends.",
   },
 ]
-
-const validVariableSet = new Set<string>(TEMPLATE_VARIABLES)
-
-/** Renders text with valid {{variables}} highlighted. */
-function HighlightedText({ text }: { text: string }) {
-  const parts = text.split(/(\{\{[\w]*\}\})/g)
-  return (
-    <>
-      {parts.map((part, i) => {
-        const match = part.match(/^\{\{(\w*)\}\}$/)
-        if (match && validVariableSet.has(match[1])) {
-          return (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static split, no reordering
-            <mark key={i} className="rounded-sm bg-brand/15 text-brand">
-              {part}
-            </mark>
-          )
-        }
-        // biome-ignore lint/suspicious/noArrayIndexKey: static split, no reordering
-        return <span key={i}>{part}</span>
-      })}
-    </>
-  )
-}
 
 export function EmailTemplatesForm({ production }: Props) {
   const router = useRouter()

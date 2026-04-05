@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/common/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/common/toggle-group"
 import { BulkActionBar } from "@/components/productions/bulk-action-bar"
+import { BulkEmailDialog } from "@/components/productions/bulk-email-dialog"
 import { ComparisonView } from "@/components/productions/comparison-view"
 import { EmailPreviewDialog } from "@/components/productions/email-preview-dialog"
 import { KanbanColumn } from "@/components/productions/kanban-column"
@@ -87,6 +88,7 @@ export function ProductionSubmissions({
     })
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [comparisonOpen, setComparisonOpen] = useState(false)
+  const [bulkEmailOpen, setBulkEmailOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [selectDialogOpen, setSelectDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -751,6 +753,7 @@ export function ProductionSubmissions({
           pipelineStages={pipelineStages}
           isBulkMovePending={isBulkMovePending}
           onMove={handleBulkMove}
+          onSendEmail={() => setBulkEmailOpen(true)}
           onCompare={() => setComparisonOpen(true)}
           onClear={clearSelection}
         />
@@ -769,6 +772,16 @@ export function ProductionSubmissions({
             if (next.size < 2) setComparisonOpen(false)
             return next
           })
+        }}
+      />
+
+      <BulkEmailDialog
+        open={bulkEmailOpen}
+        onOpenChange={setBulkEmailOpen}
+        submissionIds={Array.from(selectedIds)}
+        onSuccess={() => {
+          clearSelection()
+          router.refresh()
         }}
       />
 
