@@ -90,7 +90,9 @@ export function ProductionSubmissions({
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [selectDialogOpen, setSelectDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [viewMode, setViewMode] = useState<"grid" | "compact" | "table">("grid")
+  const [viewMode, setViewMode] = useState<"compact" | "grid" | "table">(
+    "compact",
+  )
   const [selectedRoleId, setSelectedRoleId] = useState("")
 
   // Stores pending reject info: either a single drag submission or bulk IDs
@@ -528,14 +530,14 @@ export function ProductionSubmissions({
             size="sm"
             value={viewMode}
             onValueChange={(v) => {
-              if (v) setViewMode(v as "grid" | "compact" | "table")
+              if (v) setViewMode(v as "compact" | "grid" | "table")
             }}
           >
-            <ToggleGroupItem value="grid" aria-label="Grid view">
-              <LayoutGridIcon className="size-4" />
-            </ToggleGroupItem>
             <ToggleGroupItem value="compact" aria-label="Compact view">
               <Rows3Icon className="size-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="grid" aria-label="Grid view">
+              <LayoutGridIcon className="size-4" />
             </ToggleGroupItem>
             <ToggleGroupItem value="table" aria-label="Table view">
               <TableIcon className="size-4" />
