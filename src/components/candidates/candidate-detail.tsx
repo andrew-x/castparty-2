@@ -41,7 +41,6 @@ import type {
   PipelineStageData,
   SubmissionWithCandidate,
 } from "@/lib/submission-helpers"
-import { getStageBadgeProps } from "@/lib/submission-helpers"
 import type { CustomForm } from "@/lib/types"
 import { cn } from "@/lib/util"
 
@@ -123,12 +122,20 @@ function SubmissionNav({
               </p>
             </div>
             {row.submission.stage && (
-              <Badge
-                {...getStageBadgeProps(row.submission.stage)}
-                className="shrink-0 text-caption"
+              <span
+                className={cn(
+                  "shrink-0 text-[11px]",
+                  row.submission.stage.type === "SELECTED" &&
+                    "text-success-text",
+                  row.submission.stage.type === "REJECTED" &&
+                    "text-destructive",
+                  (row.submission.stage.type === "APPLIED" ||
+                    row.submission.stage.type === "CUSTOM") &&
+                    "text-muted-foreground",
+                )}
               >
                 {row.submission.stage.name}
-              </Badge>
+              </span>
             )}
           </button>
         ))}
@@ -202,20 +209,19 @@ export function CandidateDetail({ candidate, submissions }: Props) {
               >
                 <div className="flex items-center justify-between px-4 pt-1.5 pb-0">
                   <div className="flex min-w-0 items-center gap-element">
-                    <p className="font-medium text-foreground text-label">
+                    <Link
+                      href={`/productions/${selected.productionId}?submission=${submission.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 font-medium text-foreground text-label transition-colors hover:text-muted-foreground"
+                    >
                       {selected.productionName} &mdash; {selected.roleName}
-                    </p>
+                      <ExternalLinkIcon className="size-3 shrink-0 text-muted-foreground" />
+                    </Link>
                     <Badge variant="outline" className="shrink-0 text-caption">
                       {submission.stage?.name ?? "Inbound"}
                     </Badge>
                   </div>
-                  <Link
-                    href={`/productions/${selected.productionId}/roles/${selected.roleId}?submission=${submission.id}`}
-                    className="flex shrink-0 items-center gap-1 text-caption text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    View in role
-                    <ExternalLinkIcon className="size-3" />
-                  </Link>
                 </div>
                 <TabsList variant="line" className="border-b px-4">
                   <TabsTrigger value="submission">Submission</TabsTrigger>
