@@ -1,5 +1,6 @@
 "use server"
 
+import { createElement } from "react"
 import { inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
@@ -17,11 +18,13 @@ export const bulkSendEmailAction = secureActionClient
   .inputSchema(bulkEmailActionSchema)
   .action(
     async ({
-      parsedInput: { submissionIds, subject, body },
+      parsedInput: { submissionIds: rawIds, subject, body },
       ctx: { user },
     }) => {
       const orgId = user.activeOrganizationId
       if (!orgId) throw new Error("No active organization.")
+
+      const submissionIds = [...new Set(rawIds)]
 
       const submissions = await db.query.Submission.findMany({
         where: (s) => inArray(s.id, submissionIds),
@@ -78,13 +81,11 @@ export const bulkSendEmailAction = secureActionClient
         emailPayloads.map((e) => ({
           to: e.to,
           subject: e.subject,
-          react: (
-            <TemplateEmail
-              body={e.body}
-              preview={e.subject}
-              replyTo={e.replyTo}
-            />
-          ),
+          react: createElement(TemplateEmail, {
+            body: e.body,
+            preview: e.subject,
+            replyTo: e.replyTo,
+          }),
           text: `${e.body}\n\n---\nTo respond, just reply to this email or send a message to ${e.replyTo}`,
           replyTo: e.replyTo,
         })),

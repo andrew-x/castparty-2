@@ -50,8 +50,7 @@ export function BulkEmailDialog({
       formProps: { defaultValues: { subject: "", body: "" } },
       actionProps: {
         onSuccess() {
-          form.reset({ subject: "", body: "" })
-          onOpenChange(false)
+          close()
           onSuccess()
         },
         onError({ error }) {
@@ -63,6 +62,11 @@ export function BulkEmailDialog({
     },
   )
 
+  function close() {
+    form.reset({ subject: "", body: "" })
+    onOpenChange(false)
+  }
+
   function onSubmit(values: { subject: string; body: string }) {
     action.execute({ ...values, submissionIds })
   }
@@ -71,8 +75,7 @@ export function BulkEmailDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) form.reset({ subject: "", body: "" })
-        onOpenChange(next)
+        if (!next) close()
       }}
     >
       <DialogContent className="sm:max-w-2xl">
@@ -174,7 +177,7 @@ export function BulkEmailDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={close}
               disabled={action.isPending}
             >
               Cancel
