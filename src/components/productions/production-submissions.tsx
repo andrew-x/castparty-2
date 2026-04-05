@@ -3,7 +3,13 @@
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider } from "@dnd-kit/react"
 import { generateKeyBetween } from "fractional-indexing"
-import { LayoutGridIcon, Rows3Icon, SearchIcon, UsersIcon } from "lucide-react"
+import {
+  LayoutGridIcon,
+  Rows3Icon,
+  SearchIcon,
+  TableIcon,
+  UsersIcon,
+} from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
@@ -27,6 +33,7 @@ import { EmailPreviewDialog } from "@/components/productions/email-preview-dialo
 import { KanbanColumn } from "@/components/productions/kanban-column"
 import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
+import { SubmissionTableView } from "@/components/productions/submission-table-view"
 import { interpolateTemplate } from "@/lib/email-template"
 import type {
   ColumnItems,
@@ -83,7 +90,9 @@ export function ProductionSubmissions({
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [selectDialogOpen, setSelectDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [compact, setCompact] = useState(false)
+  const [viewMode, setViewMode] = useState<"compact" | "grid" | "table">(
+    "compact",
+  )
   const [selectedRoleId, setSelectedRoleId] = useState("")
 
   // Stores pending reject info: either a single drag submission or bulk IDs
@@ -398,6 +407,77 @@ export function ProductionSubmissions({
     }
   }
 
+  function handleStageChange(submissionId: string, targetStageId: string) {
+    // Compute everything inside the functional updater so each rapid call
+    // sees the latest state (avoids duplicate sortOrder keys).
+    let computedSortOrder = ""
+    let found = false
+
+    previousColumns.current = columns
+    setColumns((current) => {
+      // Find the submission in the current state
+      let submission: SubmissionWithCandidate | undefined
+      for (const items of Object.values(current)) {
+        submission = items.find((s) => s.id === submissionId)
+        if (submission) break
+      }
+      if (!submission || submission.stageId === targetStageId) return current
+
+      found = true
+
+      // Compute sortOrder from current target column (not stale closure)
+      const targetCol = current[targetStageId] ?? []
+      const lastKey =
+        targetCol.length > 0
+          ? targetCol[targetCol.length - 1].sortOrder || null
+          : null
+      computedSortOrder = generateKeyBetween(lastKey, null)
+
+      const next: ColumnItems = {}
+      for (const [stageId, items] of Object.entries(current)) {
+        next[stageId] = items.filter((s) => s.id !== submissionId)
+      }
+      next[targetStageId] = [
+        ...(next[targetStageId] ?? []),
+        { ...submission, stageId: targetStageId, sortOrder: computedSortOrder },
+      ]
+      return next
+    })
+
+    if (!found) return
+
+    // If moving to REJECTED, show the reason dialog
+    if (rejectedStage && targetStageId === rejectedStage.id) {
+      pendingRejectRef.current = {
+        type: "drag",
+        submissionId,
+        stageId: targetStageId,
+        sortOrder: computedSortOrder,
+      }
+      setRejectDialogOpen(true)
+      return
+    }
+
+    // If moving to SELECTED, show the email preview dialog
+    if (selectedStage && targetStageId === selectedStage.id) {
+      pendingSelectRef.current = {
+        submissionId,
+        stageId: targetStageId,
+        sortOrder: computedSortOrder,
+      }
+      setSelectDialogOpen(true)
+      return
+    }
+
+    // Normal stage change — server call
+    setPendingSubmissionId(submissionId)
+    executeStatusChangeAsync({
+      submissionId,
+      stageId: targetStageId,
+      sortOrder: computedSortOrder,
+    })
+  }
+
   function getEmailPreviewForSubmission(
     submissionId: string,
     templateKey: keyof typeof emailTemplates,
@@ -469,16 +549,19 @@ export function ProductionSubmissions({
             type="single"
             variant="outline"
             size="sm"
-            value={compact ? "compact" : "default"}
+            value={viewMode}
             onValueChange={(v) => {
-              if (v) setCompact(v === "compact")
+              if (v) setViewMode(v as "compact" | "grid" | "table")
             }}
           >
-            <ToggleGroupItem value="default" aria-label="Default view">
-              <LayoutGridIcon className="size-4" />
-            </ToggleGroupItem>
             <ToggleGroupItem value="compact" aria-label="Compact view">
               <Rows3Icon className="size-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="grid" aria-label="Grid view">
+              <LayoutGridIcon className="size-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="table" aria-label="Table view">
+              <TableIcon className="size-4" />
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
@@ -625,24 +708,39 @@ export function ProductionSubmissions({
           }
         }}
       >
-        <div className="flex min-h-0 flex-1 gap-block overflow-x-auto pb-2">
-          {pipelineStages.map((stage) => (
-            <KanbanColumn
-              key={stage.id}
-              stage={stage}
-              items={filteredColumns[stage.id] ?? []}
-              compact={compact}
-              searchActive={query !== "" || !showAllRoles}
-              selectedIds={selectedIds}
-              pendingSubmissionId={pendingSubmissionId}
-              showRoleName={showAllRoles}
-              onToggle={toggleSelection}
-              onSelectAll={addToSelection}
-              onDeselectAll={removeFromSelection}
-              onSelect={selectSubmission}
-            />
-          ))}
-        </div>
+        {viewMode === "table" ? (
+          <SubmissionTableView
+            pipelineStages={pipelineStages}
+            filteredColumns={filteredColumns}
+            searchActive={query !== "" || !showAllRoles}
+            selectedIds={selectedIds}
+            pendingSubmissionId={pendingSubmissionId}
+            onSelect={selectSubmission}
+            onToggle={toggleSelection}
+            onSelectAll={addToSelection}
+            onDeselectAll={removeFromSelection}
+            onStageChange={handleStageChange}
+          />
+        ) : (
+          <div className="flex min-h-0 flex-1 gap-block overflow-x-auto pb-2">
+            {pipelineStages.map((stage) => (
+              <KanbanColumn
+                key={stage.id}
+                stage={stage}
+                items={filteredColumns[stage.id] ?? []}
+                compact={viewMode === "compact"}
+                searchActive={query !== "" || !showAllRoles}
+                selectedIds={selectedIds}
+                pendingSubmissionId={pendingSubmissionId}
+                showRoleName
+                onToggle={toggleSelection}
+                onSelectAll={addToSelection}
+                onDeselectAll={removeFromSelection}
+                onSelect={selectSubmission}
+              />
+            ))}
+          </div>
+        )}
       </DragDropProvider>
 
       {selectedIds.size > 0 && (
