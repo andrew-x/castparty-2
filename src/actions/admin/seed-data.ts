@@ -36,7 +36,8 @@ import { generateId } from "@/lib/util"
 
 const DEV_USER_EMAIL = "dev@test.com"
 const DEV_USER_PASSWORD = "password"
-const DEV_USER_NAME = "Dev User"
+const DEV_USER_FIRST_NAME = "Dev"
+const DEV_USER_LAST_NAME = "User"
 
 const PRODUCTION_CONFIGS = [
   { name: "A Midsummer Night's Dream", status: "open" as const },
@@ -247,7 +248,9 @@ export const seedDataAction = adminActionClient
     // 1. Create dev user via Better Auth (outside transaction)
     const signUpResult = await auth.api.signUpEmail({
       body: {
-        name: DEV_USER_NAME,
+        name: `${DEV_USER_FIRST_NAME} ${DEV_USER_LAST_NAME}`,
+        firstName: DEV_USER_FIRST_NAME,
+        lastName: DEV_USER_LAST_NAME,
         email: DEV_USER_EMAIL,
         password: DEV_USER_PASSWORD,
       },

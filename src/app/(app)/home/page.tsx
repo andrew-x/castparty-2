@@ -39,7 +39,7 @@ export default async function HomePage({
 
   return (
     <Page>
-      <PageHeader title={`Welcome, ${user?.name}.`} />
+      <PageHeader title={`Welcome, ${user?.firstName}.`} />
       <PageContent>
         {allProductions.length === 0 && (
           <div className="flex flex-1 flex-col items-center justify-center">

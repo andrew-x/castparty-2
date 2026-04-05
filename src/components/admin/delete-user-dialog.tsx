@@ -16,7 +16,12 @@ import {
 } from "@/components/common/alert-dialog"
 
 interface Props {
-  user: { id: string; name: string; email: string } | null
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  } | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
@@ -53,8 +58,8 @@ export function DeleteUserDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete user?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete {user?.name} ({user?.email}) and all
-            associated data. This cannot be undone.
+            This will permanently delete {user?.firstName} {user?.lastName} (
+            {user?.email}) and all associated data. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         {errorMessage && (

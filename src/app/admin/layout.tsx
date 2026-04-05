@@ -29,7 +29,12 @@ export default async function AdminLayout({
     <main className="min-h-svh bg-background px-page py-section">
       <div className="mx-auto flex max-w-4xl flex-col gap-section">
         {isImpersonating && (
-          <ImpersonationBanner userName={sessionData.user?.name ?? "Unknown"} />
+          <ImpersonationBanner
+            userName={
+              `${sessionData.user?.firstName ?? ""} ${sessionData.user?.lastName ?? ""}`.trim() ||
+              "Unknown"
+            }
+          />
         )}
         <div className="flex flex-col gap-element">
           <p className="font-mono text-caption text-muted-foreground uppercase tracking-widest">

@@ -20,14 +20,22 @@ export const auth = betterAuth({
   baseURL:
     process.env.BETTER_AUTH_URL ??
     `http://localhost:${process.env.PORT ?? 3000}`,
+  user: {
+    additionalFields: {
+      firstName: { type: "string", required: true, input: true },
+      lastName: { type: "string", required: true, input: true },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, token }) => {
       const resetUrl = getAppUrl(`/auth/reset-password?token=${token}`)
+      // additionalFields are present at runtime but not in the callback type
+      const firstName = (user as typeof user & { firstName: string }).firstName
       await sendEmail({
         to: user.email,
         subject: "Reset your password",
-        react: PasswordResetEmail({ name: user.name, resetUrl }),
+        react: PasswordResetEmail({ name: firstName, resetUrl }),
         text: `Reset your password here: ${resetUrl}`,
       })
     },
@@ -37,10 +45,11 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, token }) => {
       const verifyUrl = getAppUrl(`/auth/verify-email?token=${token}`)
+      const firstName = (user as typeof user & { firstName: string }).firstName
       await sendEmail({
         to: user.email,
         subject: "Verify your email",
-        react: VerifyEmailEmail({ name: user.name, verifyUrl }),
+        react: VerifyEmailEmail({ name: firstName, verifyUrl }),
         text: `Verify your email here: ${verifyUrl}`,
       })
     },
@@ -80,6 +89,7 @@ export const auth = betterAuth({
           to: data.email,
           subject: `You're invited to ${data.organization.name}`,
           react: InvitationEmail({
+            // name is always "${firstName} ${lastName}" — see additionalFields config
             inviterName: data.inviter.user.name,
             organizationName: data.organization.name,
             acceptUrl,
@@ -91,6 +101,8 @@ export const auth = betterAuth({
     nextCookies(),
   ],
 })
+
+export type Auth = typeof auth
 
 export const getSession = cache(async () => {
   return await auth.api.getSession({

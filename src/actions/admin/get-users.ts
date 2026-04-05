@@ -10,7 +10,8 @@ export async function getUsers() {
   return db.query.user.findMany({
     columns: {
       id: true,
-      name: true,
+      firstName: true,
+      lastName: true,
       email: true,
       emailVerified: true,
       createdAt: true,

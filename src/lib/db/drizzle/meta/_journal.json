@@ -15,6 +15,13 @@
       "when": 1775404391595,
       "tag": "0001_clean_barracuda",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775413854871,
+      "tag": "0002_nostalgic_blazing_skull",
+      "breakpoints": true
     }
   ]
 }

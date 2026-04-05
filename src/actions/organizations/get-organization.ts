@@ -28,7 +28,8 @@ export async function getOrganization(orgId: string) {
           user: {
             columns: {
               id: true,
-              name: true,
+              firstName: true,
+              lastName: true,
               email: true,
               image: true,
             },
@@ -47,7 +48,7 @@ export async function getOrganization(orgId: string) {
     role: m.role,
     createdAt: m.createdAt,
     userId: m.user.id,
-    userName: m.user.name,
+    userName: `${m.user.firstName} ${m.user.lastName}`,
     userEmail: m.user.email,
     userImage: m.user.image,
   }))

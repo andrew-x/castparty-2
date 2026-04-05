@@ -29,7 +29,7 @@ const schema = z.object({
 })
 
 interface Props {
-  user: { id: string; name: string } | null
+  user: { id: string; firstName: string; lastName: string } | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
@@ -71,7 +71,7 @@ export function ChangePasswordDialog({
           <DialogTitle>Change password</DialogTitle>
           {user && (
             <DialogDescription>
-              Set a new password for {user.name}.
+              Set a new password for {user.firstName} {user.lastName}.
             </DialogDescription>
           )}
         </DialogHeader>

@@ -1,6 +1,6 @@
 {
-  "id": "f6e12055-7d6b-4f72-bb46-26119937a948",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "cbd2ce4d-d33d-4184-b3cf-3c784aea8b45",
+  "prevId": "72fbe36e-8ed0-4a67-ada3-ea22d8bea3bd",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1751,38 +1751,6 @@
           "notNull": true,
           "default": "''"
         },
-        "first_name": {
-          "name": "first_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "last_name": {
-          "name": "last_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "phone": {
-          "name": "phone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "location": {
-          "name": "location",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
         "answers": {
           "name": "answers",
           "type": "jsonb",
@@ -1895,6 +1863,18 @@
         },
         "name": {
           "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
