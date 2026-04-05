@@ -81,7 +81,7 @@ export function CreateOrgDialog({ open, onOpenChange }: Props) {
           <DialogTitle>Create organization</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit((v) => action.execute(v))}>
-          <FieldGroup>
+          <FieldGroup className="gap-block">
             <Controller
               name="name"
               control={form.control}
