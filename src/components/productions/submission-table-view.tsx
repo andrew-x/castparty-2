@@ -3,6 +3,12 @@
 import { CollisionPriority } from "@dnd-kit/abstract"
 import { useDroppable } from "@dnd-kit/react"
 import { useSortable } from "@dnd-kit/react/sortable"
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
 import { GripVerticalIcon } from "lucide-react"
 import {
   Accordion,
@@ -48,14 +54,6 @@ interface Props {
   onStageChange: (submissionId: string, targetStageId: string) => void
 }
 
-const COL_WIDTHS = {
-  drag: "w-10",
-  checkbox: "w-10",
-  role: "w-1/5",
-  stage: "w-36",
-  submitted: "w-32",
-}
-
 export function SubmissionTableView({
   pipelineStages,
   filteredColumns,
@@ -97,6 +95,50 @@ export function SubmissionTableView({
   )
 }
 
+// -- Column definitions (stable, defined once at module level) --
+
+const col = createColumnHelper<SubmissionWithCandidate>()
+
+const columns = [
+  col.display({
+    id: "drag",
+    size: 40,
+    header: () => <span className="sr-only">Reorder</span>,
+    cell: () => null, // rendered by DraggableRow
+  }),
+  col.display({
+    id: "select",
+    size: 40,
+    header: () => <span className="sr-only">Select</span>,
+    cell: () => null, // rendered by DraggableRow
+  }),
+  col.accessor((row) => `${row.firstName} ${row.lastName}`, {
+    id: "name",
+    header: "Name",
+    cell: () => null, // rendered by DraggableRow
+  }),
+  col.accessor("roleName", {
+    id: "role",
+    header: "Role",
+    size: 160,
+    cell: () => null, // rendered by DraggableRow
+  }),
+  col.display({
+    id: "stage",
+    header: "Stage",
+    size: 144,
+    cell: () => null, // rendered by DraggableRow
+  }),
+  col.accessor("createdAt", {
+    id: "submitted",
+    header: "Submitted",
+    size: 128,
+    cell: () => null, // rendered by DraggableRow
+  }),
+]
+
+// -- Stage accordion (droppable zone + table) --
+
 interface StageAccordionProps {
   stage: PipelineStageData
   items: SubmissionWithCandidate[]
@@ -129,6 +171,13 @@ function StageAccordion({
     type: "column",
     accept: "item",
     collisionPriority: CollisionPriority.Low,
+  })
+
+  const table = useReactTable({
+    data: items,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => row.id,
   })
 
   const columnIds = items.map((item) => item.id)
@@ -179,33 +228,41 @@ function StageAccordion({
         ) : (
           <Table>
             <colgroup>
-              <col className={COL_WIDTHS.drag} />
-              <col className={COL_WIDTHS.checkbox} />
-              <col />
-              <col className={COL_WIDTHS.role} />
-              <col className={COL_WIDTHS.stage} />
-              <col className={COL_WIDTHS.submitted} />
+              {table.getAllColumns().map((column) => (
+                <col
+                  key={column.id}
+                  style={
+                    column.getSize() !== 150
+                      ? { width: column.getSize() }
+                      : undefined
+                  }
+                />
+              ))}
             </colgroup>
             <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead aria-label="Reorder" />
-                <TableHead aria-label="Select" />
-                <TableHead className="text-caption">Name</TableHead>
-                <TableHead className="text-caption">Role</TableHead>
-                <TableHead className="text-caption">Stage</TableHead>
-                <TableHead className="text-caption">Submitted</TableHead>
-              </TableRow>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id} className="text-caption">
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
             </TableHeader>
             <TableBody>
-              {items.map((submission, index) => (
-                <SubmissionRow
-                  key={submission.id}
-                  submission={submission}
-                  index={index}
+              {table.getRowModel().rows.map((row) => (
+                <DraggableRow
+                  key={row.id}
+                  submission={row.original}
+                  index={row.index}
                   stageId={stage.id}
                   pipelineStages={pipelineStages}
-                  isChecked={selectedIds.has(submission.id)}
-                  isPending={submission.id === pendingSubmissionId}
+                  isChecked={selectedIds.has(row.id)}
+                  isPending={row.id === pendingSubmissionId}
                   onSelect={onSelect}
                   onToggle={onToggle}
                   onStageChange={onStageChange}
@@ -219,7 +276,9 @@ function StageAccordion({
   )
 }
 
-interface SubmissionRowProps {
+// -- Draggable table row --
+
+interface DraggableRowProps {
   submission: SubmissionWithCandidate
   index: number
   stageId: string
@@ -231,7 +290,7 @@ interface SubmissionRowProps {
   onStageChange: (submissionId: string, targetStageId: string) => void
 }
 
-function SubmissionRow({
+function DraggableRow({
   submission,
   index,
   stageId,
@@ -241,7 +300,7 @@ function SubmissionRow({
   onSelect,
   onToggle,
   onStageChange,
-}: SubmissionRowProps) {
+}: DraggableRowProps) {
   const { ref, handleRef, isDragSource } = useSortable({
     id: submission.id,
     index,
@@ -319,7 +378,7 @@ function SubmissionRow({
         </button>
       </TableCell>
 
-      {/* Role — always show in table view since the column is visible */}
+      {/* Role */}
       <TableCell className="text-label text-muted-foreground">
         {submission.roleName || "-"}
       </TableCell>
