@@ -1,5 +1,6 @@
 "use server"
 
+import { generateNKeysBetween } from "fractional-indexing"
 import { and, eq, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
@@ -76,15 +77,40 @@ export const bulkUpdateSubmissionStatus = secureActionClient
 
       const toMoveIds = toMove.map((s) => s.id)
 
+      // Find the current last sortOrder in the target stage so bulk-moved
+      // submissions are appended to the end of the column.
+      const lastInStage = await db.query.Submission.findFirst({
+        where: (s) =>
+          and(
+            eq(s.productionId, submissions[0].productionId),
+            eq(s.stageId, stageId),
+          ),
+        columns: { sortOrder: true },
+        orderBy: (s, { desc }) => [desc(s.sortOrder)],
+      })
+
+      const sortKeys = generateNKeysBetween(
+        lastInStage?.sortOrder || null,
+        null,
+        toMove.length,
+      )
+
       // Store rejection reason when moving to REJECTED, clear when moving away
       const reason =
         targetStage.type === "REJECTED" ? (rejectionReason ?? null) : null
 
       await db.transaction(async (tx) => {
-        await tx
-          .update(Submission)
-          .set({ stageId, rejectionReason: reason, updatedAt: day().toDate() })
-          .where(inArray(Submission.id, toMoveIds))
+        for (let i = 0; i < toMove.length; i++) {
+          await tx
+            .update(Submission)
+            .set({
+              stageId,
+              rejectionReason: reason,
+              sortOrder: sortKeys[i],
+              updatedAt: day().toDate(),
+            })
+            .where(eq(Submission.id, toMove[i].id))
+        }
 
         await tx.insert(PipelineUpdate).values(
           toMove.map((s) => ({
