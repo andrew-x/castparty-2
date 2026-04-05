@@ -102,6 +102,8 @@ export const auth = betterAuth({
   ],
 })
 
+export type Auth = typeof auth
+
 export const getSession = cache(async () => {
   return await auth.api.getSession({
     headers: await headers(),
