@@ -18,8 +18,7 @@ export default function Home() {
             src="/logo.svg"
             alt="Castparty"
             width={409}
-            height={77}
-            className="h-auto w-auto"
+            height={80}
             priority
           />
           <p className="max-w-sm text-body-lg text-muted-foreground">

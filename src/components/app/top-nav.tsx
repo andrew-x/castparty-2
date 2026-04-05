@@ -67,13 +67,7 @@ export function TopNav({
     <header className="sticky top-0 z-30 flex h-14 items-center border-border border-b bg-background px-page">
       {/* Logo */}
       <Link href="/home" className="mr-6 shrink-0">
-        <Image
-          src="/logo.svg"
-          alt="Castparty"
-          width={140}
-          height={26}
-          className="h-auto w-auto"
-        />
+        <Image src="/logo.svg" alt="Castparty" width={140} height={28} />
       </Link>
 
       {/* Desktop nav links */}
@@ -128,8 +122,7 @@ export function TopNav({
                   src="/logo.svg"
                   alt="Castparty"
                   width={120}
-                  height={22}
-                  className="h-auto w-auto"
+                  height={24}
                 />
               </SheetTitle>
             </SheetHeader>
