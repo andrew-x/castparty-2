@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, ne } from "drizzle-orm"
 import { generateNKeysBetween } from "fractional-indexing"
 import { revalidatePath } from "next/cache"
 import { extractText, getDocumentProxy } from "unpdf"
@@ -117,7 +117,11 @@ export const createSubmission = publicActionClient
       // Applied column (before the current first item).
       const firstInApplied = await db.query.Submission.findFirst({
         where: (s) =>
-          and(eq(s.productionId, productionId), eq(s.stageId, appliedStage.id)),
+          and(
+            eq(s.productionId, productionId),
+            eq(s.stageId, appliedStage.id),
+            ne(s.sortOrder, ""),
+          ),
         columns: { sortOrder: true },
         orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)],
       })

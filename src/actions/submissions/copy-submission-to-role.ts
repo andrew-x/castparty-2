@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, ne } from "drizzle-orm"
 import { generateKeyBetween } from "fractional-indexing"
 import { revalidatePath } from "next/cache"
 import { secureActionClient } from "@/lib/action"
@@ -86,6 +86,7 @@ export const copySubmissionToRole = secureActionClient
           and(
             eq(s.productionId, targetRole.productionId),
             eq(s.stageId, appliedStage.id),
+            ne(s.sortOrder, ""),
           ),
         columns: { sortOrder: true },
         orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)],
