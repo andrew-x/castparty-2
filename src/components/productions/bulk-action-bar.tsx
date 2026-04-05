@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDownIcon, ScaleIcon, XIcon } from "lucide-react"
+import { ChevronDownIcon, MailIcon, ScaleIcon, XIcon } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/common/button"
 import {
@@ -15,6 +15,7 @@ interface Props {
   pipelineStages: PipelineStageData[]
   isBulkMovePending: boolean
   onMove: (stageId: string) => void
+  onSendEmail: () => void
   onCompare: () => void
   onClear: () => void
 }
@@ -24,6 +25,7 @@ export function BulkActionBar({
   pipelineStages,
   isBulkMovePending,
   onMove,
+  onSendEmail,
   onCompare,
   onClear,
 }: Props) {
@@ -65,6 +67,15 @@ export function BulkActionBar({
           </div>
         </PopoverContent>
       </Popover>
+
+      <Button
+        variant="outline"
+        size="sm"
+        leftSection={<MailIcon />}
+        onClick={onSendEmail}
+      >
+        Send email
+      </Button>
 
       <Button
         variant="outline"
