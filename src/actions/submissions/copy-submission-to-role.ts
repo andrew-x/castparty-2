@@ -88,7 +88,7 @@ export const copySubmissionToRole = secureActionClient
             eq(s.stageId, appliedStage.id),
           ),
         columns: { sortOrder: true },
-        orderBy: (s, { asc }) => [asc(s.sortOrder)],
+        orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)],
       })
 
       const sortOrder = generateKeyBetween(

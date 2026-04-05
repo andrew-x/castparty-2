@@ -119,7 +119,7 @@ export const createSubmission = publicActionClient
         where: (s) =>
           and(eq(s.productionId, productionId), eq(s.stageId, appliedStage.id)),
         columns: { sortOrder: true },
-        orderBy: (s, { asc }) => [asc(s.sortOrder)],
+        orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)],
       })
 
       const sortOrders = generateNKeysBetween(

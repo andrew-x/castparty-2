@@ -36,7 +36,7 @@ export async function getProductionSubmissions(productionId: string) {
       roles: {
         with: {
           submissions: {
-            orderBy: (s, { asc }) => [asc(s.sortOrder)],
+            orderBy: (s, { asc }) => [asc(s.sortOrder), asc(s.createdAt)],
             with: {
               candidate: true,
               stage: true,

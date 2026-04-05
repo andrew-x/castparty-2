@@ -145,9 +145,14 @@ export function buildColumns(
   // different roles may be interleaved. Sort each column by sortOrder so
   // fractional-indexing neighbor lookups always see ascending keys.
   for (const items of Object.values(columns)) {
-    items.sort((a, b) =>
-      a.sortOrder < b.sortOrder ? -1 : a.sortOrder > b.sortOrder ? 1 : 0,
-    )
+    items.sort((a, b) => {
+      if (a.sortOrder < b.sortOrder) return -1
+      if (a.sortOrder > b.sortOrder) return 1
+      // Stable tie-breaker for duplicate sortOrder (e.g. empty default)
+      const timeA = day(a.createdAt).valueOf()
+      const timeB = day(b.createdAt).valueOf()
+      return timeA - timeB || a.id.localeCompare(b.id)
+    })
   }
   return columns
 }
