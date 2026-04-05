@@ -11,3 +11,8 @@ export const updateCandidateFormSchema = z.object({
 export const updateCandidateActionSchema = updateCandidateFormSchema.extend({
   candidateId: z.string().min(1),
 })
+
+export const mergeCandidateActionSchema = z.object({
+  sourceCandidateId: z.string().min(1),
+  destinationCandidateId: z.string().min(1),
+})
