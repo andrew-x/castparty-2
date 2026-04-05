@@ -416,6 +416,14 @@ export function ProductionSubmissions({
     }
     if (!submission || submission.stageId === targetStageId) return
 
+    // Compute sortOrder: append to end of target column
+    const targetCol = columns[targetStageId] ?? []
+    const lastKey =
+      targetCol.length > 0
+        ? targetCol[targetCol.length - 1].sortOrder || null
+        : null
+    const sortOrder = generateKeyBetween(lastKey, null)
+
     function optimisticMove(current: ColumnItems) {
       const next: ColumnItems = {}
       for (const [stageId, items] of Object.entries(current)) {
@@ -423,7 +431,7 @@ export function ProductionSubmissions({
       }
       next[targetStageId] = [
         ...(next[targetStageId] ?? []),
-        { ...submission!, stageId: targetStageId },
+        { ...submission!, stageId: targetStageId, sortOrder },
       ]
       return next
     }
@@ -434,6 +442,7 @@ export function ProductionSubmissions({
         type: "drag",
         submissionId,
         stageId: targetStageId,
+        sortOrder,
       }
       previousColumns.current = columns
       setColumns(optimisticMove)
@@ -443,7 +452,11 @@ export function ProductionSubmissions({
 
     // If moving to SELECTED, show the email preview dialog
     if (selectedStage && targetStageId === selectedStage.id) {
-      pendingSelectRef.current = { submissionId, stageId: targetStageId }
+      pendingSelectRef.current = {
+        submissionId,
+        stageId: targetStageId,
+        sortOrder,
+      }
       previousColumns.current = columns
       setColumns(optimisticMove)
       setSelectDialogOpen(true)
@@ -454,7 +467,11 @@ export function ProductionSubmissions({
     previousColumns.current = columns
     setColumns(optimisticMove)
     setPendingSubmissionId(submissionId)
-    executeStatusChangeAsync({ submissionId, stageId: targetStageId })
+    executeStatusChangeAsync({
+      submissionId,
+      stageId: targetStageId,
+      sortOrder,
+    })
   }
 
   function getEmailPreviewForSubmission(
