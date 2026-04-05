@@ -72,12 +72,22 @@ export function MergeCandidateDialog({ candidate, open, onOpenChange }: Props) {
       return
     }
 
+    let stale = false
+
     debounceRef.current = setTimeout(async () => {
-      const data = await searchCandidates(trimmed, candidate.id)
-      setResults(data)
+      try {
+        const data = await searchCandidates(trimmed, candidate.id)
+        if (!stale) setResults(data)
+      } catch {
+        if (!stale) {
+          setResults([])
+          setError("Search failed. Check your connection and try again.")
+        }
+      }
     }, 300)
 
     return () => {
+      stale = true
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [query, candidate.id])
@@ -111,7 +121,7 @@ export function MergeCandidateDialog({ candidate, open, onOpenChange }: Props) {
             }}
           />
 
-          <div className="h-48 overflow-y-auto rounded-md border">
+          <div className="h-48 overflow-y-auto rounded-md border border-border">
             {results.length > 0 ? (
               <ul className="flex flex-col">
                 {results.map((c) => (
