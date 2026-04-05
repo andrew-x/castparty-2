@@ -39,8 +39,9 @@ export const updateSubmission = secureActionClient
       // Load submission with ownership chain
       const submission = await db.query.Submission.findFirst({
         where: (s) => eq(s.id, submissionId),
-        columns: { id: true, candidateId: true, email: true },
+        columns: { id: true, candidateId: true },
         with: {
+          candidate: { columns: { email: true } },
           role: {
             columns: { id: true },
             with: {
@@ -59,7 +60,7 @@ export const updateSubmission = secureActionClient
       // --- Pre-validation (before any side effects) ---
 
       // Check email conflict before moving files
-      if (email !== submission.email) {
+      if (email !== submission.candidate.email) {
         const conflict = await db.query.Candidate.findFirst({
           where: (c) =>
             and(
@@ -215,11 +216,6 @@ export const updateSubmission = secureActionClient
         await tx
           .update(Submission)
           .set({
-            firstName,
-            lastName,
-            email,
-            phone: phone ?? "",
-            location: location ?? "",
             links,
             videoUrl: videoUrl || null,
             unionStatus,
@@ -228,7 +224,7 @@ export const updateSubmission = secureActionClient
           })
           .where(eq(Submission.id, submissionId))
 
-        // Update candidate
+        // Update candidate info
         await tx
           .update(Candidate)
           .set({
@@ -240,24 +236,6 @@ export const updateSubmission = secureActionClient
             updatedAt: day().toDate(),
           })
           .where(eq(Candidate.id, submission.candidateId))
-
-        // Sync denormalized fields on all other submissions for this candidate
-        await tx
-          .update(Submission)
-          .set({
-            firstName,
-            lastName,
-            email,
-            phone: phone ?? "",
-            location: location ?? "",
-            updatedAt: day().toDate(),
-          })
-          .where(
-            and(
-              eq(Submission.candidateId, submission.candidateId),
-              ne(Submission.id, submissionId),
-            ),
-          )
       })
 
       // Parse PDF text from the uploaded resume (best-effort, after transaction)

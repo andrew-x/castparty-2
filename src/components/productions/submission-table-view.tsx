@@ -112,11 +112,14 @@ const columns = [
     header: () => <span className="sr-only">Select</span>,
     cell: () => null, // rendered by DraggableRow
   }),
-  col.accessor((row) => `${row.firstName} ${row.lastName}`, {
-    id: "name",
-    header: "Name",
-    cell: () => null, // rendered by DraggableRow
-  }),
+  col.accessor(
+    (row) => `${row.candidate.firstName} ${row.candidate.lastName}`,
+    {
+      id: "name",
+      header: "Name",
+      cell: () => null, // rendered by DraggableRow
+    },
+  ),
   col.accessor("roleName", {
     id: "role",
     header: "Role",
@@ -342,7 +345,7 @@ function DraggableRow({
           <Checkbox
             checked={isChecked}
             onCheckedChange={() => onToggle(submission.id)}
-            aria-label={`Select ${submission.firstName} ${submission.lastName}`}
+            aria-label={`Select ${submission.candidate.firstName} ${submission.candidate.lastName}`}
           />
         </div>
       </TableCell>
@@ -359,21 +362,21 @@ function DraggableRow({
               // biome-ignore lint/performance/noImgElement: external R2 URLs
               <img
                 src={headshotUrl}
-                alt={`${submission.firstName} ${submission.lastName}`}
+                alt={`${submission.candidate.firstName} ${submission.candidate.lastName}`}
                 className="size-full object-cover"
                 draggable={false}
               />
             ) : (
               <div className="flex size-full items-center justify-center">
                 <span className="font-medium text-caption text-muted-foreground">
-                  {submission.firstName.charAt(0)}
-                  {submission.lastName.charAt(0)}
+                  {submission.candidate.firstName.charAt(0)}
+                  {submission.candidate.lastName.charAt(0)}
                 </span>
               </div>
             )}
           </div>
           <span className="font-medium text-foreground text-label">
-            {submission.firstName} {submission.lastName}
+            {submission.candidate.firstName} {submission.candidate.lastName}
           </span>
         </button>
       </TableCell>

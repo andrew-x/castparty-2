@@ -114,8 +114,8 @@ export function SubmissionDetailSheet({
       }
     }
     return {
-      first_name: submission.firstName,
-      last_name: submission.lastName,
+      first_name: submission.candidate.firstName,
+      last_name: submission.candidate.lastName,
       production_name: productionName,
       role_name: submission.roleName,
       organization_name: organizationName,
@@ -301,7 +301,8 @@ export function SubmissionDetailSheet({
                       target="_blank"
                       className="inline-flex items-center gap-1.5 hover:underline"
                     >
-                      {submission.firstName} {submission.lastName}
+                      {submission.candidate.firstName}{" "}
+                      {submission.candidate.lastName}
                       <ExternalLinkIcon className="size-3.5 text-muted-foreground" />
                     </Link>
                   </SheetTitle>
@@ -312,18 +313,18 @@ export function SubmissionDetailSheet({
                     <div className="mt-element flex flex-wrap items-center gap-group text-label text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <MailIcon className="size-3.5" />
-                        {submission.email}
+                        {submission.candidate.email}
                       </span>
-                      {submission.phone && (
+                      {submission.candidate.phone && (
                         <span className="flex items-center gap-1">
                           <PhoneIcon className="size-3.5" />
-                          {submission.phone}
+                          {submission.candidate.phone}
                         </span>
                       )}
-                      {submission.location && (
+                      {submission.candidate.location && (
                         <span className="flex items-center gap-1">
                           <MapPinIcon className="size-3.5" />
-                          {submission.location}
+                          {submission.candidate.location}
                         </span>
                       )}
                     </div>

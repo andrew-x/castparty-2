@@ -35,12 +35,9 @@ export async function sendSubmissionEmail(
 ) {
   const submission = await db.query.Submission.findFirst({
     where: (s) => eq(s.id, submissionId),
-    columns: {
-      firstName: true,
-      lastName: true,
-      email: true,
-    },
+    columns: {},
     with: {
+      candidate: { columns: { firstName: true, lastName: true, email: true } },
       role: { columns: { name: true } },
       production: {
         columns: { name: true, emailTemplates: true, organizationId: true },
@@ -69,8 +66,8 @@ export async function sendSubmissionEmail(
     const template = templates[templateType]
 
     const variables = {
-      first_name: submission.firstName,
-      last_name: submission.lastName,
+      first_name: submission.candidate.firstName,
+      last_name: submission.candidate.lastName,
       production_name: submission.production.name,
       role_name: submission.role.name,
       organization_name: submission.production.organization.name,
@@ -85,7 +82,7 @@ export async function sendSubmissionEmail(
   const replyTo = `reply+${submissionId}@${inboundDomain}`
 
   const { html } = await sendEmail({
-    to: submission.email,
+    to: submission.candidate.email,
     subject,
     react: <TemplateEmail body={body} preview={subject} replyTo={replyTo} />,
     text: `${body}\n\n---\nTo respond, just reply to this email or send a message to ${replyTo}`,
@@ -99,7 +96,7 @@ export async function sendSubmissionEmail(
       submissionId,
       sentByUserId: sentByUserId ?? null,
       direction: "outbound",
-      toEmail: submission.email,
+      toEmail: submission.candidate.email,
       subject,
       bodyText: body,
       bodyHtml: html,

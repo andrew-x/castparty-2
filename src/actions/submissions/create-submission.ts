@@ -62,10 +62,21 @@ export const createSubmission = publicActionClient
       }
 
       // Check for existing submissions with this email for the requested roles
-      const existingSubmissions = await db.query.Submission.findMany({
-        where: (s) => and(eq(s.email, email), inArray(s.roleId, roleIds)),
-        columns: { roleId: true },
+      const existingCandidate = await db.query.Candidate.findFirst({
+        where: (c) => and(eq(c.organizationId, orgId), eq(c.email, email)),
+        columns: { id: true },
       })
+
+      const existingSubmissions = existingCandidate
+        ? await db.query.Submission.findMany({
+            where: (s) =>
+              and(
+                eq(s.candidateId, existingCandidate.id),
+                inArray(s.roleId, roleIds),
+              ),
+            columns: { roleId: true },
+          })
+        : []
 
       const alreadySubmittedRoleIds = new Set(
         existingSubmissions.map((s) => s.roleId),
@@ -366,11 +377,6 @@ export const createSubmission = publicActionClient
             candidateId: candidate.id,
             stageId: appliedStage.id,
             sortOrder: sortOrders[i],
-            firstName,
-            lastName,
-            email,
-            phone: phone ?? "",
-            location: location || "",
             answers: formResponses,
             links,
             videoUrl: videoUrl || null,

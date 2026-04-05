@@ -485,8 +485,8 @@ export function ProductionSubmissions({
     const sub = submissions.find((s) => s.id === submissionId)
     if (!sub) return { subject: "", body: "" }
     const variables = {
-      first_name: sub.firstName,
-      last_name: sub.lastName,
+      first_name: sub.candidate.firstName,
+      last_name: sub.candidate.lastName,
       production_name: productionName,
       role_name: sub.roleName,
       organization_name: organizationName,
@@ -508,7 +508,9 @@ export function ProductionSubmissions({
     filteredColumns[stageId] = items.filter((s) => {
       const matchesRole = showAllRoles || s.roleId === selectedRoleId
       const matchesSearch = query
-        ? `${s.firstName} ${s.lastName}`.toLowerCase().includes(query)
+        ? `${s.candidate.firstName} ${s.candidate.lastName}`
+            .toLowerCase()
+            .includes(query)
         : true
       return matchesRole && matchesSearch
     })

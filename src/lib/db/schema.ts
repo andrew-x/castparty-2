@@ -426,12 +426,6 @@ export const Submission = pgTable("submission", {
   rejectionReason: text(),
   sortOrder: text().notNull().default(""),
 
-  firstName: text().notNull(),
-  lastName: text().notNull(),
-  email: text().notNull(),
-  phone: text().notNull().default(""),
-  location: text().notNull().default(""),
-
   answers: jsonb().$type<CustomFormResponse[]>().notNull().default([]),
   links: text().array().notNull().default([]),
   videoUrl: text(),

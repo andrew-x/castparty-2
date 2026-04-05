@@ -56,11 +56,11 @@ export function SubmissionEditForm({
     {
       formProps: {
         defaultValues: {
-          firstName: submission.firstName,
-          lastName: submission.lastName,
-          email: submission.email,
-          phone: submission.phone ?? "",
-          location: submission.location ?? "",
+          firstName: submission.candidate.firstName,
+          lastName: submission.candidate.lastName,
+          email: submission.candidate.email,
+          phone: submission.candidate.phone ?? "",
+          location: submission.candidate.location ?? "",
           links: submission.links,
           videoUrl: submission.videoUrl ?? "",
           unionStatus: submission.unionStatus ?? [],

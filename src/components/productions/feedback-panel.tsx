@@ -497,7 +497,7 @@ export function FeedbackPanel({ submission, feedbackFormFields }: Props) {
               className="flex flex-col gap-block px-block pb-block"
             >
               <p className="text-caption text-muted-foreground">
-                To: {submission.email}
+                To: {submission.candidate.email}
               </p>
               <Input placeholder="Subject" {...emailForm.register("subject")} />
               {emailForm.formState.errors.subject && (
