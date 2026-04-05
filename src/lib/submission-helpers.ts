@@ -141,6 +141,14 @@ export function buildColumns(
       columns[sub.stageId].push(sub)
     }
   }
+  // Submissions arrive per-role from the relational query, so items from
+  // different roles may be interleaved. Sort each column by sortOrder so
+  // fractional-indexing neighbor lookups always see ascending keys.
+  for (const items of Object.values(columns)) {
+    items.sort((a, b) =>
+      a.sortOrder < b.sortOrder ? -1 : a.sortOrder > b.sortOrder ? 1 : 0,
+    )
+  }
   return columns
 }
 
