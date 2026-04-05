@@ -75,8 +75,6 @@ export const bulkUpdateSubmissionStatus = secureActionClient
         return { movedCount: 0 }
       }
 
-      const toMoveIds = toMove.map((s) => s.id)
-
       // Find the current last sortOrder in the target stage so bulk-moved
       // submissions are appended to the end of the column.
       const lastInStage = await db.query.Submission.findFirst({
