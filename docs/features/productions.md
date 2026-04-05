@@ -1,6 +1,6 @@
 # Productions
 
-> **Last verified:** 2026-03-29
+> **Last verified:** 2026-04-05
 
 ## Overview
 Productions are the central organizing unit of Castparty. Each production represents a show, event, or project that an organization is casting. Productions contain roles, a configurable casting pipeline, custom forms, email templates, and reject reasons. They map to "Jobs" in the ATS analogy -- roles within a production are the individual positions being cast.
@@ -10,7 +10,7 @@ Productions serve casting directors (the primary user) by giving them a single w
 ## Routes
 | Path | Component | Auth | Description |
 |------|-----------|------|-------------|
-| `/productions` | `ProductionsPage` | Authenticated + active org | Grid of production cards with submission counts; toggle for archived |
+| `/productions` | `ProductionsPage` | Authenticated + active org | `ProductionsTable` (TanStack Table) with sortable columns, search, and status filter tabs |
 | `/productions/new` | `NewProductionPage` | Authenticated + active org | 5-step create wizard |
 | `/productions/[id]` | `ProductionPage` (via layout) | Authenticated + active org | Production overview with submissions Kanban per role |
 | `/productions/[id]/roles` | `RolesPage` | Authenticated + active org | Left-right split: role list + inline role settings form |
@@ -35,6 +35,7 @@ All routes are nested inside a `(production)` route group that provides a shared
 | `description` | `text` | Default `""` |
 | `status` | `production_status` enum | `"open"` / `"closed"` / `"archive"`, default `"closed"` |
 | `location` | `text` | Free-text, default `""` |
+| `banner` | `text` | Nullable; URL of uploaded banner image stored in R2 |
 | `submissionFormFields` | `jsonb` (`CustomForm[]`) | Custom fields for the public submission form |
 | `systemFieldConfig` | `jsonb` (`SystemFieldConfig`) | Visibility of system fields (phone, location, headshots, resume, links) |
 | `feedbackFormFields` | `jsonb` (`CustomForm[]`) | Custom fields for internal feedback forms |
@@ -50,6 +51,7 @@ All routes are nested inside a `(production)` route group that provides a shared
 | `name` | `text` | Required, max 100 chars |
 | `slug` | `text` | Unique within production (`role_production_slug_uidx`) |
 | `description` | `text` | Default `""` |
+| `referencePhotos` | `jsonb` (`string[]`) | Array of R2 image URLs used as visual references for the role; default `[]` |
 | `status` | `production_status` enum | Reuses the same enum: `"open"` / `"closed"` / `"archive"` |
 | `createdAt` / `updatedAt` | `timestamp` | Auto-managed |
 
@@ -78,7 +80,9 @@ All routes are nested inside a `(production)` route group that provides a shared
 | `src/actions/productions/check-slug.ts` | Async slug uniqueness check during wizard |
 | `src/components/productions/create-production-form.tsx` | 5-step create wizard (client component) |
 | `src/components/productions/production-settings-form.tsx` | General settings form (name, slug, location, status) |
-| `src/components/productions/production-card.tsx` | Card component for list page |
+| `src/components/productions/production-card.tsx` | Card component (used in create wizard roles step; not used on the list page) |
+| `src/components/productions/productions-table.tsx` | `ProductionsTable` — TanStack Table data table for the productions list page |
+| `src/actions/productions/presign-banner-upload.ts` | Presigns an R2 upload URL for a production banner image |
 | `src/components/productions/production-sub-nav.tsx` | Sub-navigation (8 items) |
 | `src/components/productions/roles-manager.tsx` | Left-right split role list + inline settings |
 | `src/components/productions/create-role-dialog.tsx` | Dialog for creating a new role |
@@ -129,7 +133,7 @@ Roles are managed on the `/productions/[id]/roles` page via `RolesManager`:
 
 ### Productions List
 
-`ProductionsPage` fetches productions with aggregated role and submission counts. Archived productions are hidden by default with a "Show archived" toggle. Empty state shows a CTA to create the first production. Cards show production name, creation date, role count, submission count, and a status icon (lock/unlock/archive).
+`ProductionsPage` fetches productions with aggregated role and submission counts. The list renders as a `ProductionsTable` — a TanStack Table data table (`src/components/productions/productions-table.tsx`) with sortable columns (name, date, roles, submissions), full-text search, and status filter tabs (All / Open / Closed / Archive). Empty state shows a CTA to create the first production.
 
 ## Business Logic
 

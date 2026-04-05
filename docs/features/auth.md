@@ -1,6 +1,6 @@
 # Auth Flow
 
-> **Last verified:** 2026-03-29
+> **Last verified:** 2026-04-05
 
 ## Overview
 Email/password authentication for production team members. Covers sign-in, account creation, email verification, password reset, and a settings-page account panel. Built on Better Auth's `signIn.email` and `signUp.email` methods. This is the mandatory entry point before any production data is accessible -- every other feature in the app lives behind an auth gate.
@@ -42,7 +42,7 @@ All tables are managed by Better Auth. Castparty defines them in Drizzle schema 
 | `src/components/auth/auth-card.tsx` | Presentational wrapper: Castparty icon + bordered card (max-w-sm) |
 | `src/components/auth/auth-tabs.tsx` | Client component: shadcn `Tabs` with "Sign in" / "Sign up" tabs |
 | `src/components/auth/login-form.tsx` | Client component: email + password fields; calls `authClient.signIn.email` |
-| `src/components/auth/signup-form.tsx` | Client component: name + email + password fields; calls `authClient.signUp.email` |
+| `src/components/auth/signup-form.tsx` | Client component: firstName + lastName + email + password fields; calls `authClient.signUp.email` |
 | `src/components/auth/forgot-password-form.tsx` | Client component: email field; calls `authClient.requestPasswordReset` |
 | `src/components/auth/reset-password-form.tsx` | Client component: new password field; calls `authClient.resetPassword` |
 | `src/components/auth/email-verification-banner.tsx` | Client component: alert banner with "Resend verification email" button |
@@ -57,8 +57,8 @@ All tables are managed by Better Auth. Castparty defines them in Drizzle schema 
 4. On success: `router.push("/home")`. On error: maps error codes to friendly messages.
 
 ### Signup
-1. "Sign up" tab. `SignUpForm` collects name + email + password, validates via `signUpSchema`.
-2. Calls `authClient.signUp.email({ name, email, password, callbackURL: "/auth/verify-email" })`.
+1. "Sign up" tab. `SignUpForm` collects firstName + lastName + email + password, validates via `signUpSchema`.
+2. Calls `authClient.signUp.email({ name: firstName + " " + lastName, firstName, lastName, email, password, callbackURL: "/auth/verify-email" })`.
 3. Better Auth creates user + account + session. Verification email is sent automatically (`sendOnSignUp: true`).
 4. On success: `router.push(redirectTo)` (defaults to `/home`, supports `?redirect` param).
 
@@ -83,7 +83,8 @@ All tables are managed by Better Auth. Castparty defines them in Drizzle schema 
 ### Validation Rules
 | Schema | Field | Rules |
 |--------|-------|-------|
-| `signUpSchema` | `name` | `.trim().min(1)` |
+| `signUpSchema` | `firstName` | `.trim().min(1, "First name is required.")` |
+| `signUpSchema` | `lastName` | `.trim().min(1, "Last name is required.")` |
 | `signUpSchema` | `email` | `.trim().email()` |
 | `signUpSchema` | `password` | `.min(8)` (no trim -- intentional) |
 | `loginSchema` | `email` | `.trim().email()` |

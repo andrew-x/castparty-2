@@ -1,6 +1,6 @@
 # Custom Form Fields
 
-> **Last verified:** 2026-04-02
+> **Last verified:** 2026-04-05
 
 ## Overview
 
@@ -92,7 +92,7 @@ type SystemFieldConfig = {
 
 | File | Purpose |
 |------|---------|
-| `src/lib/types.ts` | `CustomForm`, `CustomFormFieldType`, `CustomFormResponse`, `SystemFieldConfig` types |
+| `src/lib/types.ts` | `CustomForm`, `CustomFormFieldType`, `CustomFormResponse`, `SystemFieldConfig` types; `SYSTEM_FIELD_ALLOWED_VISIBILITIES` constant |
 | `src/lib/schemas/form-fields.ts` | Zod schemas: `customFormItemSchema`, CRUD schemas for both contexts, `systemFieldConfigSchema` |
 | `src/components/productions/form-fields-editor.tsx` | `FormFieldsEditor` -- generic drag-and-drop field list; `ProductionFormFieldsEditor` -- submission form wrapper |
 | `src/components/productions/default-feedback-form-fields-editor.tsx` | `ProductionFeedbackFormFieldsEditor` -- feedback form wrapper |
@@ -111,6 +111,7 @@ type SystemFieldConfig = {
 | `src/actions/productions/update-production-feedback-form-field.ts` | Update a field in `feedbackFormFields` |
 | `src/actions/productions/remove-production-feedback-form-field.ts` | Remove a field from `feedbackFormFields` |
 | `src/actions/productions/reorder-production-feedback-form-fields.ts` | Reorder fields in `feedbackFormFields` |
+| `src/actions/submissions/presign-custom-field-upload.ts` | Presigns R2 upload URLs for `IMAGE` and `DOCUMENT` custom field responses (uses `publicActionClient`; no auth required, invoked from the public submission form) |
 
 ## How It Works
 
@@ -187,8 +188,10 @@ Custom field values travel as flat `Record<string, string>` in the form. The ser
 
 ### System Field Config
 
-| Field | Values | Effect |
-|-------|--------|--------|
+The `SYSTEM_FIELD_ALLOWED_VISIBILITIES` constant in `src/lib/types.ts` defines which visibility values are legal for each field. Fields that support `"required"` show up in `SystemFieldToggles` with a three-way toggle; fields capped at `"optional"` show a two-way toggle.
+
+| Field | Allowed values | Effect |
+|-------|----------------|--------|
 | `phone` | `hidden` / `optional` / `required` | Controls phone field in submission form |
 | `location` | `hidden` / `optional` / `required` | Controls location field with city autocomplete |
 | `headshots` | `hidden` / `optional` / `required` | Controls headshot uploader |

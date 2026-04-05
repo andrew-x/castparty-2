@@ -32,8 +32,14 @@ One file per feature domain. Each doc contains enough detail to recreate the fea
 | Submissions Kanban | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | [kanban.md](./kanban.md) |
 | Submission Detail Sheet | `shipped` | `src/components/productions/submission-detail-sheet.tsx` | [kanban.md](./kanban.md) |
 | Submission Editing | `shipped` | `src/components/productions/submission-edit-form.tsx` | [submission-editing.md](./submission-editing.md) |
+| Submissions Table View | `shipped` | `src/components/productions/submission-table-view.tsx` | [kanban.md](./kanban.md) |
+| Consider for Role | `shipped` | `src/actions/submissions/copy-submission-to-role.ts` | [submission-editing.md](./submission-editing.md) |
+| Candidate Merge | `shipped` | `src/actions/candidates/merge-candidate.ts` | [candidates.md](./candidates.md) |
+| Production Branding | `shipped` | `src/actions/productions/presign-banner-upload.ts` | [productions.md](./productions.md) |
+| Fractional-Index Sort Order | `shipped` | `src/lib/schemas/submission.ts` (`sortOrderSchema`) | [kanban.md](./kanban.md) |
 | Headshot Lightbox | `shipped` | `src/components/productions/headshot-lightbox.tsx` | [kanban.md](./kanban.md) |
 | Bulk Submission Status | `shipped` | `src/actions/submissions/bulk-update-submission-status.ts` | [kanban.md](./kanban.md) |
+| Bulk Send Email | `shipped` | `src/actions/submissions/bulk-send-email.ts` | [email.md](./email.md) |
 | Comparison View | `shipped` | `src/components/productions/comparison-view.tsx` | [kanban.md](./kanban.md) |
 | Comments | `shipped` | `src/actions/comments/create-comment.ts` | [comments.md](./comments.md) |
 | Organization Switcher | `shipped` | `src/components/organizations/org-switcher.tsx` | [organizations.md](./organizations.md) |

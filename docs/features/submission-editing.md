@@ -1,6 +1,6 @@
 # Submission Editing
 
-> **Last verified:** 2026-04-02
+> **Last verified:** 2026-04-05
 
 ## Overview
 
@@ -20,11 +20,11 @@ Not a separate route -- it is an `isEditing` toggle state within `SubmissionDeta
 
 | Table | Role in editing |
 |-------|-----------------|
-| `Submission` | Updated: firstName, lastName, email, phone, location, links, videoUrl, updatedAt |
-| `Candidate` | Updated in same transaction: firstName, lastName, email, phone, location, updatedAt |
+| `Submission` | Updated: `links`, `videoUrl`, `unionStatus`, `representation`, `updatedAt` |
+| `Candidate` | Updated: `firstName`, `lastName`, `email`, `phone`, `location`, `updatedAt` — contact fields live here, not on `Submission` |
 | `File` | New headshot/resume rows inserted (type: `HEADSHOT` or `RESUME`) |
 
-Contact field changes propagate to all other submissions for the same candidate (denormalized sync within the transaction).
+Contact fields (`firstName`, `lastName`, `email`, `phone`, `location`) are stored on the `Candidate` record only. The form collects them and the action writes them to `Candidate`. Because a single `Candidate` may have many submissions across roles, updating the candidate record propagates the change everywhere automatically — no denormalized sync across submission rows is needed.
 
 ## Key Files
 
@@ -74,9 +74,8 @@ updateSubmission action:
   5. Move files from temp/ to permanent R2 storage
   6. db.transaction:
      ├── Insert new File rows
-     ├── UPDATE Submission (contact, links)
-     ├── UPDATE Candidate (contact fields)
-     └── UPDATE all other Submissions for same candidate (denormalized sync)
+     ├── UPDATE Submission (links, videoUrl, unionStatus, representation)
+     └── UPDATE Candidate (firstName, lastName, email, phone, location)
   7. If new resume: extract text via unpdf (best-effort)
   8. revalidatePath
 ```
@@ -107,9 +106,9 @@ updateSubmission action:
 
 If email is changed, queries for another `Candidate` with the same email in the same org. Runs inside transaction to prevent TOCTOU races.
 
-### Denormalized Candidate Sync
+### Candidate as Source of Truth for Contact Fields
 
-Contact changes propagate to all other submissions for the same candidate, keeping Kanban cards consistent across roles.
+Contact fields (`firstName`, `lastName`, `email`, `phone`, `location`) are stored only on the `Candidate` record. The `Submission` table holds no copies of these fields. Updating the candidate propagates automatically to all roles that candidate has applied for, because all submissions join to the same `Candidate` row.
 
 ## UI States
 
@@ -136,4 +135,4 @@ Contact changes propagate to all other submissions for the same candidate, keepi
 - **Email conflict check inside transaction.** Atomic check-and-update prevents race conditions.
 - **`maxFiles` prop on HeadshotUploader.** Edit form passes `10 - existingCount` for consistent client/server validation.
 - **Pre-validation before side effects.** All checks run before files are moved, preventing orphaned files on validation failure.
-- **Denormalized sync.** Contact fields duplicated on each Submission for simple reads; wider UPDATE on save is the trade-off.
+- **Contact fields on Candidate only.** `Submission` rows do not duplicate contact data; all reads join to `Candidate`. This removes the need for cross-submission syncing on save.

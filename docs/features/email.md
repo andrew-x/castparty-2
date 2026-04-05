@@ -1,15 +1,16 @@
 # Email System
 
-> **Last verified:** 2026-03-29
+> **Last verified:** 2026-04-05
 
 ## Overview
 
-The email system handles all communication between Castparty and performers across the casting lifecycle. It comprises four subsystems:
+The email system handles all communication between Castparty and performers across the casting lifecycle. It comprises five subsystems:
 
 1. **Email Templates** -- per-production customizable templates for Submission Received, Rejected, and Selected emails with variable interpolation.
 2. **Email Storage** -- persistence of all outbound and inbound emails in a dedicated `Email` table, surfaced in the submission activity log.
 3. **Inbound Email** -- performers reply to any Castparty email; replies route back via a Resend webhook, are linked to the correct submission, and appear in the activity feed.
-4. **Email Emulator** (dev-only) -- intercepts outbound emails in memory for preview in an admin inbox.
+4. **Bulk Email** -- casting directors select multiple submissions and send a freeform email to all of them in one action.
+5. **Email Emulator** (dev-only) -- intercepts outbound emails in memory for preview in an admin inbox.
 
 Exists because casting requires a two-way communication loop: performers need confirmation of their submission, notification of decisions, and the ability to reply -- while casting directors need an audit trail of everything sent and received.
 
@@ -71,7 +72,10 @@ Defaults to `DEFAULT_EMAIL_TEMPLATES` on creation. Null values fall back to defa
 | `src/lib/schemas/custom-email.ts` | Zod schema for freeform custom emails |
 | `src/actions/productions/update-email-templates.ts` | Save all three templates at once |
 | `src/actions/submissions/send-submission-email.tsx` | `sendSubmissionEmail()` + `sendSubmissionEmailAction`; inserts outbound `Email` row |
-| `src/actions/submissions/send-custom-email.ts` | Sends freeform email (no template) |
+| `src/actions/submissions/send-custom-email.ts` | Sends freeform email to a single submission (no template) |
+| `src/actions/submissions/bulk-send-email.ts` | `bulkSendEmailAction`; sends freeform email to multiple submissions via `sendBatchEmail()` |
+| `src/components/productions/bulk-email-dialog.tsx` | `BulkEmailDialog`; subject + body form with variable insert buttons; opened from Kanban bulk actions |
+| `src/lib/schemas/bulk-email.ts` | Zod schemas for bulk email form and action |
 | `src/actions/emails/receive-inbound-email.ts` | Deduplicates by `resendEmailId`, inserts inbound `Email` row |
 | `src/app/api/webhooks/resend/route.ts` | Webhook handler: Svix verification, submission ID extraction from reply-to |
 | `src/components/productions/email-templates-form.tsx` | Template list + editor with variable insert buttons |
@@ -114,6 +118,28 @@ Performer hits Reply → reply+{submissionId}@{INBOUND_EMAIL_DOMAIN}
            └── db.insert(Email) { direction: "inbound", fromEmail: sender }
         5. Return 200 OK (always, even on soft failures)
 ```
+
+### Bulk Email
+
+Casting directors can select multiple submissions in the Kanban and send a single composed email to all of them.
+
+```
+Kanban bulk-select → BulkEmailDialog
+  ├── Subject + Body inputs with variable insert buttons
+  ├── form.handleSubmit → bulkSendEmailAction({ submissionIds, subject, body })
+
+bulkSendEmailAction:
+  1. Auth + org ownership check (all submission IDs must belong to active org)
+  2. Deduplicate submission IDs
+  3. Build per-submission payloads (interpolate variables, set unique replyTo)
+  4. sendBatchEmail(payloads) → Resend batch API
+  5. db.insert(Email) one row per submission (outbound, templateType: null)
+  6. revalidatePath
+```
+
+Variable interpolation uses the same `interpolateTemplate()` as template emails. Each email gets its own `replyTo` address (`reply+{submissionId}@{INBOUND_EMAIL_DOMAIN}`), so performer replies still route back to the correct submission.
+
+If batch send succeeds but DB insert fails, the action throws a descriptive error noting emails were sent but not logged (prevents double-send on retry).
 
 ### Dev Emulator
 
