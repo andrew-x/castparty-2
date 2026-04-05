@@ -134,6 +134,7 @@ export async function getCandidate(candidateId: string) {
         phone: submission.phone,
         location: submission.location,
         createdAt: submission.createdAt,
+        sortOrder: submission.sortOrder,
         stageId: submission.stageId,
         rejectionReason: submission.rejectionReason,
         stage: submission.stage
