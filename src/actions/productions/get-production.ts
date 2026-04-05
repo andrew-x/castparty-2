@@ -16,6 +16,9 @@ export async function getProduction(id: string) {
         organization: {
           columns: { name: true, slug: true },
         },
+        roles: {
+          columns: { id: true, status: true },
+        },
       },
     })) ?? null
   )
