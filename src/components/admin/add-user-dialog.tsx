@@ -2,7 +2,6 @@
 
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Controller } from "react-hook-form"
-import { z } from "zod/v4"
 import { createUserAction } from "@/actions/admin/create-user"
 import { Alert, AlertDescription } from "@/components/common/alert"
 import { Button } from "@/components/common/button"
@@ -20,14 +19,8 @@ import {
   FieldLabel,
 } from "@/components/common/field"
 import { Input } from "@/components/common/input"
+import { createUserFormSchema } from "@/lib/schemas/admin"
 import { formResolver } from "@/lib/schemas/resolve"
-
-const schema = z.object({
-  firstName: z.string().trim().min(1, "First name is required."),
-  lastName: z.string().trim().min(1, "Last name is required."),
-  email: z.string().trim().email("Enter a valid email."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-})
 
 interface Props {
   open: boolean
@@ -38,7 +31,7 @@ interface Props {
 export function AddUserDialog({ open, onOpenChange, onSuccess }: Props) {
   const { form, action } = useHookFormAction(
     createUserAction,
-    formResolver(schema),
+    formResolver(createUserFormSchema),
     {
       formProps: {
         defaultValues: { firstName: "", lastName: "", email: "", password: "" },

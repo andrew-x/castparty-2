@@ -543,7 +543,7 @@ export function SubmissionForm({
                         )
                         setRoleError(null)
                       }}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-label font-medium transition-colors ${
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-medium text-label transition-colors ${
                         checked
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border bg-background text-foreground hover:border-primary/50"

@@ -13,7 +13,7 @@ export default async function AppLayout({
   const user = await getCurrentUser()
   if (!user) redirect("/auth")
 
-  const hasOrg = await hasAnyOrganization(user.id)
+  const hasOrg = await hasAnyOrganization()
   if (!hasOrg) redirect("/onboarding")
 
   const [session, organizations, pendingInvitations] = await Promise.all([

@@ -78,7 +78,7 @@ export function CandidateCard({ candidate }: { candidate: Candidate }) {
                 {sub.stage && (
                   <span
                     className={cn(
-                      "shrink-0 text-[11px]",
+                      "shrink-0 text-caption-sm",
                       sub.stage.type === "SELECTED" && "text-success-text",
                       sub.stage.type === "REJECTED" && "text-destructive",
                       (sub.stage.type === "APPLIED" ||

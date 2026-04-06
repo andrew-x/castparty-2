@@ -1,5 +1,3 @@
-"use server"
-
 import { eq } from "drizzle-orm"
 import day from "@/lib/dayjs"
 import db from "@/lib/db/db"

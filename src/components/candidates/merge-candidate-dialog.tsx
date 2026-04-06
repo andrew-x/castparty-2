@@ -135,7 +135,7 @@ export function MergeCandidateDialog({ candidate, open, onOpenChange }: Props) {
                       onClick={() => setSelected(c)}
                     >
                       <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="text-label font-medium">
+                        <span className="font-medium text-label">
                           {c.firstName} {c.lastName}
                         </span>
                         <span className="text-caption text-muted-foreground">

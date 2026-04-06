@@ -127,6 +127,7 @@ Use the semantic type tokens instead of raw Tailwind size classes (`text-sm`, `t
 | Body | `text-body` | 1rem | Body text |
 | Label | `text-label` | 0.875rem | UI labels, buttons |
 | Caption | `text-caption` | 0.75rem | Fine print, badges |
+| Caption sm | `text-caption-sm` | 0.6875rem | Compact status badges |
 
 Each token includes its own `line-height` and (for display) `letter-spacing`.
 

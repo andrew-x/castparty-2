@@ -98,11 +98,13 @@ export const updateSubmission = secureActionClient
           }
         }
 
-        for (const headshot of newHeadshots) {
-          const exists = await checkFileExists(headshot.key)
-          if (!exists)
-            throw new Error("Headshot upload not found. Try uploading again.")
-        }
+        await Promise.all(
+          newHeadshots.map(async (headshot) => {
+            const exists = await checkFileExists(headshot.key)
+            if (!exists)
+              throw new Error("Headshot upload not found. Try uploading again.")
+          }),
+        )
 
         const [{ value: maxOrder }] = await db
           .select({ value: max(File.order) })

@@ -61,7 +61,7 @@ export const submissionFormSchema = z.object({
     .pipe(z.email({ error: "Enter a valid email." })),
   phone: z.string().trim().optional(),
   location: z.string().trim().max(200).optional(),
-  answers: z.record(z.string(), z.string()).default({}),
+  answers: z.record(z.string(), z.string().trim()).default({}),
   links: z
     .preprocess(
       (val) =>

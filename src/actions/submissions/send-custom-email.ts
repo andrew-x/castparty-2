@@ -1,7 +1,10 @@
 "use server"
 
 import { eq } from "drizzle-orm"
-import { sendSubmissionEmail } from "@/actions/submissions/send-submission-email"
+import {
+  type SubmissionEmailData,
+  sendSubmissionEmail,
+} from "@/actions/submissions/send-email-impl"
 import { secureActionClient } from "@/lib/action"
 import db from "@/lib/db/db"
 import { customEmailActionSchema } from "@/lib/schemas/custom-email"
@@ -14,22 +17,32 @@ export const sendCustomEmailAction = secureActionClient
       const orgId = user.activeOrganizationId
       if (!orgId) throw new Error("No active organization.")
 
+      // Verify the user's org owns this submission and fetch all data needed
+      // for sending the email in a single query
       const submission = await db.query.Submission.findFirst({
         where: (s) => eq(s.id, submissionId),
         columns: { id: true },
         with: {
-          role: {
-            columns: { id: true },
-            with: { production: { columns: { organizationId: true } } },
+          candidate: {
+            columns: { firstName: true, lastName: true, email: true },
+          },
+          role: { columns: { name: true } },
+          production: {
+            columns: { name: true, emailTemplates: true, organizationId: true },
+            with: { organization: { columns: { name: true } } },
           },
         },
       })
 
-      if (!submission || submission.role.production.organizationId !== orgId) {
+      if (!submission || submission.production.organizationId !== orgId) {
         throw new Error("Submission not found.")
       }
 
-      await sendSubmissionEmail(submissionId, null, subject, body, user.id)
+      await sendSubmissionEmail(submissionId, null, subject, body, user.id, {
+        candidate: submission.candidate,
+        role: submission.role,
+        production: submission.production as SubmissionEmailData["production"],
+      })
       return { success: true }
     },
   )

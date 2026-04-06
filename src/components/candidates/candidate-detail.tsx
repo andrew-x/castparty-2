@@ -124,7 +124,7 @@ function SubmissionNav({
             {row.submission.stage && (
               <span
                 className={cn(
-                  "shrink-0 text-[11px]",
+                  "shrink-0 text-caption-sm",
                   row.submission.stage.type === "SELECTED" &&
                     "text-success-text",
                   row.submission.stage.type === "REJECTED" &&

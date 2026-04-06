@@ -11,6 +11,8 @@ One file per feature domain. Each doc contains enough detail to recreate the fea
 | App Shell (Top Nav) | `shipped` | `src/app/(app)/layout.tsx` | [app-shell.md](./app-shell.md) |
 | Onboarding | `shipped` | `src/app/onboarding/page.tsx` | [onboarding.md](./onboarding.md) |
 | Organizations Management | `shipped` | `src/app/(app)/settings/page.tsx` | [organizations.md](./organizations.md) |
+| Account Settings | `shipped` | `src/app/(app)/settings/account/page.tsx` | [auth.md](./auth.md) |
+| Members Settings | `shipped` | `src/app/(app)/settings/members/page.tsx` | [organizations.md](./organizations.md) |
 | Accept Invitation | `shipped` | `src/app/accept-invitation/[id]/page.tsx` | [organizations.md](./organizations.md) |
 | Productions List | `shipped` | `src/app/(app)/productions/page.tsx` | [productions.md](./productions.md) |
 | Production Detail | `shipped` | `src/app/(app)/productions/[id]/(production)/page.tsx` | [productions.md](./productions.md) |
@@ -24,8 +26,11 @@ One file per feature domain. Each doc contains enough detail to recreate the fea
 | Admin Panel | `shipped` | `src/app/admin/page.tsx` | [admin.md](./admin.md) |
 | Candidates List | `shipped` | `src/app/(app)/candidates/page.tsx` | [candidates.md](./candidates.md) |
 | Candidate Detail | `shipped` | `src/app/(app)/candidates/[candidateId]/page.tsx` | [candidates.md](./candidates.md) |
+| Candidate Merge | `shipped` | `src/actions/candidates/merge-candidate.ts` | [candidates.md](./candidates.md) |
 | Home Dashboard | `shipped` | `src/app/(app)/home/page.tsx` | [app-shell.md](./app-shell.md) |
-| Public Submission Flow | `shipped` | `src/app/s/[orgSlug]/page.tsx` | [submissions.md](./submissions.md) |
+| Public Org Page | `shipped` | `src/app/s/[orgSlug]/page.tsx` | [submissions.md](./submissions.md) |
+| Public Production Page | `shipped` | `src/app/s/[orgSlug]/[productionSlug]/page.tsx` | [submissions.md](./submissions.md) |
+| Public Submission Flow | `shipped` | `src/app/s/[orgSlug]/[productionSlug]/[roleSlug]/page.tsx` | [submissions.md](./submissions.md) |
 | URL Slugs | `shipped` | `src/lib/slug.ts` | [submissions.md](./submissions.md) |
 | Pipeline Stages | `shipped` | `src/lib/pipeline.ts` | [pipeline.md](./pipeline.md) |
 | Custom Form Fields | `shipped` | `src/lib/types.ts` | [custom-fields.md](./custom-fields.md) |

@@ -27,7 +27,6 @@ import { useState } from "react"
 import { Badge } from "@/components/common/badge"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
-import { Tabs, TabsList, TabsTrigger } from "@/components/common/tabs"
 import {
   Table,
   TableBody,
@@ -36,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/common/table"
+import { Tabs, TabsList, TabsTrigger } from "@/components/common/tabs"
 import day from "@/lib/dayjs"
 import { cn } from "@/lib/util"
 

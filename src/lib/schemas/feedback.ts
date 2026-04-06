@@ -6,7 +6,7 @@ export const createFeedbackFormSchema = z.object({
     error: "Select a rating.",
   }),
   notes: z.string().trim().max(5000).optional().default(""),
-  answers: z.record(z.string(), z.string()).default({}),
+  answers: z.record(z.string(), z.string().trim()).default({}),
 })
 
 export const createFeedbackActionSchema = createFeedbackFormSchema.extend({
