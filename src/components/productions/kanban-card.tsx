@@ -106,12 +106,14 @@ export function KanbanCard({
         </button>
 
         {/* Inline drag handle */}
-        <div
+        <button
+          type="button"
           ref={handleRef}
+          aria-label="Drag to reorder"
           className="shrink-0 cursor-grab rounded-sm p-0.5 opacity-0 transition-opacity active:cursor-grabbing group-hover:opacity-100"
         >
           <GripVerticalIcon className="size-3.5 text-muted-foreground" />
-        </div>
+        </button>
       </div>
     )
   }
@@ -170,14 +172,14 @@ export function KanbanCard({
       </button>
 
       {/* Drag handle */}
-      {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: drag handle needs accessible label for screen readers */}
-      <div
+      <button
+        type="button"
         ref={handleRef}
         className="absolute top-2 right-2 flex cursor-grab items-center justify-center rounded-sm bg-background/80 p-0.5 opacity-0 backdrop-blur-sm transition-opacity active:cursor-grabbing group-hover:opacity-100"
         aria-label="Drag to reorder"
       >
         <GripVerticalIcon className="size-3.5 text-muted-foreground" />
-      </div>
+      </button>
 
       {/* Checkbox overlay */}
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops pointer-down from reaching dnd-kit; Checkbox inside handles all keyboard interaction */}

@@ -6,6 +6,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
+import logger from "@/lib/logger"
 import { generateId, IS_DEV } from "@/lib/util"
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID ?? ""
@@ -106,12 +107,19 @@ export async function moveFile(
     }),
   )
 
-  await s3.send(
-    new DeleteObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: sourceKey,
-    }),
-  )
+  try {
+    await s3.send(
+      new DeleteObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: sourceKey,
+      }),
+    )
+  } catch (error) {
+    logger.error(
+      { sourceKey, destKey, error },
+      "[R2] Move: copy succeeded but delete failed, orphaned source file",
+    )
+  }
 
   return `${R2_PUBLIC_URL}/${destKey}`
 }
@@ -173,12 +181,19 @@ export async function moveFileByKey(
     }),
   )
 
-  await s3.send(
-    new DeleteObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: sourceKey,
-    }),
-  )
+  try {
+    await s3.send(
+      new DeleteObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: sourceKey,
+      }),
+    )
+  } catch (error) {
+    logger.error(
+      { sourceKey, destKey, error },
+      "[R2] Move: copy succeeded but delete failed, orphaned source file",
+    )
+  }
 
   return {
     url: `${R2_PUBLIC_URL}/${destKey}`,

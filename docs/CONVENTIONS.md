@@ -27,7 +27,7 @@ Don't comment what the code clearly does. Comment *why* it does it.
 | Route directories | lowercase | `src/app/dashboard/` |
 | Style files | kebab-case or `globals.scss` | `globals.scss` |
 
-No barrel files (`index.ts` re-exports). Import from the actual file. (`src/lib/schemas/index.ts` re-exports all feature schemas as a convenience barrel, but `src/lib/schemas/auth.ts` is intentionally excluded — auth schemas use bare `"zod"` for Better Auth/hookform resolver compatibility and must not be mixed with the `"zod/v4"` schemas via the barrel.)
+No barrel files (`index.ts` re-exports). Import from the actual file. (`src/lib/schemas/index.ts` re-exports all feature schemas as a convenience barrel, but `src/lib/schemas/auth.ts` is excluded because auth schemas are auth-specific, not shared feature schemas.)
 
 ## TypeScript
 
@@ -293,19 +293,19 @@ All Zod schemas live in `src/lib/schemas/[feature].ts`, not inline in form or ac
 | `src/lib/schemas/candidate.ts` | Candidate update schemas |
 | `src/lib/schemas/form-fields.ts` | Custom form field add/remove/reorder schemas |
 | `src/lib/schemas/comment.ts` | Comment create schemas |
-| `src/lib/schemas/auth.ts` | `signUpSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema` — consolidated from inline form definitions; uses bare `"zod"` (not `"zod/v4"`) for Better Auth/hookform resolver compatibility; **not** re-exported from the barrel |
-| `src/lib/schemas/resolve.ts` | `formResolver` wrapper — centralizes the type cast for form vs action schema mismatch |
+| `src/lib/schemas/auth.ts` | `signUpSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema` — consolidated from inline form definitions; **not** re-exported from the barrel (auth-specific, not shared) |
+| `src/lib/schemas/resolve.ts` | `formResolver` wrapper — uses `standardSchemaResolver` to bridge form schemas to `useHookFormAction` |
 
 **Form schema vs action schema split.** Every feature defines two schemas:
 
-- **Form schema** — user-input fields only (what the form collects). Used as the `zodResolver` argument.
+- **Form schema** — user-input fields only (what the form collects). Used as the `formResolver` argument.
 - **Action schema** — extends the form schema with server-only fields (IDs from props/context) via `.extend()`, and stricter server-side refinements via `.refine()`. Used as the `next-safe-action` `.inputSchema()` argument.
 
 ```ts
 // src/lib/schemas/submission.ts
 export const submissionFormSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required.").max(100),
-  email: z.string().trim().email("Enter a valid email."),
+  email: z.string().trim().pipe(z.email({ error: "Enter a valid email." })),
   // ...
 })
 
@@ -348,7 +348,7 @@ The action file imports and uses `submissionActionSchema`; the form component im
 
 ### Exception: auth forms
 
-Forms that call the Better Auth client SDK directly (`authClient.signIn.email`, `authClient.signUp.email`) don't go through `next-safe-action` and don't use `useHookFormAction`. Standard `useForm` is correct for those. Their Zod schemas (`signUpSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`) live in `src/lib/schemas/auth.ts` and use bare `"zod"` — not `"zod/v4"` — because the hookform resolver used by Better Auth requires the unversioned import. See `src/components/auth/` for examples.
+Forms that call the Better Auth client SDK directly (`authClient.signIn.email`, `authClient.signUp.email`) don't go through `next-safe-action` and don't use `useHookFormAction`. Standard `useForm` is correct for those. Their Zod schemas (`signUpSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`) live in `src/lib/schemas/auth.ts`. See `src/components/auth/` for examples.
 
 *Updated: 2026-03-04 — Added Form Patterns section (useHookFormAction, centralized schemas, schema split)*
 *Updated: 2026-03-04 — Replaced zodResolver-as-any pattern with formResolver from @/lib/schemas/resolve; removed as-any-cast subsection; corrected backend directory example to reflect actual actions/ directories*
@@ -382,7 +382,6 @@ validation, auth, logging, and type-safe return values automatically.
 
 import { secureActionClient } from "@/lib/action"
 import { z } from "zod/v4"  // canonical import — always use "zod/v4", not "zod"
-                             // Exception: src/lib/schemas/auth.ts uses bare "zod" for Better Auth/hookform resolver compatibility
 
 export const createProduction = secureActionClient
   .metadata({

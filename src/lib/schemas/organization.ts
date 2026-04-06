@@ -15,8 +15,8 @@ export const updateOrgFormSchema = z.object({
   name: z.string().trim().min(1, "Organization name is required.").max(100),
   slug: slugSchema,
   description: z.string().trim().max(10000),
-  websiteUrl: z.string().trim().url().or(z.literal("")),
-  logo: z.string().url().or(z.literal("")).nullable().optional(),
+  websiteUrl: z.string().trim().pipe(z.url()).or(z.literal("")),
+  logo: z.string().pipe(z.url()).or(z.literal("")).nullable().optional(),
   isOrganizationProfileOpen: z.boolean(),
 })
 
@@ -26,7 +26,10 @@ export const updateOrgActionSchema = updateOrgFormSchema.extend({
 })
 
 export const inviteFormSchema = z.object({
-  email: z.string().trim().email("Enter a valid email."),
+  email: z
+    .string()
+    .trim()
+    .pipe(z.email({ error: "Enter a valid email." })),
   role: z.enum(["admin", "member"]),
 })
 

@@ -2,7 +2,7 @@ import {
   createSafeActionClient,
   DEFAULT_SERVER_ERROR_MESSAGE,
 } from "next-safe-action"
-import { z } from "zod"
+import { z } from "zod/v4"
 import { checkAuth } from "@/lib/auth/auth-util"
 import logger from "@/lib/logger"
 import { generateId, IS_DEV, IS_MAINTENANCE_MODE } from "@/lib/util"

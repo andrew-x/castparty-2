@@ -108,17 +108,18 @@ All roles in a production share the same pipeline — there is no per-role pipel
 
 ---
 
-## ADR-009: Auth schemas use bare `"zod"`, excluded from the schemas barrel
+## ADR-009: Auth schemas now use `"zod/v4"` (superseded)
 
-**Context:** `src/lib/schemas/auth.ts` defines the Zod schemas for the auth forms (`signUpSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`). These were consolidated from inline definitions in the form components. The rest of the codebase uses `"zod/v4"` as the canonical import. Better Auth's hookform resolver adapter expects the unversioned `"zod"` import — using `"zod/v4"` causes a type mismatch at the resolver boundary.
+**Context:** Auth schemas (`src/lib/schemas/auth.ts`) originally used bare `"zod"` because `@hookform/resolvers/zod` had type incompatibilities with Zod v4 schemas. This required excluding auth schemas from the barrel to avoid mixing Zod namespaces.
 
-**Decision:** Auth schemas import from bare `"zod"` and are intentionally not re-exported from `src/lib/schemas/index.ts`. This prevents the `"zod"` and `"zod/v4"` namespaces from being mixed in downstream consumers that import from the barrel.
+**Update (2026-04-05):** The form resolver was switched from `zodResolver` to `standardSchemaResolver` (`@hookform/resolvers/standard-schema`), which uses Zod v4's native Standard Schema V1 implementation. This eliminates the type mismatch entirely. Auth schemas now import from `"zod/v4"` like the rest of the codebase.
+
+**Decision:** Auth schemas use `"zod/v4"` and remain excluded from the barrel (they are auth-specific schemas, not shared feature schemas).
 
 **Consequences:**
-- Auth form components import directly from `@/lib/schemas/auth` — never from the barrel
-- The barrel (`src/lib/schemas/index.ts`) is safe to import anywhere without pulling in mixed Zod versions
-- Maintainers must be aware of this exception; the barrel omission is a signal, not an oversight
-- If Better Auth's adapter is updated to support `"zod/v4"`, auth schemas can be migrated and added to the barrel
+- All `.ts` files in the project now use `"zod/v4"` consistently
+- The resolver type cast in `formResolver` is reduced to a single `any` (form schema subset vs action schema superset) instead of two casts
+- Auth form components still import directly from `@/lib/schemas/auth`
 
 ---
 

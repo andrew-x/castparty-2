@@ -20,6 +20,16 @@ export const auth = betterAuth({
   baseURL:
     process.env.BETTER_AUTH_URL ??
     `http://localhost:${process.env.PORT ?? 3000}`,
+  trustedOrigins: [
+    process.env.BETTER_AUTH_URL ??
+      `http://localhost:${process.env.PORT ?? 3000}`,
+  ],
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
   user: {
     additionalFields: {
       firstName: { type: "string", required: true, input: true },
