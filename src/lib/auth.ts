@@ -94,7 +94,7 @@ export const auth = betterAuth({
     organizationPlugin({
       creatorRole: "owner",
       sendInvitationEmail: async (data) => {
-        const acceptUrl = getAppUrl(`/accept-invitation/${data.id}`)
+        const acceptUrl = getAppUrl(`/auth/accept-invitation/${data.id}`)
         await sendEmail({
           to: data.email,
           subject: `You're invited to ${data.organization.name}`,

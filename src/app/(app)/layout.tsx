@@ -14,7 +14,7 @@ export default async function AppLayout({
   if (!user) redirect("/auth")
 
   const hasOrg = await hasAnyOrganization()
-  if (!hasOrg) redirect("/onboarding")
+  if (!hasOrg) redirect("/auth/onboarding")
 
   const [session, organizations, pendingInvitations] = await Promise.all([
     getSession(),
