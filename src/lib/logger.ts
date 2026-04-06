@@ -2,7 +2,7 @@
  * This is purely AI generated, so if something breaks... ¯\_(ツ)_/¯
  */
 
-import dayjs from "@/lib/dayjs"
+import day from "@/lib/dayjs"
 import { IS_DEV } from "@/lib/util"
 
 type LogLevel = "info" | "error"
@@ -36,7 +36,7 @@ const createLogger = () => {
   const log = (level: LogLevel, ...inputs: LogInput[]) => {
     if (!IS_DEV) return
 
-    const timestamp = dayjs().format("HH:mm:ss.SSS")
+    const timestamp = day().format("HH:mm:ss.SSS")
     const levelUpper = level.toUpperCase()
 
     // Format each input with proper spacing and indentation

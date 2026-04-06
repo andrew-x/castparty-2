@@ -14,6 +14,9 @@ export async function getPublicOrgProfile(organizationId: string) {
     },
   })
 
+  // Legacy backfill: orgs created before the OrganizationProfile table was
+  // introduced may not have a row. Auto-create with defaults so public pages
+  // render correctly. createOrganization now handles this for new orgs.
   if (!profile) {
     await db
       .insert(OrganizationProfile)

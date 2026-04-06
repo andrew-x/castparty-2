@@ -28,29 +28,32 @@ export const addProductionStage = secureActionClient
     })
     if (!production) throw new Error("Production not found.")
 
-    // Find all production template stages (including system stages) and enforce limit
-    const allTemplateStages = await db.query.PipelineStage.findMany({
-      where: (s) => eq(s.productionId, productionId),
-      columns: { id: true, order: true, type: true },
-    })
-    if (allTemplateStages.length >= MAX_PIPELINE_STAGES) {
-      throw new Error(
-        `A production can have at most ${MAX_PIPELINE_STAGES} pipeline stages.`,
-      )
-    }
-
-    const maxOrder = allTemplateStages
-      .filter((s) => s.type === "CUSTOM")
-      .reduce((max, s) => Math.max(max, s.order), 0)
-
     const id = generateId("stg")
-    await db.insert(PipelineStage).values({
-      id,
-      organizationId: orgId,
-      productionId,
-      name,
-      order: maxOrder + 1,
-      type: "CUSTOM",
+
+    await db.transaction(async (tx) => {
+      // Find all production template stages (including system stages) and enforce limit
+      const allTemplateStages = await tx.query.PipelineStage.findMany({
+        where: (s) => eq(s.productionId, productionId),
+        columns: { id: true, order: true, type: true },
+      })
+      if (allTemplateStages.length >= MAX_PIPELINE_STAGES) {
+        throw new Error(
+          `A production can have at most ${MAX_PIPELINE_STAGES} pipeline stages.`,
+        )
+      }
+
+      const maxOrder = allTemplateStages
+        .filter((s) => s.type === "CUSTOM")
+        .reduce((max, s) => Math.max(max, s.order), 0)
+
+      await tx.insert(PipelineStage).values({
+        id,
+        organizationId: orgId,
+        productionId,
+        name,
+        order: maxOrder + 1,
+        type: "CUSTOM",
+      })
     })
 
     revalidatePath("/", "layout")
