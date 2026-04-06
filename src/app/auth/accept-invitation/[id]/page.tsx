@@ -16,7 +16,7 @@ export default async function AcceptInvitationPage({
   const session = await getSession()
 
   if (!session) {
-    redirect(`/auth?tab=signup&redirect=/accept-invitation/${id}`)
+    redirect(`/auth?tab=signup&redirect=/auth/accept-invitation/${id}`)
   }
 
   return <AcceptInvitationCard invitationId={id} />
