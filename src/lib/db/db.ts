@@ -9,14 +9,15 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL is not set")
 }
 
-const pool = new Pool({ connectionString: databaseUrl })
-const db = drizzle({
-  schema,
-  client: pool,
-  casing: "snake_case",
-})
+function createDb() {
+  const pool = new Pool({ connectionString: databaseUrl })
+  return drizzle({ schema, client: pool, casing: "snake_case" })
+}
 
-const globalForDrizzle = global as unknown as { db: typeof db }
+const globalForDrizzle = global as unknown as {
+  db: ReturnType<typeof createDb>
+}
+const db = globalForDrizzle.db ?? createDb()
 
 if (process.env.NODE_ENV !== "production") globalForDrizzle.db = db
 

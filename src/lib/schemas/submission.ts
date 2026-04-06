@@ -4,7 +4,7 @@ import { z } from "zod/v4"
 const httpUrl = z
   .string()
   .trim()
-  .url("Enter a valid URL.")
+  .pipe(z.url({ error: "Enter a valid URL." }))
   .refine(
     (v) => /^https?:\/\//i.test(v),
     "URL must start with http:// or https://",
@@ -45,14 +45,20 @@ export const customFieldFileSchema = z.object({
 
 export const representationSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(200),
-  email: z.string().trim().email("Enter a valid email."),
+  email: z
+    .string()
+    .trim()
+    .pipe(z.email({ error: "Enter a valid email." })),
   phone: z.string().trim().max(50).default(""),
 })
 
 export const submissionFormSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required.").max(100),
   lastName: z.string().trim().min(1, "Last name is required.").max(100),
-  email: z.string().trim().email("Enter a valid email."),
+  email: z
+    .string()
+    .trim()
+    .pipe(z.email({ error: "Enter a valid email." })),
   phone: z.string().trim().optional(),
   location: z.string().trim().max(200).optional(),
   answers: z.record(z.string(), z.string()).default({}),
@@ -108,7 +114,10 @@ export const reorderSubmissionSchema = z.object({
 export const updateSubmissionFormSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required.").max(100),
   lastName: z.string().trim().min(1, "Last name is required.").max(100),
-  email: z.string().trim().email("Enter a valid email."),
+  email: z
+    .string()
+    .trim()
+    .pipe(z.email({ error: "Enter a valid email." })),
   phone: z.string().trim().max(50).optional().or(z.literal("")),
   location: z.string().trim().max(200).optional().or(z.literal("")),
   links: z

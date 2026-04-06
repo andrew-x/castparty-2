@@ -1,7 +1,14 @@
 import type { ReactElement } from "react"
+import { Resend } from "resend"
 import { addEmail } from "@/lib/email-dev-store"
 import logger from "@/lib/logger"
 import { IS_DEV } from "@/lib/util"
+
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 
 export interface SendEmailOptions {
   to: string
@@ -31,9 +38,7 @@ export async function sendEmail({
       return { html }
     }
 
-    const { Resend } = await import("resend")
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    await resend.emails.send({ from, to, subject, html, text, replyTo })
+    await getResend().emails.send({ from, to, subject, html, text, replyTo })
     return { html }
   } catch (error) {
     logger.error("[Email] Failed to send:", error)
@@ -73,13 +78,10 @@ export async function sendBatchEmail(
       return rendered.map(({ html }) => ({ html }))
     }
 
-    const { Resend } = await import("resend")
-    const resend = new Resend(process.env.RESEND_API_KEY)
-
     // Chunk into batches of 100 (Resend's per-call limit)
     for (let i = 0; i < rendered.length; i += BATCH_LIMIT) {
       const chunk = rendered.slice(i, i + BATCH_LIMIT)
-      await resend.batch.send(
+      await getResend().batch.send(
         chunk.map((email) => ({
           from,
           to: email.to,

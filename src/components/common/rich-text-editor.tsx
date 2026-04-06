@@ -93,7 +93,11 @@ export function RichTextEditor({
         className,
       )}
     >
-      <div className="flex gap-0.5 border-input border-b px-2 py-1.5">
+      <div
+        role="toolbar"
+        aria-label="Formatting options"
+        className="flex gap-0.5 border-input border-b px-2 py-1.5"
+      >
         {toggleButtons.map((btn) => (
           <button
             key={btn.label}

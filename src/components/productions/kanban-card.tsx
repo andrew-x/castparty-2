@@ -106,8 +106,10 @@ export function KanbanCard({
         </button>
 
         {/* Inline drag handle */}
+        {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: drag handle needs accessible label for screen readers */}
         <div
           ref={handleRef}
+          aria-label="Drag to reorder"
           className="shrink-0 cursor-grab rounded-sm p-0.5 opacity-0 transition-opacity active:cursor-grabbing group-hover:opacity-100"
         >
           <GripVerticalIcon className="size-3.5 text-muted-foreground" />

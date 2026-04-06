@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET
   if (!webhookSecret) {
     logger.error("[Webhook] RESEND_WEBHOOK_SECRET not configured")
-    return new Response("Webhook secret not configured", { status: 500 })
+    return new Response("Internal server error", { status: 500 })
   }
 
   const body = await req.text()
