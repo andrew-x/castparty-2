@@ -11,6 +11,7 @@ import {
   UsersIcon,
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { flushSync } from "react-dom"
 import { useAction } from "next-safe-action/hooks"
 import { useRef, useState } from "react"
 import { bulkUpdateSubmissionStatus } from "@/actions/submissions/bulk-update-submission-status"
@@ -32,6 +33,7 @@ import { BulkEmailDialog } from "@/components/productions/bulk-email-dialog"
 import { ComparisonView } from "@/components/productions/comparison-view"
 import { EmailPreviewDialog } from "@/components/productions/email-preview-dialog"
 import { KanbanColumn } from "@/components/productions/kanban-column"
+import { KanbanErrorBoundary } from "@/components/productions/kanban-error-boundary"
 import { RejectReasonDialog } from "@/components/productions/reject-reason-dialog"
 import { SubmissionDetailSheet } from "@/components/productions/submission-detail-sheet"
 import { SubmissionTableView } from "@/components/productions/submission-table-view"
@@ -596,156 +598,160 @@ export function ProductionSubmissions({
         )}
       </div>
 
-      <DragDropProvider
-        onDragStart={() => {
-          previousColumns.current = columns
-        }}
-        onDragOver={(event) => {
-          setColumns((current) => {
-            const next = move(current, event)
-            movedColumns.current = next
-            return next
-          })
-        }}
-        onDragEnd={(event) => {
-          if (event.canceled) {
-            setColumns(previousColumns.current)
-            movedColumns.current = null
-            return
-          }
-
-          const { source } = event.operation
-          if (!source) return
-
-          const submissionId = String(source.id)
-          const currentColumns = movedColumns.current
-          movedColumns.current = null
-          if (!currentColumns) return
-
-          // Find original stage
-          let originalStageId: string | null = null
-          for (const [stageId, items] of Object.entries(
-            previousColumns.current,
-          )) {
-            if (items.some((s) => s.id === submissionId)) {
-              originalStageId = stageId
-              break
-            }
-          }
-
-          // Find new stage and index
-          let newStageId: string | null = null
-          let newIndex = -1
-          for (const [stageId, items] of Object.entries(currentColumns)) {
-            const idx = items.findIndex((s) => s.id === submissionId)
-            if (idx !== -1) {
-              newStageId = stageId
-              newIndex = idx
-              break
-            }
-          }
-
-          if (!originalStageId || !newStageId || newIndex === -1) return
-
-          // Check if position actually changed (same column, same index = no-op)
-          if (originalStageId === newStageId) {
-            const prevCol = previousColumns.current[originalStageId]
-            const prevIdx =
-              prevCol?.findIndex((s) => s.id === submissionId) ?? -1
-            if (prevIdx === newIndex) return
-          }
-
-          // Compute sort order from neighbors in the new column
-          const col = currentColumns[newStageId]
-          const prevKey =
-            newIndex > 0 ? col[newIndex - 1].sortOrder || null : null
-          const nextKey =
-            newIndex < col.length - 1
-              ? col[newIndex + 1].sortOrder || null
-              : null
-          const newSortOrder = generateKeyBetween(prevKey, nextKey)
-
-          // Update local state with new sortOrder for accurate subsequent drags
-          setColumns((current) => {
-            const items = current[newStageId]
-            if (!items) return current
-            return {
-              ...current,
-              [newStageId]: items.map((s) =>
-                s.id === submissionId ? { ...s, sortOrder: newSortOrder } : s,
-              ),
-            }
-          })
-
-          if (originalStageId !== newStageId) {
-            // Cross-column move
-            if (rejectedStage && newStageId === rejectedStage.id) {
-              pendingRejectRef.current = {
-                type: "drag",
-                submissionId,
-                stageId: newStageId,
-                sortOrder: newSortOrder,
-              }
-              setRejectDialogOpen(true)
-              return
-            }
-
-            if (selectedStage && newStageId === selectedStage.id) {
-              pendingSelectRef.current = {
-                submissionId,
-                stageId: newStageId,
-                sortOrder: newSortOrder,
-              }
-              setSelectDialogOpen(true)
-              return
-            }
-
-            setPendingSubmissionId(submissionId)
-            executeStatusChangeAsync({
-              submissionId,
-              stageId: newStageId,
-              sortOrder: newSortOrder,
+      <KanbanErrorBoundary>
+        <DragDropProvider
+          onDragStart={() => {
+            previousColumns.current = columns
+          }}
+          onDragOver={(event) => {
+            flushSync(() => {
+              setColumns((current) => {
+                const next = move(current, event)
+                movedColumns.current = next
+                return next
+              })
             })
-          } else {
-            // Within-column reorder
-            executeReorder({ submissionId, sortOrder: newSortOrder })
-          }
-        }}
-      >
-        {viewMode === "table" ? (
-          <SubmissionTableView
-            pipelineStages={pipelineStages}
-            filteredColumns={filteredColumns}
-            searchActive={query !== "" || !showAllRoles}
-            selectedIds={selectedIds}
-            pendingSubmissionId={pendingSubmissionId}
-            onSelect={selectSubmission}
-            onToggle={toggleSelection}
-            onSelectAll={addToSelection}
-            onDeselectAll={removeFromSelection}
-            onStageChange={handleStageChange}
-          />
-        ) : (
-          <div className="flex min-h-0 flex-1 gap-block overflow-x-auto pb-2">
-            {pipelineStages.map((stage) => (
-              <KanbanColumn
-                key={stage.id}
-                stage={stage}
-                items={filteredColumns[stage.id] ?? []}
-                compact={viewMode === "compact"}
-                searchActive={query !== "" || !showAllRoles}
-                selectedIds={selectedIds}
-                pendingSubmissionId={pendingSubmissionId}
-                showRoleName
-                onToggle={toggleSelection}
-                onSelectAll={addToSelection}
-                onDeselectAll={removeFromSelection}
-                onSelect={selectSubmission}
-              />
-            ))}
-          </div>
-        )}
-      </DragDropProvider>
+          }}
+          onDragEnd={(event) => {
+            if (event.canceled) {
+              setColumns(previousColumns.current)
+              movedColumns.current = null
+              return
+            }
+
+            const { source } = event.operation
+            if (!source) return
+
+            const submissionId = String(source.id)
+            const currentColumns = movedColumns.current
+            movedColumns.current = null
+            if (!currentColumns) return
+
+            // Find original stage
+            let originalStageId: string | null = null
+            for (const [stageId, items] of Object.entries(
+              previousColumns.current,
+            )) {
+              if (items.some((s) => s.id === submissionId)) {
+                originalStageId = stageId
+                break
+              }
+            }
+
+            // Find new stage and index
+            let newStageId: string | null = null
+            let newIndex = -1
+            for (const [stageId, items] of Object.entries(currentColumns)) {
+              const idx = items.findIndex((s) => s.id === submissionId)
+              if (idx !== -1) {
+                newStageId = stageId
+                newIndex = idx
+                break
+              }
+            }
+
+            if (!originalStageId || !newStageId || newIndex === -1) return
+
+            // Check if position actually changed (same column, same index = no-op)
+            if (originalStageId === newStageId) {
+              const prevCol = previousColumns.current[originalStageId]
+              const prevIdx =
+                prevCol?.findIndex((s) => s.id === submissionId) ?? -1
+              if (prevIdx === newIndex) return
+            }
+
+            // Compute sort order from neighbors in the new column
+            const col = currentColumns[newStageId]
+            const prevKey =
+              newIndex > 0 ? col[newIndex - 1].sortOrder || null : null
+            const nextKey =
+              newIndex < col.length - 1
+                ? col[newIndex + 1].sortOrder || null
+                : null
+            const newSortOrder = generateKeyBetween(prevKey, nextKey)
+
+            // Update local state with new sortOrder for accurate subsequent drags
+            setColumns((current) => {
+              const items = current[newStageId]
+              if (!items) return current
+              return {
+                ...current,
+                [newStageId]: items.map((s) =>
+                  s.id === submissionId ? { ...s, sortOrder: newSortOrder } : s,
+                ),
+              }
+            })
+
+            if (originalStageId !== newStageId) {
+              // Cross-column move
+              if (rejectedStage && newStageId === rejectedStage.id) {
+                pendingRejectRef.current = {
+                  type: "drag",
+                  submissionId,
+                  stageId: newStageId,
+                  sortOrder: newSortOrder,
+                }
+                setRejectDialogOpen(true)
+                return
+              }
+
+              if (selectedStage && newStageId === selectedStage.id) {
+                pendingSelectRef.current = {
+                  submissionId,
+                  stageId: newStageId,
+                  sortOrder: newSortOrder,
+                }
+                setSelectDialogOpen(true)
+                return
+              }
+
+              setPendingSubmissionId(submissionId)
+              executeStatusChangeAsync({
+                submissionId,
+                stageId: newStageId,
+                sortOrder: newSortOrder,
+              })
+            } else {
+              // Within-column reorder
+              executeReorder({ submissionId, sortOrder: newSortOrder })
+            }
+          }}
+        >
+          {viewMode === "table" ? (
+            <SubmissionTableView
+              pipelineStages={pipelineStages}
+              filteredColumns={filteredColumns}
+              searchActive={query !== "" || !showAllRoles}
+              selectedIds={selectedIds}
+              pendingSubmissionId={pendingSubmissionId}
+              onSelect={selectSubmission}
+              onToggle={toggleSelection}
+              onSelectAll={addToSelection}
+              onDeselectAll={removeFromSelection}
+              onStageChange={handleStageChange}
+            />
+          ) : (
+            <div className="flex min-h-0 flex-1 gap-block overflow-x-auto pb-2">
+              {pipelineStages.map((stage) => (
+                <KanbanColumn
+                  key={stage.id}
+                  stage={stage}
+                  items={filteredColumns[stage.id] ?? []}
+                  compact={viewMode === "compact"}
+                  searchActive={query !== "" || !showAllRoles}
+                  selectedIds={selectedIds}
+                  pendingSubmissionId={pendingSubmissionId}
+                  showRoleName
+                  onToggle={toggleSelection}
+                  onSelectAll={addToSelection}
+                  onDeselectAll={removeFromSelection}
+                  onSelect={selectSubmission}
+                />
+              ))}
+            </div>
+          )}
+        </DragDropProvider>
+      </KanbanErrorBoundary>
 
       {selectedIds.size > 0 && (
         <BulkActionBar
