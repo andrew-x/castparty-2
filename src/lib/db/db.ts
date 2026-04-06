@@ -15,7 +15,7 @@ function createDb() {
 }
 
 const globalForDrizzle = global as unknown as {
-  db: ReturnType<typeof createDb>
+  db?: ReturnType<typeof createDb>
 }
 const db = globalForDrizzle.db ?? createDb()
 

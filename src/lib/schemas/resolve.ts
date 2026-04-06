@@ -5,11 +5,12 @@ import type { FieldValues } from "react-hook-form"
 /**
  * Typed wrapper around standardSchemaResolver for use with useHookFormAction.
  *
- * Form schemas intentionally differ from action schemas (fewer fields),
- * so the resolver type doesn't match what the adapter expects. This
- * wrapper centralises the cast so individual form files stay clean.
+ * standardSchemaResolver returns Resolver<FieldValues> (generic), but
+ * useHookFormAction expects Resolver<SpecificFields> (contravariant in
+ * its type parameter). The any cast bridges this mismatch so individual
+ * form files stay clean.
  */
-// biome-ignore lint/suspicious/noExplicitAny: form schema is a subset of action schema
+// biome-ignore lint/suspicious/noExplicitAny: Resolver<FieldValues> is not assignable to Resolver<SpecificFields> due to contravariance
 export function formResolver(schema: StandardSchemaV1<FieldValues>): any {
   return standardSchemaResolver(schema)
 }
