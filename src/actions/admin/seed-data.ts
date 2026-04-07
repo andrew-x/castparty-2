@@ -6,6 +6,7 @@ import { generateNKeysBetween } from "fractional-indexing"
 import { revalidatePath } from "next/cache"
 import { adminActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
+import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import {
   Candidate,
@@ -417,6 +418,10 @@ export const seedDataAction = adminActionClient
             ? faker.helpers.arrayElement(prod.rejectReasons)
             : null
 
+        // Spread createdAt across the last 7 days for dashboard charts
+        const daysAgo = faker.number.int({ min: 0, max: 6 })
+        const submittedAt = day().subtract(daysAgo, "day").toDate()
+
         submissionRows.push({
           id: subId,
           productionId: prod.id,
@@ -428,6 +433,7 @@ export const seedDataAction = adminActionClient
           links: Math.random() < 0.4 ? [faker.internet.url()] : [],
           unionStatus,
           representation,
+          createdAt: submittedAt,
         })
 
         // Pipeline updates: trace path from APPLIED to current stage

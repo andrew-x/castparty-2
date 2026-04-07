@@ -210,7 +210,7 @@ export function CandidateDetail({ candidate, submissions }: Props) {
                 <div className="flex items-center justify-between px-4 pt-1.5 pb-0">
                   <div className="flex min-w-0 items-center gap-element">
                     <Link
-                      href={`/productions/${selected.productionId}?submission=${submission.id}`}
+                      href={`/productions/${selected.productionId}/submissions?submission=${submission.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 font-medium text-foreground text-label transition-colors hover:text-muted-foreground"
