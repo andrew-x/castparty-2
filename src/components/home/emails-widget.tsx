@@ -1,10 +1,10 @@
 import { MailIcon } from "lucide-react"
 import Link from "next/link"
-import type { RecentEmail } from "@/actions/dashboard/get-recent-emails"
+import type { RecentInboundEmail } from "@/actions/dashboard/get-recent-emails"
 import day from "@/lib/dayjs"
 
 interface Props {
-  emails: RecentEmail[]
+  emails: RecentInboundEmail[]
 }
 
 export function EmailsWidget({ emails }: Props) {
@@ -18,7 +18,7 @@ export function EmailsWidget({ emails }: Props) {
           No inbound emails yet
         </p>
       ) : (
-        <div className="flex min-h-48 max-h-[28rem] flex-col overflow-y-auto">
+        <div className="flex max-h-[28rem] min-h-48 flex-col overflow-y-auto">
           {emails.map((email) => {
             const inner = (
               <div className="flex items-start gap-element px-block py-element">

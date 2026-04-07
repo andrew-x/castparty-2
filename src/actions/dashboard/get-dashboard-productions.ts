@@ -1,6 +1,6 @@
 "use server"
 
-import { count, desc, eq, sql } from "drizzle-orm"
+import { count, eq } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
 import db from "@/lib/db/db"
 import { PipelineStage, Production, Role, Submission } from "@/lib/db/schema"
@@ -27,118 +27,115 @@ export async function getDashboardProductions(): Promise<
   const orgId = user.activeOrganizationId
   if (!orgId) return []
 
-  const roleCountSq = db
-    .select({
-      productionId: Role.productionId,
-      count: count().as("role_count"),
-    })
-    .from(Role)
-    .groupBy(Role.productionId)
-    .as("rc")
+  // Fetch productions, role counts by status, and submission counts by stage type
+  // using 3 queries instead of 8 subqueries
+  const [productions, roleCounts, submissionCounts] = await Promise.all([
+    db.query.Production.findMany({
+      where: (p, { eq }) => eq(p.organizationId, orgId),
+      orderBy: (p, { desc }) => desc(p.createdAt),
+      columns: {
+        id: true,
+        name: true,
+        status: true,
+        createdAt: true,
+      },
+    }),
+    db
+      .select({
+        productionId: Role.productionId,
+        status: Role.status,
+        count: count().as("count"),
+      })
+      .from(Role)
+      .innerJoin(Production, eq(Role.productionId, Production.id))
+      .where(eq(Production.organizationId, orgId))
+      .groupBy(Role.productionId, Role.status),
+    db
+      .select({
+        productionId: Submission.productionId,
+        stageType: PipelineStage.type,
+        count: count().as("count"),
+      })
+      .from(Submission)
+      .innerJoin(PipelineStage, eq(Submission.stageId, PipelineStage.id))
+      .innerJoin(Production, eq(Submission.productionId, Production.id))
+      .where(eq(Production.organizationId, orgId))
+      .groupBy(Submission.productionId, PipelineStage.type),
+  ])
 
-  const openRoleSq = db
-    .select({
-      productionId: Role.productionId,
-      count: count().as("open_role_count"),
-    })
-    .from(Role)
-    .where(eq(Role.status, "open"))
-    .groupBy(Role.productionId)
-    .as("open_roles")
+  // Build lookup maps
+  const roleMap = new Map<
+    string,
+    { total: number; open: number; closed: number; archived: number }
+  >()
+  for (const r of roleCounts) {
+    const entry = roleMap.get(r.productionId) ?? {
+      total: 0,
+      open: 0,
+      closed: 0,
+      archived: 0,
+    }
+    entry.total += r.count
+    if (r.status === "open") entry.open += r.count
+    else if (r.status === "closed") entry.closed += r.count
+    else if (r.status === "archive") entry.archived += r.count
+    roleMap.set(r.productionId, entry)
+  }
 
-  const closedRoleSq = db
-    .select({
-      productionId: Role.productionId,
-      count: count().as("closed_role_count"),
-    })
-    .from(Role)
-    .where(eq(Role.status, "closed"))
-    .groupBy(Role.productionId)
-    .as("closed_roles")
+  const stageMap = new Map<
+    string,
+    { applied: number; inReview: number; selected: number; rejected: number }
+  >()
+  for (const s of submissionCounts) {
+    const entry = stageMap.get(s.productionId) ?? {
+      applied: 0,
+      inReview: 0,
+      selected: 0,
+      rejected: 0,
+    }
+    if (s.stageType === "APPLIED") entry.applied += s.count
+    else if (s.stageType === "CUSTOM") entry.inReview += s.count
+    else if (s.stageType === "SELECTED") entry.selected += s.count
+    else if (s.stageType === "REJECTED") entry.rejected += s.count
+    stageMap.set(s.productionId, entry)
+  }
 
-  const archivedRoleSq = db
-    .select({
-      productionId: Role.productionId,
-      count: count().as("archived_role_count"),
-    })
-    .from(Role)
-    .where(eq(Role.status, "archive"))
-    .groupBy(Role.productionId)
-    .as("archived_roles")
+  // Assemble and sort: open first, then closed, then archived
+  const result: DashboardProduction[] = productions.map((p) => {
+    const roles = roleMap.get(p.id) ?? {
+      total: 0,
+      open: 0,
+      closed: 0,
+      archived: 0,
+    }
+    const stages = stageMap.get(p.id) ?? {
+      applied: 0,
+      inReview: 0,
+      selected: 0,
+      rejected: 0,
+    }
+    return {
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      createdAt: p.createdAt,
+      roleCount: roles.total,
+      openRoleCount: roles.open,
+      closedRoleCount: roles.closed,
+      archivedRoleCount: roles.archived,
+      appliedCount: stages.applied,
+      inReviewCount: stages.inReview,
+      selectedCount: stages.selected,
+      rejectedCount: stages.rejected,
+    }
+  })
 
-  const appliedSq = db
-    .select({
-      productionId: Submission.productionId,
-      count: count().as("applied_count"),
-    })
-    .from(Submission)
-    .innerJoin(PipelineStage, eq(Submission.stageId, PipelineStage.id))
-    .where(eq(PipelineStage.type, "APPLIED"))
-    .groupBy(Submission.productionId)
-    .as("applied")
+  result.sort((a, b) => {
+    const statusOrder = { open: 0, closed: 1, archive: 2 }
+    const diff = statusOrder[a.status] - statusOrder[b.status]
+    if (diff !== 0) return diff
+    return b.createdAt.getTime() - a.createdAt.getTime()
+  })
 
-  const inReviewSq = db
-    .select({
-      productionId: Submission.productionId,
-      count: count().as("in_review_count"),
-    })
-    .from(Submission)
-    .innerJoin(PipelineStage, eq(Submission.stageId, PipelineStage.id))
-    .where(eq(PipelineStage.type, "CUSTOM"))
-    .groupBy(Submission.productionId)
-    .as("in_review")
-
-  const selectedSq = db
-    .select({
-      productionId: Submission.productionId,
-      count: count().as("selected_count"),
-    })
-    .from(Submission)
-    .innerJoin(PipelineStage, eq(Submission.stageId, PipelineStage.id))
-    .where(eq(PipelineStage.type, "SELECTED"))
-    .groupBy(Submission.productionId)
-    .as("selected")
-
-  const rejectedSq = db
-    .select({
-      productionId: Submission.productionId,
-      count: count().as("rejected_count"),
-    })
-    .from(Submission)
-    .innerJoin(PipelineStage, eq(Submission.stageId, PipelineStage.id))
-    .where(eq(PipelineStage.type, "REJECTED"))
-    .groupBy(Submission.productionId)
-    .as("rejected")
-
-  const rows = await db
-    .select({
-      id: Production.id,
-      name: Production.name,
-      status: Production.status,
-      createdAt: Production.createdAt,
-      roleCount: sql<number>`coalesce(${roleCountSq.count}, 0)`,
-      openRoleCount: sql<number>`coalesce(${openRoleSq.count}, 0)`,
-      closedRoleCount: sql<number>`coalesce(${closedRoleSq.count}, 0)`,
-      archivedRoleCount: sql<number>`coalesce(${archivedRoleSq.count}, 0)`,
-      appliedCount: sql<number>`coalesce(${appliedSq.count}, 0)`,
-      inReviewCount: sql<number>`coalesce(${inReviewSq.count}, 0)`,
-      selectedCount: sql<number>`coalesce(${selectedSq.count}, 0)`,
-      rejectedCount: sql<number>`coalesce(${rejectedSq.count}, 0)`,
-    })
-    .from(Production)
-    .leftJoin(roleCountSq, eq(roleCountSq.productionId, Production.id))
-    .leftJoin(openRoleSq, eq(openRoleSq.productionId, Production.id))
-    .leftJoin(closedRoleSq, eq(closedRoleSq.productionId, Production.id))
-    .leftJoin(archivedRoleSq, eq(archivedRoleSq.productionId, Production.id))
-    .leftJoin(appliedSq, eq(appliedSq.productionId, Production.id))
-    .leftJoin(inReviewSq, eq(inReviewSq.productionId, Production.id))
-    .leftJoin(selectedSq, eq(selectedSq.productionId, Production.id))
-    .leftJoin(rejectedSq, eq(rejectedSq.productionId, Production.id))
-    .where(eq(Production.organizationId, orgId))
-    .orderBy(
-      sql`CASE WHEN ${Production.status} = 'open' THEN 0 WHEN ${Production.status} = 'closed' THEN 1 ELSE 2 END`,
-      desc(Production.createdAt),
-    )
-
-  return rows as DashboardProduction[]
+  return result
 }

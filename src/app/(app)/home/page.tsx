@@ -2,7 +2,7 @@ import { ClapperboardIcon, PlusIcon } from "lucide-react"
 import type { Metadata } from "next"
 import { getDashboardProductions } from "@/actions/dashboard/get-dashboard-productions"
 import { getRecentActivity } from "@/actions/dashboard/get-recent-activity"
-import { getRecentEmails } from "@/actions/dashboard/get-recent-emails"
+import { getRecentInboundEmails } from "@/actions/dashboard/get-recent-emails"
 import { Button } from "@/components/common/button"
 import {
   Empty,
@@ -26,7 +26,7 @@ export default async function HomePage() {
   const [user, productions, emails, activity] = await Promise.all([
     getCurrentUser(),
     getDashboardProductions(),
-    getRecentEmails(),
+    getRecentInboundEmails(),
     getRecentActivity(),
   ])
 

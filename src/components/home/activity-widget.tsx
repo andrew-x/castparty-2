@@ -33,7 +33,7 @@ export function ActivityWidget({ activity }: Props) {
           No comments or feedback yet
         </p>
       ) : (
-        <div className="flex min-h-48 max-h-[28rem] flex-col overflow-y-auto">
+        <div className="flex max-h-[28rem] min-h-48 flex-col overflow-y-auto">
           {activity.map((item) => (
             <Link
               key={`${item.type}-${item.id}`}
