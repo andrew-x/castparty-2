@@ -22,7 +22,7 @@ export function ProductionsWidget({ productions }: Props) {
   return (
     <section className="flex flex-col gap-block">
       <h2 className="font-medium text-heading">Productions</h2>
-      <div className="flex max-h-[32rem] flex-col gap-block overflow-y-auto">
+      <div className="flex max-h-128 flex-col gap-block overflow-y-auto">
         {visibleProductions.map((production) => {
           const config = statusConfig[production.status]
           return (

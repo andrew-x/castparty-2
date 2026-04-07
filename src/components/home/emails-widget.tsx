@@ -18,7 +18,7 @@ export function EmailsWidget({ emails }: Props) {
           No inbound emails yet
         </p>
       ) : (
-        <div className="flex max-h-[28rem] min-h-48 flex-col overflow-y-auto">
+        <div className="flex max-h-128 min-h-48 flex-col overflow-y-auto">
           {emails.map((email) => {
             const inner = (
               <div className="flex items-start gap-element px-block py-element">

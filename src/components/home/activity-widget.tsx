@@ -8,14 +8,16 @@ interface Props {
   activity: ActivityItem[]
 }
 
-const ratingLabels: Record<string, string> = {
+type FeedbackRating = Extract<ActivityItem, { type: "feedback" }>["rating"]
+
+const ratingLabels: Record<FeedbackRating, string> = {
   STRONG_YES: "Strong Yes",
   YES: "Yes",
   NO: "No",
   STRONG_NO: "Strong No",
 }
 
-const ratingColors: Record<string, string> = {
+const ratingColors: Record<FeedbackRating, string> = {
   STRONG_YES: "bg-success-light text-success-text",
   YES: "bg-success-subtle text-success-text",
   NO: "bg-error-subtle text-error-text",
@@ -33,7 +35,7 @@ export function ActivityWidget({ activity }: Props) {
           No comments or feedback yet
         </p>
       ) : (
-        <div className="flex max-h-[28rem] min-h-48 flex-col overflow-y-auto">
+        <div className="flex max-h-128 min-h-48 flex-col overflow-y-auto">
           {activity.map((item) => (
             <Link
               key={`${item.type}-${item.id}`}

@@ -35,7 +35,7 @@ export default async function HomePage() {
   return (
     <Page>
       <PageHeader
-        title={`Welcome, ${user?.firstName ?? ""}`}
+        title={user?.firstName ? `Welcome, ${user.firstName}.` : "Welcome."}
         actions={
           hasVisibleProductions ? (
             <Button href="/productions/new" leftSection={<PlusIcon />}>
