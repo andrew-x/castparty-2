@@ -36,7 +36,6 @@ interface Props {
   submissions: DashboardSubmission[]
   pipelineStages: DashboardStage[]
   roles: DashboardRole[]
-  rejectReasons: string[]
   recentEmails: DashboardEmail[]
   recentActivity: (DashboardComment | DashboardFeedback)[]
   productionStatus: string

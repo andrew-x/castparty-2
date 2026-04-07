@@ -57,7 +57,6 @@ export interface DashboardData {
   submissions: DashboardSubmission[]
   pipelineStages: DashboardStage[]
   roles: DashboardRole[]
-  rejectReasons: string[]
   recentEmails: DashboardEmail[]
   recentActivity: (DashboardComment | DashboardFeedback)[]
 }
@@ -73,7 +72,6 @@ export async function getProductionDashboard(
     where: (p) => and(eq(p.id, productionId), eq(p.organizationId, orgId)),
     columns: {
       id: true,
-      rejectReasons: true,
     },
     with: {
       pipelineStages: {
@@ -203,7 +201,6 @@ export async function getProductionDashboard(
     submissions,
     pipelineStages: production.pipelineStages as DashboardStage[],
     roles: production.roles.map((r) => ({ id: r.id, name: r.name })),
-    rejectReasons: (production.rejectReasons as string[]) ?? [],
     recentEmails: allEmails.slice(0, 10),
     recentActivity: allActivity.slice(0, 10),
   }

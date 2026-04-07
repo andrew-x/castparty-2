@@ -62,14 +62,24 @@ export function DashboardInboundChart({
 
   if (totalCount === 0) {
     return (
-      <Empty className="py-12">
-        <EmptyHeader>
-          <EmptyTitle>No submissions in the last 7 days</EmptyTitle>
-          <EmptyDescription>
-            New submissions will appear here as candidates apply.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      <div className="flex flex-col gap-block">
+        <Empty className="py-12">
+          <EmptyHeader>
+            <EmptyTitle>No submissions in the last 7 days</EmptyTitle>
+            <EmptyDescription>
+              New submissions will appear here as candidates apply.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+        {isClosed && (
+          <div className="flex items-center gap-element rounded-md bg-muted px-block py-element">
+            <InfoIcon className="size-3.5 shrink-0 text-muted-foreground" />
+            <p className="text-caption text-muted-foreground">
+              This production is no longer accepting submissions.
+            </p>
+          </div>
+        )}
+      </div>
     )
   }
 

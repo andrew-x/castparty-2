@@ -46,7 +46,6 @@ export default async function ProductionHomePage({
       submissions={data.submissions}
       pipelineStages={data.pipelineStages}
       roles={data.roles}
-      rejectReasons={data.rejectReasons}
       recentEmails={data.recentEmails}
       recentActivity={data.recentActivity}
       productionStatus={production.status}

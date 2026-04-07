@@ -65,13 +65,14 @@ export function DashboardRejectReasonsChart({
   }
 
   const data = Array.from(reasonCounts.entries()).map(([reason, count], i) => ({
+    key: `reason-${i}`,
     reason,
     count,
     fill: CHART_COLORS[i % CHART_COLORS.length],
   }))
 
   const config: ChartConfig = Object.fromEntries(
-    data.map((d) => [d.reason, { label: d.reason, color: d.fill }]),
+    data.map((d) => [d.key, { label: d.reason, color: d.fill }]),
   )
 
   const totalRejected = rejectedSubmissions.length
@@ -79,7 +80,9 @@ export function DashboardRejectReasonsChart({
   return (
     <ChartContainer config={config} className="aspect-square h-64 w-full">
       <PieChart>
-        <ChartTooltip content={<ChartTooltipContent nameKey="reason" />} />
+        <ChartTooltip
+          content={<ChartTooltipContent nameKey="key" labelKey="reason" />}
+        />
         <Pie
           data={data}
           dataKey="count"
@@ -119,7 +122,7 @@ export function DashboardRejectReasonsChart({
             }}
           />
         </Pie>
-        <ChartLegend content={<ChartLegendContent nameKey="reason" />} />
+        <ChartLegend content={<ChartLegendContent nameKey="key" />} />
       </PieChart>
     </ChartContainer>
   )
