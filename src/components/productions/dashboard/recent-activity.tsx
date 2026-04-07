@@ -46,7 +46,7 @@ export function DashboardRecentActivity({ activity }: Props) {
   }
 
   return (
-    <div className="flex max-h-80 flex-col divide-y overflow-y-auto">
+    <div className="flex max-h-80 flex-col divide-y divide-border overflow-y-auto">
       {activity.map((item) => {
         if (isFeedback(item)) {
           return (

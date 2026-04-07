@@ -6,6 +6,7 @@ import { generateNKeysBetween } from "fractional-indexing"
 import { revalidatePath } from "next/cache"
 import { adminActionClient } from "@/lib/action"
 import { auth } from "@/lib/auth"
+import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 import {
   Candidate,
@@ -419,9 +420,7 @@ export const seedDataAction = adminActionClient
 
         // Spread createdAt across the last 7 days for dashboard charts
         const daysAgo = faker.number.int({ min: 0, max: 6 })
-        const submittedAt = new Date(
-          now.getTime() - daysAgo * 24 * 60 * 60 * 1000,
-        )
+        const submittedAt = day().subtract(daysAgo, "day").toDate()
 
         submissionRows.push({
           id: subId,

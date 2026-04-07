@@ -2,6 +2,7 @@
 
 import { and, eq } from "drizzle-orm"
 import { checkAuth } from "@/lib/auth/auth-util"
+import day from "@/lib/dayjs"
 import db from "@/lib/db/db"
 
 export interface DashboardSubmission {
@@ -188,14 +189,10 @@ export async function getProductionDashboard(
   }
 
   // Sort by date descending, take most recent 10
-  allEmails.sort(
-    (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
+  allEmails.sort((a, b) => day(b.sentAt).valueOf() - day(a.sentAt).valueOf())
+  allActivity.sort(
+    (a, b) => day(b.createdAt).valueOf() - day(a.createdAt).valueOf(),
   )
-  allActivity.sort((a, b) => {
-    const aTime = new Date(a.createdAt).getTime()
-    const bTime = new Date(b.createdAt).getTime()
-    return bTime - aTime
-  })
 
   return {
     submissions,

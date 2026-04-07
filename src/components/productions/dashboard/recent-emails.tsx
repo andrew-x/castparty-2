@@ -29,7 +29,7 @@ export function DashboardRecentEmails({ emails }: Props) {
   }
 
   return (
-    <div className="flex max-h-80 flex-col divide-y overflow-y-auto">
+    <div className="flex max-h-80 flex-col divide-y divide-border overflow-y-auto">
       {emails.map((email) => (
         <div key={email.id} className="flex items-start gap-block py-block">
           <div className="flex size-6 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground">
