@@ -1,7 +1,8 @@
-import { ClapperboardIcon } from "lucide-react"
+import { ClapperboardIcon, PlusIcon } from "lucide-react"
 import type { Metadata } from "next"
-import Link from "next/link"
-import { getProductionsWithSubmissionCounts } from "@/actions/productions/get-productions-with-submission-counts"
+import { getDashboardProductions } from "@/actions/dashboard/get-dashboard-productions"
+import { getRecentActivity } from "@/actions/dashboard/get-recent-activity"
+import { getRecentInboundEmails } from "@/actions/dashboard/get-recent-emails"
 import { Button } from "@/components/common/button"
 import {
   Empty,
@@ -12,36 +13,39 @@ import {
   EmptyTitle,
 } from "@/components/common/empty"
 import { Page, PageContent, PageHeader } from "@/components/common/page"
-import { ProductionCard } from "@/components/productions/production-card"
+import { ActivityWidget } from "@/components/home/activity-widget"
+import { EmailsWidget } from "@/components/home/emails-widget"
+import { ProductionsWidget } from "@/components/home/productions-widget"
 import { getCurrentUser } from "@/lib/auth"
 
 export const metadata: Metadata = {
   title: "Home — Castparty",
 }
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}) {
-  const params = await searchParams
-  const showArchived = params.showArchived === "true"
-
-  const [user, allProductions] = await Promise.all([
+export default async function HomePage() {
+  const [user, productions, emails, activity] = await Promise.all([
     getCurrentUser(),
-    getProductionsWithSubmissionCounts(),
+    getDashboardProductions(),
+    getRecentInboundEmails(),
+    getRecentActivity(),
   ])
 
-  const hasArchived = allProductions.some((p) => p.status === "archive")
-  const productions = showArchived
-    ? allProductions
-    : allProductions.filter((p) => p.status !== "archive")
+  const hasVisibleProductions = productions.some((p) => p.status !== "archive")
 
   return (
     <Page>
-      <PageHeader title={`Welcome, ${user?.firstName}.`} />
+      <PageHeader
+        title={user?.firstName ? `Welcome, ${user.firstName}.` : "Welcome."}
+        actions={
+          hasVisibleProductions ? (
+            <Button href="/productions/new" leftSection={<PlusIcon />}>
+              Create production
+            </Button>
+          ) : undefined
+        }
+      />
       <PageContent>
-        {allProductions.length === 0 && (
+        {!hasVisibleProductions ? (
           <div className="flex flex-1 flex-col items-center justify-center">
             <Empty>
               <EmptyHeader>
@@ -50,7 +54,8 @@ export default async function HomePage({
                 </EmptyMedia>
                 <EmptyTitle>No productions yet</EmptyTitle>
                 <EmptyDescription>
-                  Create your first production to start casting.
+                  Create your first production to start managing auditions,
+                  tracking submissions, and casting roles.
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
@@ -58,25 +63,12 @@ export default async function HomePage({
               </EmptyContent>
             </Empty>
           </div>
-        )}
-
-        {allProductions.length > 0 && (
-          <div className="flex flex-col gap-block">
-            <div className="flex items-center justify-between">
-              <h2 className="font-medium text-heading">Your productions</h2>
-              {hasArchived && (
-                <Link
-                  href={showArchived ? "/home" : "/home?showArchived=true"}
-                  className="text-caption text-muted-foreground hover:text-foreground"
-                >
-                  {showArchived ? "Hide archived" : "Show archived"}
-                </Link>
-              )}
-            </div>
-            <div className="grid gap-block sm:grid-cols-2 lg:grid-cols-3">
-              {productions.map((production) => (
-                <ProductionCard key={production.id} production={production} />
-              ))}
+        ) : (
+          <div className="grid gap-section lg:grid-cols-[3fr_2fr]">
+            <ProductionsWidget productions={productions} />
+            <div className="flex flex-col gap-section">
+              <EmailsWidget emails={emails} />
+              <ActivityWidget activity={activity} />
             </div>
           </div>
         )}
