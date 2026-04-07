@@ -2,6 +2,7 @@
 
 import {
   ClipboardListIcon,
+  HomeIcon,
   ListIcon,
   MailIcon,
   MessageSquareTextIcon,
@@ -18,7 +19,12 @@ export function ProductionSubNav({ productionId }: { productionId: string }) {
   return (
     <SubNav
       items={[
-        { label: "Submissions", href: basePath, icon: UsersIcon },
+        { label: "Home", href: basePath, icon: HomeIcon },
+        {
+          label: "Submissions",
+          href: `${basePath}/submissions`,
+          icon: UsersIcon,
+        },
         {
           label: "Production Settings",
           href: `${basePath}/settings`,

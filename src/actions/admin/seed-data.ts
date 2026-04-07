@@ -417,6 +417,12 @@ export const seedDataAction = adminActionClient
             ? faker.helpers.arrayElement(prod.rejectReasons)
             : null
 
+        // Spread createdAt across the last 7 days for dashboard charts
+        const daysAgo = faker.number.int({ min: 0, max: 6 })
+        const submittedAt = new Date(
+          now.getTime() - daysAgo * 24 * 60 * 60 * 1000,
+        )
+
         submissionRows.push({
           id: subId,
           productionId: prod.id,
@@ -428,6 +434,7 @@ export const seedDataAction = adminActionClient
           links: Math.random() < 0.4 ? [faker.internet.url()] : [],
           unionStatus,
           representation,
+          createdAt: submittedAt,
         })
 
         // Pipeline updates: trace path from APPLIED to current stage

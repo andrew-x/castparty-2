@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation"
 import { getProduction } from "@/actions/productions/get-production"
-import { getProductionSubmissions } from "@/actions/productions/get-production-submissions"
-import { ProductionSubmissions } from "@/components/productions/production-submissions"
-import { DEFAULT_EMAIL_TEMPLATES } from "@/lib/email-template"
-import type { EmailTemplates } from "@/lib/types"
+import { getProductionDashboard } from "@/actions/productions/get-production-dashboard"
+import { ProductionDashboard } from "@/components/productions/dashboard/production-dashboard"
+import { getAppUrl } from "@/lib/url"
 
 export async function generateMetadata({
   params,
@@ -19,7 +18,7 @@ export async function generateMetadata({
   }
 }
 
-export default async function ProductionPage({
+export default async function ProductionHomePage({
   params,
 }: {
   params: Promise<{ id: string }>
@@ -31,27 +30,28 @@ export default async function ProductionPage({
     notFound()
   }
 
-  const data = await getProductionSubmissions(production.id)
+  const data = await getProductionDashboard(production.id)
 
   if (!data) {
     notFound()
   }
 
+  const shareUrl = getAppUrl(
+    `/s/${production.organization.slug}/${production.slug}`,
+  )
+  const shareHref = `/s/${production.organization.slug}/${production.slug}`
+
   return (
-    <ProductionSubmissions
-      productionName={production.name}
-      organizationName={production.organization.name}
-      emailTemplates={
-        (production.emailTemplates as EmailTemplates | null) ??
-        DEFAULT_EMAIL_TEMPLATES
-      }
-      roles={data.roles}
+    <ProductionDashboard
       submissions={data.submissions}
       pipelineStages={data.pipelineStages}
-      submissionFormFields={data.submissionFormFields}
-      feedbackFormFields={data.feedbackFormFields}
+      roles={data.roles}
       rejectReasons={data.rejectReasons}
-      otherRoleSubmissions={data.otherRoleSubmissions}
+      recentEmails={data.recentEmails}
+      recentActivity={data.recentActivity}
+      productionStatus={production.status}
+      shareUrl={shareUrl}
+      shareHref={shareHref}
     />
   )
 }
